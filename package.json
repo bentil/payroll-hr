@@ -1,0 +1,78 @@
+{
+  "name": "payroll-hr",
+  "version": "1.0.0",
+  "description": "Payroll Platform for hr",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "db:init-client": "npx prisma init",
+    "db:migrate": "npx prisma migrate dev --name schema --create-only --schema ./prisma/schema.prisma",
+    "db:generate": "npx prisma generate --schema ./prisma/schema.prisma",
+    "db:push": "npx prisma db push --schema ./prisma/schema.prisma",
+    "pre:dev": "npm run swagger",
+    "pre:build": "npm run swagger",
+    "proto:clean": "rm -rf ./generated/pb/",
+    "proto:generate": "npx buf generate --template buf.gen.yaml ../payroll-protos/proto",
+    "proto:clean-generate": "npm run proto:clean && npm run proto:generate",
+    "start": "ts-node ./src/index.ts",
+    "start:dev": "concurrently \"nodemon\" \"nodemon -x tsoa spec\"",
+    "start:test": "NODE_ENV=test ts-node ./src/index.ts",
+    "swagger": "tsoa spec",
+    "test": "jest",
+    "test:active-true": "jest --testNamePattern=Active-true",
+    "test:active-false": "jest --testNamePattern=Active-false",
+    "test:currency": "jest --testNamePattern=Currency",
+    "lint": "eslint . --cache --cache-location node_modules/.cache/eslint",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bentil/payroll-hr"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "@bufbuild/buf": "^1.27.1",
+    "@grpc/grpc-js": "^1.9.6",
+    "@grpc/proto-loader": "^0.7.10",
+    "@prisma/client": "^5.4.2",
+    "cls-rtracer": "^2.6.3",
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "joi": "^17.11.0",
+    "kafkajs": "^2.2.4",
+    "morgan": "^1.10.0",
+    "swagger-ui-express": "^5.0.0",
+    "ts-proto": "^1.162.1",
+    "tsoa": "^5.1.1",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.19",
+    "@types/morgan": "^1.9.6",
+    "@types/node": "^20.8.6",
+    "@types/swagger-ui-express": "^4.1.4",
+    "@typescript-eslint/eslint-plugin": "^6.8.0",
+    "@typescript-eslint/parser": "^6.8.0",
+    "eslint": "^8.51.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.0.1",
+    "nodemon": "^3.0.1",
+    "prisma": "^5.4.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "./src"
+    ],
+    "ext": "ts",
+    "exec": "ts-node ./src/index.ts"
+  },
+  "lint-staged": {
+    "*.ts": "eslint --cache --cache-location node_modules/.cache/eslint --fix"
+  }
+}

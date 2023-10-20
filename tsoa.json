@@ -1,0 +1,23 @@
+{
+    "entryFile": "./src/index.ts",
+    "noImplicitAdditionalProperties": "throw-on-extras",
+    "controllerPathGlobs": ["./src/controllers/openapi/**/*.oas.controller.ts"],
+    "spec": {
+        "outputDirectory": "./dist",
+        "specVersion": 3,
+        "spec": {
+            "servers": [
+              {
+                "url": "https://services.lucidarray.dev/akatua/hr/",
+                "description": "Staging"
+              },
+              {
+                "url": "http://localhost:3010",
+                "description": "Development"
+              }
+            ]
+          }
+    },
+    "security": { "api_key": [] },
+    "ignore": ["**/node_modules/**"]
+}

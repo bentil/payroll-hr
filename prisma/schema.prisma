@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model PayrollCompany {
+  id                               Int             @id
+  organizationId                   String          @map("organization_id")
+  name                             String          @db.VarChar(255)
+  address                          String          @map("address")
+  logoUrl                          String?         @map("logo_url") @db.VarChar(255)
+  contactEmail                     String          @map("contact_email") @db.VarChar(255)
+  contactMsisdn                    String?         @map("contact_misdn") @db.VarChar(20)
+  status                           String
+  currencyId                       Int             @map("currency_id")
+  countryId                        Int?            @map("country_id")
+  allowNegativeRates               Boolean         @default(false) @map("allow_negative_rates")
+  createdAt                        DateTime        @default(now()) @map("created_at")
+  modifiedAt                       DateTime?       @updatedAt @map("modified_at")
+  statusLastModifiedAt             DateTime?       @map("status_last_modified_at")
+  allowNegativeRatesLastModifiedAt DateTime?       @map("allow_negative_rates_last_modified_at")
+  grievanceTypes                   GrievanceType[]
+
+  @@map("payroll_company")
+}
+
+model Employee {
+  id                      Int       @id
+  companyId               Int       @map("company_id") @db.UnsignedInt()
+  notchId                 Int?      @map("notch_id") @db.UnsignedInt()
+  employeeNumber          String    @map("employee_number") @db.VarChar(40)
+  title                   String    @map("title") @db.VarChar(10)
+  firstName               String    @map("first_name") @db.VarChar(100)
+  lastName                String    @map("last_name") @db.VarChar(100)
+  otherNames              String?   @map("other_names") @db.VarChar(255)
+  gender                  String    @map("gender")
+  dateOfBirth             DateTime  @map("date_of_birth")
+  photoUrl                String?   @map("photo_url")
+  ssn                     String    @map("ssn") @db.VarChar(30)
+  taxIdentificationNumber String?   @map("tax_identification_number") @db.VarChar(30)
+  majorGradeLevelId       Int?      @map("major_grade_level_id") @db.UnsignedInt()
+  minorGradeLevelId       Int?      @map("minor_grade_level_id") @db.UnsignedInt()
+  nationality             String    @map("nationality")
+  regionId                Int?      @map("region_id") @db.UnsignedInt()
+  tribeId                 Int?      @map("tribe_id") @db.UnsignedInt()
+  email                   String?   @map("email") @db.VarChar(255)
+  privateEmail            String?   @map("private_email") @db.VarChar(255)
+  msisdn                  String?   @map("msisdn") @db.VarChar(20)
+  alternateMsisdn         String?   @map("alternate_msisdn") @db.VarChar(20)
+  address                 String?   @map("address")
+  digitalAddress          String?   @map("digital_address") @db.VarChar(30)
+  jobTitleId              Int?      @map("job_title_id") @db.UnsignedInt()
+  departmentId            Int?      @map("department_id") @db.UnsignedInt()
+  divisionId              Int?      @map("division_id") @db.UnsignedInt()
+  stationId               Int?      @map("station_id") @db.UnsignedInt()
+  costAreaId              Int?      @map("cost_area_id") @db.UnsignedInt()
+  status                  String
+  employmentDate          DateTime  @map("employment_date")
+  terminationDate         DateTime? @map("termination_date")
+  reemployed              Boolean?  @default(false)
+  resident                Boolean?  @default(false)
+  unionMember             Boolean?  @default(false) @map("union_member")
+  statusLastModifiedAt    DateTime? @map("status_last_modified_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  modifiedAt              DateTime? @updatedAt @map("modified_at")
+
+  @@map("employee")
+}
+
+model GrievanceType {
+  id          Int            @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int            @unique @map("company_id")
+  code        String         @db.VarChar(30)
+  name        String         @db.VarChar(30)
+  description String         @db.Text()
+  createdAt   DateTime       @default(now()) @map("created_at")
+  modifiedAt  DateTime?      @updatedAt @map("modified_at")
+  company     PayrollCompany @relation(fields: [companyId], references: [id])
+
+  @@unique([code, companyId])
+  @@unique([name, companyId])
+  @@fulltext([code, name, description])
+}
