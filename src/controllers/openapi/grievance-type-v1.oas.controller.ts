@@ -8,6 +8,7 @@ import {
   Queries,
   Response,
   Route,
+  Security,
   SuccessResponse,
   Tags,
 } from 'tsoa';
@@ -24,7 +25,7 @@ import { errors } from '../../utils/constants';
 
 @Tags('grievance-types')
 @Route('/api/v1/grievance-types')
-// @Security('api_key')
+@Security('api_key')
 export class GrievanceTypeV1Controller {
   private readonly logger = rootLogger.child({ context: GrievanceTypeV1Controller.name, });
 

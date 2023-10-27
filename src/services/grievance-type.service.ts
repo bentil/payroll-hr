@@ -170,7 +170,7 @@ export async function updateGrievanceType(
   const { companyId } = updateData;
   const grievanceType = await grievanceTypeRepository.findOne({ id });
   if (!grievanceType) {
-    logger.warn('GrievanceType[%s] to udate does not exist', id);
+    logger.warn('GrievanceType[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.GRIEVANCE_TYPE_NOT_FOUND,
       message: 'Grievance type to update does not exisit'
@@ -200,7 +200,7 @@ export async function updateGrievanceType(
 
   // Emit event.GrievanceType.modified event
   logger.debug(`Emitting ${events.modified}`);
-  kafkaService.send(events.modified, updateGrievanceType);
+  kafkaService.send(events.modified, updatedGrievanceType);
   logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedGrievanceType;
@@ -209,10 +209,10 @@ export async function updateGrievanceType(
 export async function deleteGrievanceType(id: number): Promise<void> {
   const grievanceType = await grievanceTypeRepository.findOne({ id });
   if (!grievanceType) {
-    logger.warn('GrievanceType[%s] to udate does not exist', id);
+    logger.warn('GrievanceType[%s] to delete does not exist', id);
     throw new NotFoundError({
       name: errors.GRIEVANCE_TYPE_NOT_FOUND,
-      message: 'Grievance type to update does not exisit'
+      message: 'Grievance type to delete does not exisit'
     });
   }
 

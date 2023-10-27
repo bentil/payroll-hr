@@ -53,4 +53,5 @@ export default {
       5) as number,
   },
   statementRequestBatchSize: (process.env.STATEMENT_REQUEST_BATCH_SIZE || 1000) as number,
+  reportNumberLength: parseInt(process.env.SMS_OTP_LENGTH || '6', 10),
 };

@@ -3,6 +3,13 @@
     "noImplicitAdditionalProperties": "throw-on-extras",
     "controllerPathGlobs": ["./src/controllers/openapi/**/*.oas.controller.ts"],
     "spec": {
+        "securityDefinitions": {
+          "api_key": {
+              "type": "apiKey",
+              "name": "proxy-authorization",
+              "in": "header"
+          }
+        },
         "outputDirectory": "./dist",
         "specVersion": 3,
         "spec": {

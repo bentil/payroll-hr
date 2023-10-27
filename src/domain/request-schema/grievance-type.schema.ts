@@ -35,8 +35,6 @@ export const CREATE_GRIEVANCE_TYPE_SCHEMA = Joi.object({
 });
 
 export const UPDATE_GRIEVANCE_TYPE_SCHEMA = Joi.object({
-  companyId: Joi.number()
-    .optional(),
   code: Joi.string()
     .optional()
     .trim(),
@@ -46,9 +44,7 @@ export const UPDATE_GRIEVANCE_TYPE_SCHEMA = Joi.object({
   description: Joi.string()
     .optional()
     .trim(),
-}).or(
-  'companyId', 'code', 'name', 'description'
-);
+}).or('code', 'name', 'description');
 
 export const QUERY_GRIEVANCE_TYPE_SCHEMA = Joi.object({
   companyId: Joi.number(),

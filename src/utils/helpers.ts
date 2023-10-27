@@ -1,3 +1,8 @@
+import { 
+  AddGrievanceReportedEmployeeRecord, 
+  CreateGrievanceReportedEmployeeRecord
+} from '../domain/dto/grievance-reported-employee.dto';
+
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
   return (page - 1) * limit;
@@ -39,4 +44,20 @@ export function generateRandomAlphanumeric(length: number): string {
 export function getPage(skip: number, limit: number): number {
   if (skip <= 0) return 1;
   return Math.floor(skip / limit) + 1;
+}
+
+export function generateMultiGrievanceReportedEmployeesRecords(
+  reportedEmployeeIds: number[], reportId: number
+) {
+  return reportedEmployeeIds.map(
+    reportedEmployeeId => new CreateGrievanceReportedEmployeeRecord(reportId, reportedEmployeeId)
+  );
+}
+
+export function generateMultiGrievanceReportedEmployeesDto(
+  reportedEmployeeIds: number[],
+) {
+  return reportedEmployeeIds.map(
+    reportedEmployeeId => new AddGrievanceReportedEmployeeRecord(reportedEmployeeId)
+  );
 }

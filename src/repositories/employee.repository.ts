@@ -1,6 +1,7 @@
 import { Prisma, Employee } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
+import { ListWithPagination, getListWithPagination } from './types';
 
 export async function create (data: Prisma.EmployeeCreateInput): Promise<Employee> {
   try {
@@ -28,6 +29,22 @@ export async function createOrUpdate(
     create: data,
     update: dataWithoutId,
   });
+}
+
+export async function find(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.EmployeeWhereInput,
+  orderBy?: Prisma.EmployeeOrderByWithRelationAndSearchRelevanceInput
+}): Promise<ListWithPagination<Employee>> {
+  const { skip, take } = params;
+  const paginate = skip !== undefined && take !== undefined;
+  const [data, totalCount] = await Promise.all([
+    prisma.employee.findMany(params),
+    paginate ? prisma.employee.count({ where: params.where }) : Promise.resolve(undefined),
+  ]);
+
+  return getListWithPagination(data, { skip, take, totalCount });
 }
 
 export async function findOne(

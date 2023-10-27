@@ -2,6 +2,8 @@ import {  Employee } from '@prisma/client';
 import * as repository from '../repositories/employee.repository';
 import { rootLogger } from '../utils/logger';
 import { EmployeeEvent } from '../domain/events/employee.event';
+import { NotFoundError, ServerError } from '../errors/http-errors';
+import { errors } from '../utils/constants';
 
 const logger = rootLogger.child({ context: 'EmployeeService' });
 
@@ -56,4 +58,45 @@ export async function createOrUpdateEmployee(
   );
 
   return employee;
+}
+
+export async function getEmployee(id: number): Promise<Employee> {
+  logger.debug('Getting details for Employee[%s]', id);
+  let employee: Employee | null;
+
+  try {
+    employee = await repository.findOne({ id });
+  } catch (err) {
+    logger.warn('Getting Employee[%s] failed', id, { error: (err as Error).stack });
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!employee) {
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_NOT_FOUND,
+      message: 'Employee does not exist'
+    });
+  }
+
+  logger.info('Employee[%s] details retrieved!', id);
+  return employee;
+}
+
+export async function validateEmployees(id: number[]): Promise<void> {
+  const employeesList = new Set<number>(id);
+
+  const foundEmployees = await repository.find({
+    where: { id: { in: [...employeesList] } }
+  });
+
+  if (foundEmployees.data.length !== employeesList.size) {
+    logger.warn(
+      'Received %d employees id(s), but found %d',
+      employeesList.size, foundEmployees.data.length
+    );
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_NOT_FOUND,
+      message: 'At least one Employee ID passed does not exist'
+    });
+  }
 }
