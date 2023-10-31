@@ -1,9 +1,11 @@
-import { PayrollCompany } from '@prisma/client';
+import { PayrollCompany, Prisma } from '@prisma/client';
 import * as repository from '../repositories/payroll-company.repository';
 import { rootLogger } from '../utils/logger';
 import { PayrollCompanyMessage } from '../domain/events/payroll-company.event';
-import { NotFoundError, ServerError } from '../errors/http-errors';
+import { InputError, InvalidStateError, NotFoundError, ServerError } from '../errors/http-errors';
 import { errors } from '../utils/constants';
+import { managePermissionScopeQuery } from '../utils/helpers';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const logger = rootLogger.child({ context: 'PayrollCompanyService' });
 
@@ -57,4 +59,68 @@ export async function getPayrollCompany(id: number): Promise<PayrollCompany> {
 
   logger.info('PayrollCompany[%s] details retreived!', id);
   return payrollCompany;
+}
+
+export async function validatePayrollCompany(
+  id: number, authorizedUser: AuthorizedUser,
+  options?: {
+    throwOnNotActive?: boolean,
+    organizationId?: string
+  }
+): Promise<PayrollCompany> {
+  logger.info('Getting details for Company[%s]', id);
+  let payrollCompany: PayrollCompany | null;
+  try {
+    payrollCompany = await repository.findFirst({
+      id,
+      organizationId: options?.organizationId
+    });
+  } catch (err) {
+    logger.warn('Getting PayrollCompany[%s] failed', id, { error: (err as Error).stack });
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!payrollCompany) {
+    logger.warn('PayrollCompany[%s] does not exist', id);
+    if (options?.organizationId) {
+      throw new NotFoundError({
+        message: 'Payroll Company does not exist for your organization'
+      });
+    }
+    throw new NotFoundError({ message: 'Payroll Company does not exist' });
+  }
+
+  if (options?.throwOnNotActive) {
+    if (payrollCompany.status !== 'ACTIVE') {
+      throw new InvalidStateError({
+        name: errors.PAYROLL_COMPANY_NOT_ACTIVE,
+        message: 'Payroll Company is not active'
+      });
+    }
+  }
+
+  await managePermissionScopeQuery(authorizedUser,
+    { queryCompanyId: payrollCompany.id, queryParam: {} }
+  );
+
+  logger.info('PayrollCompany[%s] details retrieved!', id);
+  return payrollCompany;
+}
+
+
+export function checkIfNegativeRateAllowedForCompany(options: {
+  allowNegativeRates: boolean,
+  value: Prisma.Decimal | Prisma.Decimal[]
+}) {
+  const { allowNegativeRates, value } = options;
+  const hasNegativeRate = Array.isArray(value)
+    ? value.some(val => val.isNegative())
+    : value.isNegative();
+
+  if (hasNegativeRate && !allowNegativeRates) {
+    throw new InputError({
+      name: errors.NEGATIVE_RATE_NOT_ALLOWED,
+      message: 'Negative rate values not allowed for company'
+    });
+  }
 }

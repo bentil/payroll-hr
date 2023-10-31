@@ -2,15 +2,15 @@ import { EmployeeEvent } from '../domain/events/employee.event';
 import * as employeeService from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
-const _logger = rootLogger.child({ context: 'EmployeeCompanyCosumer' });
+const _logger = rootLogger.child({ context: 'EmployeeCosumer' });
 
 export default class EmployeeConsumer {
   public static async handleCreated(data: EmployeeEvent): Promise<void> {
     const logger = _logger.child({ method: 'handleCreated' });
     logger.debug('Received event to handle employee created', { data });
     try {
-      const { id: companyId } = await employeeService.createOrUpdateEmployee(data);
-      logger.info('Employee[%s] saved successfully!', companyId);
+      const { id } = await employeeService.createOrUpdateEmployee(data);
+      logger.info('Employee[%s] saved successfully!', id);
     } catch (err) {
       logger.error(
         'Failed to set up Employee[%s]',

@@ -3,7 +3,7 @@ import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
-export async function create (data: Prisma.EmployeeCreateInput): Promise<Employee> {
+export async function create(data: Prisma.EmployeeCreateInput): Promise<Employee> {
   try {
     return prisma.employee.create({ data });
   }
@@ -11,7 +11,7 @@ export async function create (data: Prisma.EmployeeCreateInput): Promise<Employe
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Model already exists',
+          message: 'Employee already exists',
           cause: err
         });
       }
@@ -55,7 +55,7 @@ export async function findOne(
   });
 }
 
-export async function update (params: {
+export async function update(params: {
   where: Prisma.EmployeeWhereUniqueInput,
   data: Prisma.EmployeeUpdateInput
 }) {

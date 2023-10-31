@@ -21,8 +21,9 @@ export async function addGrievanceReportedEmployee(
       const AddReportedEmployee =  await prisma.grievanceReportedEmployee.create({ 
         data,
         include: includeRelations 
-          ?  { reportedEmployee: true, grievanceReport: true }
-          : undefined
+          ?  { reportedEmployee: true, grievanceReport: { include: {
+            company: true, reportingEmployee: true, grievanceType: true
+          } } } : undefined
       });
       reportedEmployees.push(AddReportedEmployee);
     } catch (err) {

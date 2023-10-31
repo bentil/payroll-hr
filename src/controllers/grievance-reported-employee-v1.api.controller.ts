@@ -7,7 +7,7 @@ import {
 
 const controller = new ReportedEmployeeV1Controller();
 
-export const addNewReportedEmployee = async (req: Request, res: Response, next: NextFunction) => {
+export async function addNewReportedEmployee(req: Request, res: Response, next: NextFunction) {
   const { reportId } = req.params;
   try {
     const response = await controller.addGrievanceType(req.body, +reportId);
@@ -15,9 +15,9 @@ export const addNewReportedEmployee = async (req: Request, res: Response, next: 
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const deleteReportedEmployee = async ( req: Request, res: Response, next: NextFunction ) => {
+export async function deleteReportedEmployee( req: Request, res: Response, next: NextFunction ) {
   const { reportId, employeeId } = req.params;
   try {
     await controller.deleteGrievanceType(+reportId, +employeeId);
@@ -25,4 +25,4 @@ export const deleteReportedEmployee = async ( req: Request, res: Response, next:
   } catch (err) {
     next(err);
   }
-};
+}

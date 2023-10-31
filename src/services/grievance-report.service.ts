@@ -23,6 +23,7 @@ import { errors } from '../utils/constants';
 import { ListWithPagination } from '../repositories/types';
 import { generateRandomAlphanum } from '../utils/generator.util';
 import config from '../config';
+import * as dateutil from '../utils/date.util';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceReport' });
@@ -39,7 +40,6 @@ export async function addGrievanceReport(
   let company: PayrollCompany, reportingEmployee: Employee, grievanceType: GrievanceType;
   let newGrievanceReport: GrievanceReport;
   const reportNumber = generateRandomAlphanum(config.reportNumberLength);
-  console.log('reportNumber ->', reportNumber);
 
   if (reportedEmployeeId) {
     //PERFORM VALIDATION 
@@ -140,6 +140,8 @@ export async function getGrievanceReports(
     reportingEmployeeId,
     reportDate,
     grievanceTypeId,
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
@@ -150,7 +152,10 @@ export async function getGrievanceReports(
     result = await grievanceReportRepository.find({
       skip,
       take,
-      where: { companyId, reportDate, reportingEmployeeId, grievanceTypeId },
+      where: { companyId, reportDate, reportingEmployeeId, grievanceTypeId, createdAt: {
+        gte: createdAtGte && new Date(createdAtGte),
+        lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+      } },
       orderBy: orderByInput,
       includeRelations: true
     });

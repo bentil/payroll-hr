@@ -167,7 +167,6 @@ export async function updateGrievanceType(
   id: number, 
   updateData: UpdateGrievanceTypeDto
 ): Promise<GrievanceType> {
-  const { companyId } = updateData;
   const grievanceType = await grievanceTypeRepository.findOne({ id });
   if (!grievanceType) {
     logger.warn('GrievanceType[%s] to update does not exist', id);
@@ -175,21 +174,6 @@ export async function updateGrievanceType(
       name: errors.GRIEVANCE_TYPE_NOT_FOUND,
       message: 'Grievance type to update does not exisit'
     });
-  }
-
-  //check if provided companyId  exists
-  if (companyId) {
-    try {
-      await payrollCompanyService.getPayrollCompany(companyId);
-    } catch (err) {
-      logger.warn('Getting PayrollCompany[%s] fialed', companyId);
-      if (err instanceof HttpError) throw err;
-      throw new FailedDependencyError({
-        message: 'Dependency check failed',
-        cause: err
-      });
-    }
-    logger.info('PayrollCompany[%s] exists', companyId);
   }
 
   logger.debug('Persisting update(s) to GrievanceType[%s]', id);

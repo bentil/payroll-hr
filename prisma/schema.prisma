@@ -12,23 +12,25 @@ datasource db {
 }
 
 model PayrollCompany {
-  id                               Int               @id @db.UnsignedInt()
-  organizationId                   String            @map("organization_id")
-  name                             String            @db.VarChar(255)
-  address                          String            @map("address")
-  logoUrl                          String?           @map("logo_url") @db.VarChar(255)
-  contactEmail                     String            @map("contact_email") @db.VarChar(255)
-  contactMsisdn                    String?           @map("contact_misdn") @db.VarChar(20)
+  id                               Int                      @id @db.UnsignedInt()
+  organizationId                   String                   @map("organization_id")
+  name                             String                   @db.VarChar(255)
+  address                          String                   @map("address")
+  logoUrl                          String?                  @map("logo_url") @db.VarChar(255)
+  contactEmail                     String                   @map("contact_email") @db.VarChar(255)
+  contactMsisdn                    String?                  @map("contact_misdn") @db.VarChar(20)
   status                           String
-  currencyId                       Int               @map("currency_id")
-  countryId                        Int?              @map("country_id")
-  allowNegativeRates               Boolean           @default(false) @map("allow_negative_rates")
-  createdAt                        DateTime          @default(now()) @map("created_at")
-  modifiedAt                       DateTime?         @updatedAt @map("modified_at")
-  statusLastModifiedAt             DateTime?         @map("status_last_modified_at")
-  allowNegativeRatesLastModifiedAt DateTime?         @map("allow_negative_rates_last_modified_at")
+  currencyId                       Int                      @map("currency_id")
+  countryId                        Int?                     @map("country_id")
+  allowNegativeRates               Boolean                  @default(false) @map("allow_negative_rates")
+  createdAt                        DateTime                 @default(now()) @map("created_at")
+  modifiedAt                       DateTime?                @updatedAt @map("modified_at")
+  statusLastModifiedAt             DateTime?                @map("status_last_modified_at")
+  allowNegativeRatesLastModifiedAt DateTime?                @map("allow_negative_rates_last_modified_at")
   grievanceTypes                   GrievanceType[]
   grievanceReports                 GrievanceReport[]
+  disciplinaryActionType           DisciplinaryActionType[]
+  disciplinaryAction               DisciplinaryAction[]
 
   @@map("payroll_company")
 }
@@ -74,6 +76,7 @@ model Employee {
   modifiedAt                 DateTime?                   @updatedAt @map("modified_at")
   grievanceReportingEmployee GrievanceReport[]
   grievanceReportedEmployees GrievanceReportedEmployee[]
+  disciplinaryAction         DisciplinaryAction[]
 
   @@map("employee")
 }
@@ -109,6 +112,7 @@ model GrievanceReport {
   reportingEmployee          Employee                    @relation(fields: [reportingEmployeeId], references: [id])
   grievanceType              GrievanceType               @relation(fields: [grievanceTypeId], references: [id])
   grievanceReportedEmployees GrievanceReportedEmployee[]
+  disciplinaryAction         DisciplinaryAction[]
 
   @@unique([companyId, reportNumber])
   @@fulltext([reportNumber, note])
@@ -122,7 +126,118 @@ model GrievanceReportedEmployee {
   createdAt          DateTime        @default(now()) @map("created_at")
   grievanceReport    GrievanceReport @relation(fields: [reportId], references: [id])
   reportedEmployee   Employee        @relation(fields: [reportedEmployeeId], references: [id])
- 
+
   @@unique([reportId, reportedEmployeeId])
   @@map("grievance_reported_employee")
+}
+
+model DisciplinaryActionType {
+  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt()
+  companyId          Int                  @map("company_id") @db.UnsignedInt()
+  code               String               @db.VarChar(30)
+  name               String               @db.VarChar(30)
+  description        String               @db.Text()
+  createdAt          DateTime             @default(now()) @map("created_at")
+  modifiedAt         DateTime?            @updatedAt @map("modified_at")
+  company            PayrollCompany       @relation(fields: [companyId], references: [id])
+  disciplinaryAction DisciplinaryAction[]
+
+  @@unique([code, companyId])
+  @@unique([name, companyId])
+  @@fulltext([code, name, description])
+  @@map("disciplinary_action_type")
+}
+
+model DisciplinaryAction {
+  id                Int                    @id @default(autoincrement()) @db.UnsignedInt()
+  companyId         Int                    @map("company_id") @db.UnsignedInt()
+  employeeId        Int                    @map("employee_id") @db.UnsignedInt()
+  actionTypeId      Int                    @map("action_type_id") @db.UnsignedInt()
+  actionNumber      String                 @map("action_number") @db.VarChar(30)
+  grievanceReportId Int?                   @map("grievance_report_id") @db.UnsignedInt()
+  notes             String                 @db.Text()
+  actionDate        DateTime               @map("action_date")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  modifiedAt        DateTime?              @updatedAt @map("modified_at")
+  company           PayrollCompany         @relation(fields: [companyId], references: [id])
+  employee          Employee               @relation(fields: [employeeId], references: [id])
+  actionType        DisciplinaryActionType @relation(fields: [actionTypeId], references: [id])
+  grievanceReport   GrievanceReport?       @relation(fields: [grievanceReportId], references: [id])
+
+  @@unique([actionNumber, companyId])
+  @@fulltext([actionNumber, notes])
+  @@map("disciplinary_action")
+}
+
+model CompanyLevel {
+  id                        Int                        @id @db.UnsignedInt()
+  organizationId            String                     @map("organization_id") @db.VarChar(100)
+  companyId                 Int?                       @map("company_Id") @db.UnsignedInt()
+  levelNumber               Int                        @map("level_number") @db.SmallInt
+  levelName                 String                     @map("level_name") @db.VarChar(55)
+  juniorLevel               Boolean                    @default(true) @map("junior_level")
+  parentId                  Int?                       @map("parent_id")
+  childId                   Int?                       @map("child_id")
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  modifiedAt                DateTime?                  @updatedAt @map("modified_at")
+  companyLevelLeavePackages CompanyLevelLeavePackage[]
+
+  @@map("company_level")
+}
+
+model LeaveType {
+  id            Int            @id @default(autoincrement()) @db.UnsignedInt()
+  code          String         @map("code") @db.VarChar(30)
+  name          String         @map("name") @db.VarChar(100)
+  colorCode     String         @map("color_code") @db.VarChar(10)
+  description   String         @map("description") @db.Text()
+  createdAt     DateTime       @default(now()) @map("created_at")
+  modifiedAt    DateTime?      @updatedAt @map("modified_at")
+  leavePackages LeavePackage[]
+
+  @@unique(fields: [code])
+  @@unique(fields: [name])
+  @@fulltext([code, name, description])
+  @@map("leave_type")
+}
+
+model LeavePackage {
+  id                        Int                        @id @default(autoincrement()) @db.UnsignedInt()
+  companyId                 Int                        @map("company_id") @db.UnsignedInt() //fk
+  code                      String                     @map("code") @db.VarChar(30)
+  name                      String                     @map("name") @db.VarChar(100)
+  description               String?                    @map("description") @db.Text()
+  leaveTypeId               Int                        @map("leave_type_id") @db.UnsignedInt() //fk
+  maxDays                   Int                        @map("max_days") @db.Int()
+  paid                      Boolean?                   @default(true) @map("paid")
+  redeemable                Boolean?                   @default(false) @map("redeemable")
+  accrued                   Boolean?                   @default(true) @map("accrued")
+  carryOverDaysValue        Int?                       @map("carry_over_days_value") @db.Int()
+  carryOverDaysPercent      Decimal?                   @map("carry_over_days_percent") @db.Decimal(10, 4)
+  leaveType                 LeaveType?                 @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  modifiedAt                DateTime?                  @updatedAt @map("modified_at")
+  companyLevelLeavePackages CompanyLevelLeavePackage[]
+
+  @@unique(fields: [code, companyId])
+  @@unique(fields: [name, companyId])
+  @@index(fields: [companyId])
+  @@index(fields: [code])
+  @@index(fields: [leaveTypeId])
+  @@index(fields: [paid])
+  @@index(fields: [redeemable])
+  @@index(fields: [accrued])
+  @@fulltext([code, name, description])
+  @@map("leave_package")
+}
+
+model CompanyLevelLeavePackage {
+  id             Int           @id @default(autoincrement()) @db.UnsignedInt()
+  companyLevelId Int           @map("company_level_id") @db.UnsignedInt() //fk
+  leavePackageId Int           @map("leave_package_id") @db.UnsignedInt() //fk
+  createdAt      DateTime      @default(now()) @map("created_at")
+  leavePackage   LeavePackage? @relation(fields: [leavePackageId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  companyLevel   CompanyLevel? @relation(fields: [companyLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("company_level_leave_package")
 }

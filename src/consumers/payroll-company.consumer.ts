@@ -12,8 +12,8 @@ export default class PayrollCompanyConsumer {
     const logger = _logger.child({ method: 'handleCreated' });
     logger.debug('Received event to handle PayrollCompany created', { data });
     try {
-      const { id: companyId } = await payrollCompService.createOrUpdatePayrollCompany(data);
-      logger.info('PayrollCompany[%s] saved successfully!', companyId);
+      const { id } = await payrollCompService.createOrUpdatePayrollCompany(data);
+      logger.info('PayrollCompany[%s] saved successfully!', id);
     } catch (err) {
       logger.error(
         'Failed to set up PayrollCompany[%s]',

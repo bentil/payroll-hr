@@ -26,8 +26,8 @@ export enum GrievanceTypeOrderBy {
 }
 
 export class QueryGrievanceTypeDto {
-  companyId!: number;
-  code!: string;
+  companyId?: number;
+  code?: string;
   page = 1;
   limit: number = config.pagination.limit;
   orderBy: GrievanceTypeOrderBy = GrievanceTypeOrderBy.CREATED_AT_DESC;

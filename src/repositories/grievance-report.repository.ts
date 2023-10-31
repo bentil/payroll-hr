@@ -77,7 +77,7 @@ export async function createReportWithReportedEmployee(
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Model already exists',
+          message: 'Grievance report already exists',
           cause: err
         });
       }

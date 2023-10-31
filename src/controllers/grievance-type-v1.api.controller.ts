@@ -5,16 +5,16 @@ import { QueryGrievanceTypeDto, SearchGrievanceTypeDto } from '../domain/dto/gri
 
 const controller = new GrievanceTypeV1Controller();
 
-export const addNewGrievanceType = async (req: Request, res: Response, next: NextFunction) => {
+export async function addNewGrievanceType(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.addGrievanceType(req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const getGrievanceTypes = async (req: Request, res: Response, next: NextFunction) => {
+export async function getGrievanceTypes(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.getGrievanceTypes(
       req.query as unknown as QueryGrievanceTypeDto,
@@ -23,9 +23,9 @@ export const getGrievanceTypes = async (req: Request, res: Response, next: NextF
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const getGrievanceType = async (req: Request, res: Response, next: NextFunction) => {
+export async function getGrievanceType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
     const response = await controller.getGrievanceType(+id);
@@ -33,8 +33,9 @@ export const getGrievanceType = async (req: Request, res: Response, next: NextFu
   } catch (err) {
     next(err);
   }
-};
-export const updateGrievanceType = async (req: Request, res: Response, next: NextFunction) => {
+}
+
+export async function updateGrievanceType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
     const response = await controller.updateGrievanceType(+id, req.body);
@@ -42,9 +43,9 @@ export const updateGrievanceType = async (req: Request, res: Response, next: Nex
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const searchGrievanceTypes = async (req: Request, res: Response, next: NextFunction) => {
+export async function searchGrievanceTypes(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.searchGrievanceType(
       req.query as unknown as SearchGrievanceTypeDto
@@ -53,10 +54,9 @@ export const searchGrievanceTypes = async (req: Request, res: Response, next: Ne
   } catch (err) {
     next(err);
   }
-};
+}
 
-
-export const deleteGrievanceType = async ( req: Request, res: Response, next: NextFunction ) => {
+export async function deleteGrievanceType( req: Request, res: Response, next: NextFunction ) {
   const { id } = req.params;
   try {
     await controller.deleteGrievanceType(+id);
@@ -64,4 +64,4 @@ export const deleteGrievanceType = async ( req: Request, res: Response, next: Ne
   } catch (err) {
     next(err);
   }
-};
+}

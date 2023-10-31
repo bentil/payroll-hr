@@ -1,8 +1,12 @@
 export interface AuthorizedUser {
   userId: string;
+  username: string;
+  name?: string;
   organizationId: string;
-  companyIds: string[];
+  organizationRoleId: string;
+  companyIds: number[];
   platformUser: boolean;
+  sessionId?: string;
 }
 
 export function isAuthorizedUser(obj: any): obj is AuthorizedUser {

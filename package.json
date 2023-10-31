@@ -22,7 +22,7 @@
     "test:active-true": "jest --testNamePattern=Active-true",
     "test:active-false": "jest --testNamePattern=Active-false",
     "test:currency": "jest --testNamePattern=Currency",
-    "lint": "eslint . --cache --cache-location node_modules/.cache/eslint",
+    "lint": "eslint . --cache --cache-location node_modules/.cache/eslint --fix",
     "prepare": "husky install"
   },
   "repository": {

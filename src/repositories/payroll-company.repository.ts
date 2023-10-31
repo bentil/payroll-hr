@@ -2,7 +2,7 @@ import { Prisma, PayrollCompany } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
 
-export async function create (data: Prisma.PayrollCompanyCreateInput): Promise<PayrollCompany> {
+export async function create(data: Prisma.PayrollCompanyCreateInput): Promise<PayrollCompany> {
   try {
     return prisma.payrollCompany.create({ data });
   }
@@ -10,7 +10,7 @@ export async function create (data: Prisma.PayrollCompanyCreateInput): Promise<P
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Model already exists',
+          message: 'Payroll company already exists',
           cause: err
         });
       }
@@ -38,7 +38,14 @@ export async function findOne(
   });
 }
 
-export async function update (params: {
+export async function findFirst(
+  where: Prisma.PayrollCompanyWhereInput,
+): Promise<PayrollCompany | null> {
+  return prisma.payrollCompany.findFirst({ where });
+}
+
+
+export async function update(params: {
   where: Prisma.PayrollCompanyWhereUniqueInput,
   data: Prisma.PayrollCompanyUpdateInput
 }) {

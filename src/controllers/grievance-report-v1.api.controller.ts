@@ -17,7 +17,7 @@ export const addNewGrievanceReport = async (req: Request, res: Response, next: N
   }
 };
 
-export const getGrievanceReports = async (req: Request, res: Response, next: NextFunction) => {
+export async function getGrievanceReports(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.getGrievanceReports(
       req.query as unknown as QueryGrievanceReportDto,
@@ -26,9 +26,9 @@ export const getGrievanceReports = async (req: Request, res: Response, next: Nex
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const getGrievanceReport = async (req: Request, res: Response, next: NextFunction) => {
+export async function getGrievanceReport(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
     const response = await controller.getGrievanceReport(+id);
@@ -36,8 +36,9 @@ export const getGrievanceReport = async (req: Request, res: Response, next: Next
   } catch (err) {
     next(err);
   }
-};
-export const updateGrievanceReport = async (req: Request, res: Response, next: NextFunction) => {
+}
+
+export async function updateGrievanceReport(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
     const response = await controller.updateGrievanceReport(+id, req.body);
@@ -45,9 +46,9 @@ export const updateGrievanceReport = async (req: Request, res: Response, next: N
   } catch (err) {
     next(err);
   }
-};
+}
 
-export const searchGrievanceReport = async (req: Request, res: Response, next: NextFunction) => {
+export async function searchGrievanceReport(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.searchGrievanceReport(
       req.query as unknown as SearchGrievanceReportDto
@@ -56,10 +57,10 @@ export const searchGrievanceReport = async (req: Request, res: Response, next: N
   } catch (err) {
     next(err);
   }
-};
+}
 
 
-export const deleteGrievanceReport = async ( req: Request, res: Response, next: NextFunction ) => {
+export async function deleteGrievanceReport( req: Request, res: Response, next: NextFunction ) {
   const { id } = req.params;
   try {
     await controller.deleteGrievanceReport(+id);
@@ -67,4 +68,4 @@ export const deleteGrievanceReport = async ( req: Request, res: Response, next: 
   } catch (err) {
     next(err);
   }
-};
+}
