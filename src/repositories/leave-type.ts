@@ -55,9 +55,7 @@ export const search = async (params: {
   skip?: number,
   take?: number,
   orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput
-}, searchParam?: string, scopedQuery?: {
-  companyId?: number | { in: number[] }
-}
+}, searchParam?: string
 ) => {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -71,7 +69,6 @@ export const search = async (params: {
     description: {
       search: searchParam,
     },
-    ...scopedQuery
   };
   const [data, totalCount] = await Promise.all([
     prisma.leaveType.findMany({

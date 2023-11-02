@@ -185,6 +185,7 @@ export async function searchDisciplinaryAction(
           search: searchParam,
         },
       },
+      includeRelations: true
     });
     logger.info('Found %d DisciplinaryAction(s) that matched query', { query });
   } catch (err) {
@@ -204,12 +205,36 @@ export async function updateDisciplinaryAction(
   id: number, 
   updateData: UpdateDisciplinaryActionDto
 ): Promise<DisciplinaryActionDto> {
+  const { grievanceReportId, actionTypeId } = updateData;
   const disciplinaryAction = await repository.findOne({ id });
   if (!disciplinaryAction) {
     logger.warn('DisciplinaryAction[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.DISCIPLINARY_ACTION_NOT_FOUND,
       message: 'Disciplinary action to update does not exisit'
+    });
+  }
+
+  // validate grievanceReportId and actionTypeId
+  try {
+    if (grievanceReportId && actionTypeId) {
+      await Promise.all([
+        grievanceReportService.getGrievanceReport(grievanceReportId),
+        actionTypeService.getDisciplinaryActionType(actionTypeId)
+      ]);
+    } else if (grievanceReportId) {
+      await grievanceReportService.getGrievanceReport(grievanceReportId);
+    } else if (actionTypeId) {
+      await actionTypeService.getDisciplinaryActionType(actionTypeId);
+    }
+  } catch (err) {
+    logger.warn(
+      'Getting grievanceReport[%s] or actionType[%s] failed', 
+      grievanceReportId, actionTypeId);
+    if (err instanceof HttpError) throw err;
+    throw new FailedDependencyError({
+      message: 'Dependency check failed',
+      cause: err
     });
   }
 

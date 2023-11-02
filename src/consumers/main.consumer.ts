@@ -2,6 +2,8 @@ import { Consumer } from 'kafkajs';
 import { KafkaService } from '../components/kafka.component';
 import PayrollCompanyConsumer from './payroll-company.consumer';
 import EmployeeConsumer from './employee.consumer';
+import CompanyLevelConsumer from './company-level.consumer';
+
 
 type ConsumerHandler = (data: any) => void | Promise<void>;
 const topicHandlers: Record<string, ConsumerHandler> = {
@@ -9,6 +11,8 @@ const topicHandlers: Record<string, ConsumerHandler> = {
   'event.PayrollCompany.modified': PayrollCompanyConsumer.handleModified,
   'event.Employee.created': EmployeeConsumer.handleCreated,
   'event.Employee.modified': EmployeeConsumer.handleModified,
+  'event.CompanyLevel.created': CompanyLevelConsumer.handleCreated,
+  'event.CompanyLevel.modified': CompanyLevelConsumer.handleModified,
 } as const;
 
 export default class MainConsumer {

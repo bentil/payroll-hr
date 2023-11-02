@@ -8,7 +8,7 @@ const controller = new CompanyLevelLeavePackageV1Controller();
 
 export async function addCompanyLevelLeavePackage(req: Request, res: Response, next: NextFunction) {
   try {
-    const response = await controller.addCompanyLevelLeavePackage(req.body, req);
+    const response = await controller.addCompanyLevelLeavePackage(req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);

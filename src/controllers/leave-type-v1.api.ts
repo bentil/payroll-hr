@@ -6,7 +6,7 @@ const controller = new LeaveTypeV1Controller();
 
 export async function addLeaveType(req: Request, res: Response, next: NextFunction) {
   try {
-    const response = await controller.addLeaveType(req.body, req);
+    const response = await controller.addLeaveType(req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -16,7 +16,7 @@ export async function addLeaveType(req: Request, res: Response, next: NextFuncti
 export async function updateLeaveType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.updateLeaveType(Number(id), req.body, req);
+    const response = await controller.updateLeaveType(Number(id), req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -27,7 +27,7 @@ export async function listLeaveTypes(req: Request, res: Response, next: NextFunc
   const { query } = req;
   try {
     const response = await controller.getLeaveTypes(
-      query as unknown as QueryLeaveTypeDto/*, req*/);
+      query as unknown as QueryLeaveTypeDto);
     res.json(response);
   } catch (err) {
     next(err);
@@ -37,9 +37,7 @@ export async function listLeaveTypes(req: Request, res: Response, next: NextFunc
 export async function searchLeaveTypes(req: Request, res: Response, next: NextFunction) {
   const { query } = req;
   try {
-    const response = await controller.searchLeaveType(
-      query as unknown as SearchLeaveTypeDto,
-      req);
+    const response = await controller.searchLeaveType(query as unknown as SearchLeaveTypeDto,);
     res.json(response);
   } catch (err) {
     next(err);
@@ -49,7 +47,7 @@ export async function searchLeaveTypes(req: Request, res: Response, next: NextFu
 export async function getLeaveTypeById(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.getLeaveTypeById(Number(id)/*, req*/);
+    const response = await controller.getLeaveTypeById(Number(id));
     res.json(response);
   } catch (err) {
     return next(err);
@@ -59,7 +57,7 @@ export async function getLeaveTypeById(req: Request, res: Response, next: NextFu
 export async function deleteLeaveType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.deleteLeaveType(Number(id), req);
+    const response = await controller.deleteLeaveType(Number(id));
     res.status(204).json(response);
   } catch (err) {
     return next(err);

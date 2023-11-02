@@ -9,14 +9,13 @@ import {
   Route,
   SuccessResponse,
   Tags,
-  Request,
   Delete,
+  Security,
 } from 'tsoa';
 import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
 import * as leavePackageservice from '../../services/leave-package.service';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
-import { Request as expressRequest } from 'express';
 import {
   CreateLeavePackageDto,
   LeavePackageDto,
@@ -29,6 +28,7 @@ import { IncludeCompanyLevelsQueryDto } from '../../domain/dto/leave-type.dto';
 
 @Tags('Leave Packages')
 @Route('/api/v1/leave-packages')
+@Security('api_key')
 export class LeavePackageV1Controller {
   private readonly logger = rootLogger.child({ context: LeavePackageV1Controller.name });
 
@@ -40,13 +40,11 @@ export class LeavePackageV1Controller {
 */
   @Post()
   @SuccessResponse(201, 'Created')
-  public async addLeavePackage(
-    @Body() createData: CreateLeavePackageDto,
-    @Request() request: expressRequest):
+  public async addLeavePackage(@Body() createData: CreateLeavePackageDto):
     Promise<ApiSuccessResponse<LeavePackageDto>> {
     this.logger.debug('Received request to add leavePackage');
     const leavePackage =
-      await leavePackageservice.createLeavePackage(createData, request.user!);
+      await leavePackageservice.createLeavePackage(createData);
     return { data: leavePackage };
   }
 
@@ -96,11 +94,10 @@ export class LeavePackageV1Controller {
 
   @Get()
   public async getLeavePackages(
-    @Queries() query: QueryLeavePackageDto,
-    @Request() request: expressRequest
+    @Queries() query: QueryLeavePackageDto
   ): Promise<ApiSuccessResponse<LeavePackageDto[]>> {
     this.logger.info('Received request to get leave package matching query', { query });
-    const { data, pagination } = await leavePackageservice.getLeavePackages(query, request.user!);
+    const { data, pagination } = await leavePackageservice.getLeavePackages(query);
     this.logger.info('Returning %d leave package that matched query', data.length);
     return { data, pagination };
   }
@@ -139,12 +136,11 @@ export class LeavePackageV1Controller {
      */
   @Get('search')
   public async searchLeavePackage(
-    @Queries() query: SearchLeavePackageDto,
-    @Request() request: expressRequest
+    @Queries() query: SearchLeavePackageDto
   ): Promise<ApiSuccessResponse<LeavePackageDto[]>> {
     this.logger.info('Received request to get leave-package matching search query', { query });
     const { data, pagination } =
-      await leavePackageservice.searchLeavePackages(query, request.user!);
+      await leavePackageservice.searchLeavePackages(query);
     return { data, pagination };
   }
 
@@ -162,12 +158,9 @@ export class LeavePackageV1Controller {
     details: [],
   })
   @SuccessResponse(204, 'No Content')
-  public async deleteLeavePackage(
-    @Path('id') id: number,
-    @Request() request: expressRequest
-  ): Promise<void> {
+  public async deleteLeavePackage(@Path('id') id: number): Promise<void> {
     this.logger.info('Received request to delete LeavePackage[%s]', id);
-    await leavePackageservice.deleteLeavePackage(id, request.user!);
+    await leavePackageservice.deleteLeavePackage(id);
   }
 
 }

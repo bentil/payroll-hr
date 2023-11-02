@@ -97,43 +97,22 @@ export async function validateCompanyLevel(
 }
 
 export async function validateCompanyLevels(
-  companyLevelIds: number[],
-  options?: {
-    companyId?: number,
-    companyIds?: number[]
-  }
+  companyLevelIds: number[]
 ): Promise<void> {
+  const companyList = new Set<number>(companyLevelIds);
 
-  const distinctCompanyIds = new Set<number>(options?.companyIds);
-  let companyIdQuery: {
-    companyId?: number | { in: number[] };
-  };
-  if (options?.companyId) {
-    companyIdQuery = {
-      companyId: options?.companyId
-    };
-  } else {
-    companyIdQuery = {
-      companyId: { in: [...distinctCompanyIds] }
-    };
-  }
-
-  const distinctIds = new Set<number>(companyLevelIds);
-  const companyLevels = await repository.find({
-    where: {
-      id: { in: [...distinctIds] },
-      ...companyIdQuery,
-    }
+  const foundEmployees = await repository.find({
+    where: { id: { in: [...companyLevelIds] } }
   });
 
-  if (companyLevels.data.length !== distinctIds.size) {
+  if (foundEmployees.data.length !== companyList.size) {
     logger.warn(
-      'Received %d companyLevelIds id(s), but found %d',
-      distinctIds.size, companyLevels.data.length
+      'Received %d employees id(s), but found %d',
+      companyList.size, foundEmployees.data.length
     );
     throw new NotFoundError({
       name: errors.COMPANY_LEVEL_NOT_FOUND,
-      message: 'At least one company level ID passed does not exist for company'
+      message: 'At least one Employee ID passed does not exist'
     });
   }
 }

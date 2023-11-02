@@ -7,7 +7,6 @@ import {
 import * as repository from '../repositories/company-level-leave-package.repository';
 import { HttpError, NotFoundError, ServerError } from '../errors/http-errors';
 import * as helpers from '../utils/helpers';
-import { AuthorizedUser } from '../domain/user.domain';
 import { rootLogger } from '../utils/logger';
 import * as leavePackageService from './leave-package.service';
 import * as companyLevelService from './company-level.service';
@@ -24,10 +23,8 @@ const events = {
 
 export async function createCompanyLevelLeavePackage(
   createCompanyLevelLeavePackageDto: CreateCompanyLevelLeavePackageDto,
-  authorizedUser?: AuthorizedUser
 ): Promise<CompanyLevelLeavePackageDto[]> {
   const { companyLevelId, leavePackageIds } = createCompanyLevelLeavePackageDto;
-  const { companyIds } = authorizedUser!;
 
   logger.debug(
     'Validating companyLevelId[%s] and leavePackageIds[%s]',
@@ -36,9 +33,9 @@ export async function createCompanyLevelLeavePackage(
   try {
     await Promise.all(
       [
-        companyLevelService.validateCompanyLevel(companyLevelId, authorizedUser!, { companyIds }),
+        companyLevelService.getCompanyLevelById(companyLevelId),
         // eslint-disable-next-line max-len
-        leavePackageService.validateLeavePackageIds(leavePackageIds, authorizedUser!, { companyIds })
+        leavePackageService.validateLeavePackageIds(leavePackageIds)
       ]);
     logger.info(
       'Validating companyLevelId[%s] and leavePackageIds[%s] was successful',

@@ -54,7 +54,7 @@ import * as reportedEmployeesV1Controller from '../controllers/grievance-reporte
 import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary-action-type-v1.api.controller';
 // eslint-disable-next-line max-len
 import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
-import { authenticateClient } from '../middleware/auth.middleware';
+import { authenticateClient, authenticatePlatformUser } from '../middleware/auth.middleware';
 
 const router = Router();
 router.use(authenticateClient);
@@ -266,7 +266,7 @@ router.get(
 );
 
 router.get(
-  '/leave-packages/:id/',
+  '/leave-packages/:id',
   validateRequestQuery(INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA),
   leavePackageV1Controller.getLeavePackageById
 );
@@ -281,6 +281,7 @@ router.delete(
 router.post(
   '/leave-types',
   validateRequestBody(CREATE_LEAVE_TYPE_SCHEMA),
+  authenticatePlatformUser(),
   leaveTypeV1Controller.addLeaveType
 );
 
@@ -308,6 +309,7 @@ router.get(
 
 router.delete(
   '/leave-types/:id',
+  authenticatePlatformUser(),
   leaveTypeV1Controller.deleteLeaveType
 );
 

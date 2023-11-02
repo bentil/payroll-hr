@@ -21,7 +21,7 @@ export async function addReportedEmployeesToReport(
 ): Promise<ReportedEmployeesDto[]> {
   const grievanceReport = await grievanceReportRepository.findOne({ id });
   if (!grievanceReport) {
-    logger.warn('GrievanceReport[%s] to udate does not exist', id);
+    logger.warn('GrievanceReport[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.GRIEVANCE_REPORT_NOT_FOUND,
       message: 'Grievance report to update does not exisit'

@@ -8,22 +8,23 @@ import {
   Route,
   SuccessResponse,
   Tags,
-  Request,
   Delete,
+  Security,
 } from 'tsoa';
 import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
 import * as compLevelLeavePackageService from '../../services/company-level-leave-package.service';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
-import { Request as expressRequest } from 'express';
 import {
   CreateCompanyLevelLeavePackageDto, CompanyLevelLeavePackageDto,
   QueryCompanyLevelLeavePackageDto
 } from '../../domain/dto/company-level-leave-package.dto';
+import { CompanyLevelLeavePackage } from '@prisma/client';
 
 
 @Tags('Company Level Leave Packages')
 @Route('/api/v1/company-level-leave-packages')
+@Security('api_key')
 export class CompanyLevelLeavePackageV1Controller {
   private readonly logger = rootLogger.child({ 
     context: CompanyLevelLeavePackageV1Controller.name 
@@ -37,11 +38,10 @@ export class CompanyLevelLeavePackageV1Controller {
   @SuccessResponse(201, 'Created')
   public async addCompanyLevelLeavePackage(
     @Body() createData: CreateCompanyLevelLeavePackageDto,
-    @Request() request: expressRequest
-  ): Promise<ApiSuccessResponse<CompanyLevelLeavePackageDto[]>> {
+  ): Promise<ApiSuccessResponse<CompanyLevelLeavePackage[]>> {
     this.logger.debug('Received request to add company-level-leave-package');
     const companyLevelLeavePackage = await compLevelLeavePackageService.
-      createCompanyLevelLeavePackage(createData, request.user);
+      createCompanyLevelLeavePackage(createData);
     return { data: companyLevelLeavePackage };
   }
   /**

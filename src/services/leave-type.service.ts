@@ -6,16 +6,13 @@ import {
   SearchLeaveTypeDto,
   UpdateLeaveTypeDto
 } from '../domain/dto/leave-type.dto';
-import { AuthorizedUser } from '../domain/user.domain';
 import * as repository from '../repositories/leave-type';
 import {
-  ForbiddenError,
   HttpError,
   NotFoundError,
   ServerError
 } from '../errors/http-errors';
 import { rootLogger } from '../utils/logger';
-import { managePermissionScopeQuery } from '../utils/helpers';
 import * as helpers from '../utils/helpers';
 import { LeaveType } from '@prisma/client';
 import { ListWithPagination } from '../repositories/types';
@@ -24,13 +21,7 @@ const logger = rootLogger.child({ context: 'LeaveTypeService' });
 
 export const createLeaveType = async (
   createLeaveTypeDto: CreateLeaveTypeDto,
-  authorizedUser: AuthorizedUser
 ): Promise<LeaveTypeDto> => {
-  const { platformUser } = authorizedUser;
-  if (platformUser === false) {
-    throw new ForbiddenError({ message: 'User not allowed to perform action' });
-  }
-
   logger.debug('Persisting new Leave Type...');
   let leaveType: LeaveTypeDto;
   try {
@@ -44,15 +35,10 @@ export const createLeaveType = async (
   return leaveType;
 };
 
-export const updateLeaveType = async (
+export async function updateLeaveType(
   id: number,
   updateLeaveTypeDto: UpdateLeaveTypeDto,
-  authorizedUser: AuthorizedUser
-): Promise<LeaveTypeDto> => {
-  const { platformUser } = authorizedUser;
-  if (platformUser === false) {
-    throw new ForbiddenError({ message: 'User not allowed to perform action' });
-  }
+): Promise<LeaveTypeDto> {
   const leaveType = await repository.findOne({ id });
   if (!leaveType) {
     logger.warn('LeaveType[%s] to update does not exist', id);
@@ -66,12 +52,11 @@ export const updateLeaveType = async (
   logger.info('Update(s) to LeaveType[%s] persisted successfully!', id);
   return updatedLeaveType;
 
-};
+}
 
-export const getLeaveTypes = async (
-  query: QueryLeaveTypeDto,
-  //authorizedUser: AuthorizedUser
-): Promise<ListWithPagination<LeaveType>> => {
+export async function getLeaveTypes(
+  query: QueryLeaveTypeDto
+): Promise<ListWithPagination<LeaveType>> {
   const {
     page,
     limit: take,
@@ -104,12 +89,9 @@ export const getLeaveTypes = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leaveType;
-};
+}
 
-export const getLeaveTypeById = async (
-  id: number,
-  //authorizedUser: AuthorizedUser
-): Promise<LeaveType> => {
+export async function getLeaveTypeById(id: number): Promise<LeaveType> {
   logger.debug('Getting details for LeaveType[%s]', id);
 
   let leaveType: LeaveType | null;
@@ -126,12 +108,11 @@ export const getLeaveTypeById = async (
   }
   logger.info('Leave Type[%s] details retrieved!', id);
   return leaveType;
-};
+}
 
-export const searchLeaveTypes = async (
-  query: SearchLeaveTypeDto,
-  authorizedUser: AuthorizedUser
-): Promise<ListWithPagination<LeaveType>> => {
+export async function searchLeaveTypes(
+  query: SearchLeaveTypeDto
+): Promise<ListWithPagination<LeaveType>> {
   const {
     page,
     limit: take,
@@ -141,8 +122,6 @@ export const searchLeaveTypes = async (
 
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await managePermissionScopeQuery(authorizedUser,
-    { queryParam: {} });
 
   let leaveType: ListWithPagination<LeaveType>;
   logger.debug('Finding Leave Type(s) that match search query', { query });
@@ -151,7 +130,7 @@ export const searchLeaveTypes = async (
       skip,
       take,
       orderBy: orderByInput
-    }, searchParam, scopedQuery);
+    }, searchParam);
 
     logger.info(
       'Found %d LeaveType that matched search query',
@@ -164,17 +143,9 @@ export const searchLeaveTypes = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leaveType;
-};
+}
 
-export const deleteLeaveType = async (
-  id: number,
-  authorizedUser: AuthorizedUser
-): Promise<LeaveType> => {
-  const { platformUser } = authorizedUser;
-  if (platformUser === false) {
-    throw new ForbiddenError({ message: 'User not allowed to perform action' });
-  }
-
+export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
   logger.debug('Getting details for LeaveType[%s]', id);
   let deletedLeaveType: LeaveType | null, leaveType: LeaveType | null;
   try {

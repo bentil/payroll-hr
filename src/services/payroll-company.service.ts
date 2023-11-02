@@ -4,8 +4,6 @@ import { rootLogger } from '../utils/logger';
 import { PayrollCompanyMessage } from '../domain/events/payroll-company.event';
 import { InputError, InvalidStateError, NotFoundError, ServerError } from '../errors/http-errors';
 import { errors } from '../utils/constants';
-import { managePermissionScopeQuery } from '../utils/helpers';
-import { AuthorizedUser } from '../domain/user.domain';
 
 const logger = rootLogger.child({ context: 'PayrollCompanyService' });
 
@@ -62,7 +60,7 @@ export async function getPayrollCompany(id: number): Promise<PayrollCompany> {
 }
 
 export async function validatePayrollCompany(
-  id: number, authorizedUser: AuthorizedUser,
+  id: number,
   options?: {
     throwOnNotActive?: boolean,
     organizationId?: string
@@ -98,10 +96,6 @@ export async function validatePayrollCompany(
       });
     }
   }
-
-  await managePermissionScopeQuery(authorizedUser,
-    { queryCompanyId: payrollCompany.id, queryParam: {} }
-  );
 
   logger.info('PayrollCompany[%s] details retrieved!', id);
   return payrollCompany;

@@ -9,14 +9,13 @@ import {
   Route,
   SuccessResponse,
   Tags,
-  Request,
   Delete,
+  Security,
 } from 'tsoa';
 import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
 import * as leaveTypeService from '../../services/leave-type.service';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
-import { Request as expressRequest } from 'express';
 import {
   CreateLeaveTypeDto,
   LeaveTypeDto,
@@ -28,6 +27,7 @@ import {
 
 @Tags('Leave Types')
 @Route('/api/v1/leave-types')
+@Security('api_key')
 export class LeaveTypeV1Controller {
   private readonly logger = rootLogger.child({ context: LeaveTypeV1Controller.name });
 
@@ -41,10 +41,9 @@ export class LeaveTypeV1Controller {
   @SuccessResponse(201, 'Created')
   public async addLeaveType(
     @Body() createData: CreateLeaveTypeDto,
-    @Request() request: expressRequest
   ): Promise<ApiSuccessResponse<LeaveTypeDto>> {
     this.logger.debug('Received request to add leaveType');
-    const leaveType = await leaveTypeService.createLeaveType(createData, request.user!);
+    const leaveType = await leaveTypeService.createLeaveType(createData);
     return { data: leaveType };
   }
 
@@ -77,10 +76,9 @@ export class LeaveTypeV1Controller {
   public async updateLeaveType(
     @Path('id') id: number,
     @Body() payload: UpdateLeaveTypeDto,
-    @Request() request: expressRequest
   ): Promise<ApiSuccessResponse<LeaveTypeDto>> {
     this.logger.debug('Received request to update leaveType');
-    const leaveType = await leaveTypeService.updateLeaveType(id, payload, request.user!);
+    const leaveType = await leaveTypeService.updateLeaveType(id, payload);
     return { data: leaveType };
   }
 
@@ -94,10 +92,9 @@ export class LeaveTypeV1Controller {
   @Get()
   public async getLeaveTypes(
     @Queries() query: QueryLeaveTypeDto,
-      //@Request() request: expressRequest
   ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
     this.logger.info('Received request to get leaveType matching query', { query });
-    const { data, pagination } = await leaveTypeService.getLeaveTypes(query/*, request.user!*/);
+    const { data, pagination } = await leaveTypeService.getLeaveTypes(query);
     this.logger.info('Returning %d leaveType that matched query', data.length);
     return { data, pagination };
   }
@@ -116,7 +113,6 @@ export class LeaveTypeV1Controller {
   })
   public async getLeaveTypeById(
     @Path('id') id: number,
-      //@Request() request: expressRequest
   ): Promise<ApiSuccessResponse<LeaveTypeDto>> {
     this.logger.info('Received request to get LeaveType[%s]', id);
     const leaveType = await leaveTypeService.getLeaveTypeById(id/*, request.user!*/);
@@ -132,10 +128,9 @@ export class LeaveTypeV1Controller {
   @Get('search')
   public async searchLeaveType(
     @Queries() query: SearchLeaveTypeDto,
-    @Request() request: expressRequest
   ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
     this.logger.info('Received request to get leave-type matching search query', { query });
-    const { data, pagination } = await leaveTypeService.searchLeaveTypes(query, request.user!);
+    const { data, pagination } = await leaveTypeService.searchLeaveTypes(query);
     return { data, pagination };
   }
 
@@ -153,12 +148,9 @@ export class LeaveTypeV1Controller {
     details: [],
   })
   @SuccessResponse(204, 'No Content')
-  public async deleteLeaveType(
-    @Path('id') id: number,
-    @Request() request: expressRequest
-  ): Promise<void> {
+  public async deleteLeaveType(@Path('id') id: number): Promise<void> {
     this.logger.info('Received request to delete LeaveType[%s]', id);
-    await leaveTypeService.deleteLeaveType(id, request.user!);
+    await leaveTypeService.deleteLeaveType(id);
   }
 
 

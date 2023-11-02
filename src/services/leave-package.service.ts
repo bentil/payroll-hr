@@ -6,11 +6,9 @@ import {
   SearchLeavePackageDto,
   UpdateLeavePackageDto
 } from '../domain/dto/leave-package.dto';
-import { AuthorizedUser } from '../domain/user.domain';
 import * as repository from '../repositories/leave-package';
 import { HttpError, NotFoundError, ServerError } from '../errors/http-errors';
 import { rootLogger } from '../utils/logger';
-import { managePermissionScopeQuery } from '../utils/helpers';
 import * as helpers from '../utils/helpers';
 import { LeavePackage, Prisma } from '@prisma/client';
 import * as payrollCompanyService from '../services/payroll-company.service';
@@ -25,18 +23,14 @@ const logger = rootLogger.child({ context: 'LeavePackageService' });
 
 export const createLeavePackage = async (
   createLeavePackageDto: CreateLeavePackageDto,
-  authorizedUser: AuthorizedUser
 ): Promise<LeavePackageDto> => {
   const { companyId, leaveTypeId, companyLevelIds } = createLeavePackageDto;
-  const { organizationId } = authorizedUser;
 
   logger.debug('Validating Payroll Company[%s] and Leave Type[%s]', companyId, leaveTypeId);
   try {
     await Promise.all([
-      payrollCompanyService.validatePayrollCompany(
-        companyId, authorizedUser, { throwOnNotActive: true, organizationId }
-      ),
-      leaveTypeservice.getLeaveTypeById(leaveTypeId/*, authorizedUser*/)
+      payrollCompanyService.getPayrollCompany(companyId),
+      leaveTypeservice.getLeaveTypeById(leaveTypeId)
     ]);
   } catch (err) {
     if (err instanceof HttpError) throw err;
@@ -52,18 +46,18 @@ export const createLeavePackage = async (
 
   if (companyLevelIds) {
     try {
-      await companyLevelService.validateCompanyLevels(companyLevelIds, { companyId }),
-      leavePackage = await repository.
-        createLeavePackageWithCompanyLevels(createLeavePackageDto,
-          {
-            leaveType: true,
-            companyLevelLeavePackages: {
-              include: {
-                companyLevel: true,
-              }
-            },
-          }
-        );
+      await companyLevelService.validateCompanyLevels(companyLevelIds),
+      leavePackage = await repository.createLeavePackageWithCompanyLevels(
+        createLeavePackageDto,
+        {
+          leaveType: true,
+          companyLevelLeavePackages: {
+            include: {
+              companyLevel: true,
+            }
+          },
+        }
+      );
 
       if (!leavePackage) {
         logger.error('Persisting LeavePackage with companyLevelIds for company[%s]', companyId);
@@ -96,7 +90,6 @@ export const createLeavePackage = async (
 
 export const updateLeavePackage = async (id: number,
   updateLeavePackageDto: UpdateLeavePackageDto,
-  //authorizedUser: AuthorizedUser
 ): Promise<LeavePackageDto> => {
 
   const leavePackage = await repository.findOne({ id });
@@ -118,21 +111,16 @@ export const updateLeavePackage = async (id: number,
 
 export const getLeavePackages = async (
   query: QueryLeavePackageDto,
-  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<LeavePackageDto>> => {
   const {
     page,
     limit: take,
-    companyId: queryCompanyId,
     orderBy,
     ...queryParam
   } = query;
   const skip = helpers.getSkip(page || 1, take);
   const orderByInput = helpers.getOrderByInput(orderBy || LeavePackageOrderBy.CREATED_AT_ASC);
-  const { scopedQuery } = await managePermissionScopeQuery(authorizedUser,
-    {
-      queryCompanyId, queryParam: { ...queryParam }
-    });
+ 
 
   let leavePackage: ListWithPagination<LeavePackageDto>;
   logger.debug('Finding LeavePackage(s) that match query', { query });
@@ -140,10 +128,7 @@ export const getLeavePackages = async (
     leavePackage = await repository.find({
       skip,
       take,
-      where: {
-        ...queryParam,
-        ...scopedQuery
-      },
+      where: { ...queryParam },
       include: {
         leaveType: true
       },
@@ -166,7 +151,6 @@ export const getLeavePackages = async (
 export const getLeavePackageById = async (
   id: number,
   includeCompanyLevelsQueryDto: IncludeCompanyLevelsQueryDto,
-  //authorizedUser: AuthorizedUser
 ): Promise<LeavePackageDto> => {
   const { includeCompanyLevels } = includeCompanyLevelsQueryDto;
   logger.debug('Getting details for Leave Package[%s]', id);
@@ -207,7 +191,6 @@ export const getLeavePackageById = async (
 
 export const searchLeavePackages = async (
   query: SearchLeavePackageDto,
-  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<LeavePackageDto>> => {
   const {
     page,
@@ -218,8 +201,6 @@ export const searchLeavePackages = async (
 
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await managePermissionScopeQuery(authorizedUser,
-    { queryParam: {} });
 
   let leavePackage: ListWithPagination<LeavePackageDto>;
   logger.debug('Finding Leave Package(s) that match search query', { query });
@@ -231,7 +212,7 @@ export const searchLeavePackages = async (
       include: {
         leaveType: true
       },
-    }, searchParam, scopedQuery);
+    }, searchParam);
 
     logger.info('Found %d LeavePackage that matched search query',
       leavePackage.data.length, { query }
@@ -248,19 +229,11 @@ export const searchLeavePackages = async (
 
 export const deleteLeavePackage = async (
   id: number,
-  authorizedUser: AuthorizedUser
-): Promise<LeavePackage> => {
-  const { platformUser, companyIds } = authorizedUser;
+): Promise<void> => {
   logger.debug('Getting details for LeavePackage[%s]', id);
-  let deletedLeavePackage: LeavePackage | null, leavePackage: LeavePackage | null;
+  let leavePackage: LeavePackage | null;
   try {
-    if (!platformUser) {
-      leavePackage = await repository.findFirst({
-        id, companyId: { in: companyIds },
-      });
-    } else {
-      leavePackage = await repository.findOne({ id });
-    }
+    leavePackage = await repository.findOne({ id });
     logger.info('LeavePackage[%s] details retrieved!', id);
 
     if (!leavePackage) {
@@ -269,9 +242,8 @@ export const deleteLeavePackage = async (
         message: 'LeavePackage you are attempting to delete does not exist'
       });
     }
-    deletedLeavePackage = await repository.deleteOne({ id });
+    await repository.deleteOne({ id });
     logger.info('LeavePackage[%s] successfully deleted!', id);
-    return deletedLeavePackage;
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.warn('Deleting LeavePackage[%s] failed', id, { error: (err as Error).stack });
@@ -281,33 +253,11 @@ export const deleteLeavePackage = async (
 
 
 export async function validateLeavePackageIds(
-  leavePackageIds: number[],
-  authorizedUser: AuthorizedUser,
-  options?: {
-    companyId?: number, companyIds?: number[],
-  }
+  leavePackageIds: number[]
 ): Promise<void> {
-
-  const distinctCompanyIds = new Set<number>(options?.companyIds);
-  let companyIdQuery: {
-    companyId?: number | { in: number[] };
-  };
-  if (options?.companyId) {
-    companyIdQuery = {
-      companyId: options?.companyId
-    };
-  } else {
-    companyIdQuery = {
-      companyId: { in: [...distinctCompanyIds] }
-    };
-  }
-
   const distinctIds = new Set<number>(leavePackageIds);
   const foundLeavePackageIds = await repository.find({
-    where: {
-      id: { in: [...distinctIds] },
-      ...companyIdQuery,
-    }
+    where: { id: { in: [...distinctIds] } }
   });
 
   if (foundLeavePackageIds.data.length !== distinctIds.size) {
