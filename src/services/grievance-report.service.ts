@@ -21,7 +21,7 @@ import {
 } from '../errors/http-errors';
 import { errors } from '../utils/constants';
 import { ListWithPagination } from '../repositories/types';
-import { generateRandomAlphanum } from '../utils/generator.util';
+import { generateGrievanceReportNumber } from '../utils/generator.util';
 import config from '../config';
 import * as dateutil from '../utils/date.util';
 
@@ -39,7 +39,7 @@ export async function addGrievanceReport(
   const { companyId, reportingEmployeeId, reportedEmployeeId, grievanceTypeId } = creatData;
   let company: PayrollCompany, reportingEmployee: Employee, grievanceType: GrievanceType;
   let newGrievanceReport: GrievanceReport;
-  const reportNumber = generateRandomAlphanum(config.reportNumberLength);
+  const reportNumber = generateGrievanceReportNumber(config.alphaLength, config.numLength);
 
   if (reportedEmployeeId) {
     //PERFORM VALIDATION 

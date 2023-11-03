@@ -22,7 +22,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
-import { generateRandomAlphanum } from '../utils/generator.util';
+import { generateDisciplinaryActionNumber } from '../utils/generator.util';
 import config from '../config';
 import * as dateutil from '../utils/date.util';
 
@@ -39,7 +39,7 @@ export async function addDisciplinaryAction(
 ): Promise<DisciplinaryActionDto> {
   const { companyId, employeeId, grievanceReportId, actionTypeId } = creatData;
 
-  const actionNumber = generateRandomAlphanum(config.reportNumberLength);
+  const actionNumber = generateDisciplinaryActionNumber(config.alphaLength, config.numLength);
   // validate comapnyId, employeeId, grievanceReportId and actionTypeId
   try {
     await Promise.all([
