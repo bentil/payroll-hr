@@ -17,19 +17,23 @@ import * as companyLevelService from './company-level.service';
 import { errors } from '../utils/constants';
 import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
 import { ListWithPagination } from '../repositories/types';
+import { AuthorizedUser } from '../domain/user.domain';
 
 
 const logger = rootLogger.child({ context: 'LeavePackageService' });
 
 export const createLeavePackage = async (
-  createLeavePackageDto: CreateLeavePackageDto,
+  createLeavePackageDto: CreateLeavePackageDto, authorizedUser: AuthorizedUser
 ): Promise<LeavePackageDto> => {
   const { companyId, leaveTypeId, companyLevelIds } = createLeavePackageDto;
+  const { organizationId } = authorizedUser;
 
   logger.debug('Validating Payroll Company[%s] and Leave Type[%s]', companyId, leaveTypeId);
   try {
     await Promise.all([
-      payrollCompanyService.getPayrollCompany(companyId),
+      payrollCompanyService.validatePayrollCompany(
+        companyId, { throwOnNotActive: true, organizationId }
+      ),
       leaveTypeservice.getLeaveTypeById(leaveTypeId)
     ]);
   } catch (err) {
@@ -252,12 +256,53 @@ export const deleteLeavePackage = async (
 };
 
 
+// export async function validateLeavePackageIds(
+//   leavePackageIds: number[]
+// ): Promise<void> {
+//   const distinctIds = new Set<number>(leavePackageIds);
+//   const foundLeavePackageIds = await repository.find({
+//     where: { id: { in: [...distinctIds] } }
+//   });
+
+//   if (foundLeavePackageIds.data.length !== distinctIds.size) {
+//     logger.warn(
+//       'Received %d leavePackage id(s), but found %d',
+//       distinctIds.size, foundLeavePackageIds.data.length
+//     );
+//     throw new NotFoundError({
+//       name: errors.LEAVE_PACKAGE_NOT_FOUND,
+//       message: 'At least one leave package ID passed does not exist for company'
+//     });
+//   }
+// }
+
 export async function validateLeavePackageIds(
-  leavePackageIds: number[]
+  leavePackageIds: number[],
+  options?: {
+    companyId?: number, companyIds?: number[],
+  }
 ): Promise<void> {
+
+  const distinctCompanyIds = new Set<number>(options?.companyIds);
+  let companyIdQuery: {
+    companyId?: number | { in: number[] };
+  };
+  if (options?.companyId) {
+    companyIdQuery = {
+      companyId: options?.companyId
+    };
+  } else {
+    companyIdQuery = {
+      companyId: { in: [...distinctCompanyIds] }
+    };
+  }
+
   const distinctIds = new Set<number>(leavePackageIds);
   const foundLeavePackageIds = await repository.find({
-    where: { id: { in: [...distinctIds] } }
+    where: {
+      id: { in: [...distinctIds] },
+      ...companyIdQuery,
+    }
   });
 
   if (foundLeavePackageIds.data.length !== distinctIds.size) {

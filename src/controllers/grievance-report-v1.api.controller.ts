@@ -10,7 +10,7 @@ const controller = new GrievanceReportV1Controller();
 
 export const addNewGrievanceReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const response = await controller.addGrievanceReport(req.body);
+    const response = await controller.addGrievanceReport(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);

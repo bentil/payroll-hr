@@ -24,6 +24,7 @@ import { ListWithPagination } from '../repositories/types';
 import { generateGrievanceReportNumber } from '../utils/generator.util';
 import config from '../config';
 import * as dateutil from '../utils/date.util';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceReport' });
@@ -34,19 +35,25 @@ const events = {
 };
 
 export async function addGrievanceReport(
-  creatData: CreateGrievanceReportDto
+  creatData: CreateGrievanceReportDto,
+  authorizedUser: AuthorizedUser
 ): Promise<GrievanceReportDto> {
   const { companyId, reportingEmployeeId, reportedEmployeeId, grievanceTypeId } = creatData;
   let company: PayrollCompany, reportingEmployee: Employee, grievanceType: GrievanceType;
   let newGrievanceReport: GrievanceReport;
   const reportNumber = generateGrievanceReportNumber(config.alphaLength, config.numLength);
+  const { organizationId } = authorizedUser;
 
   if (reportedEmployeeId) {
     //PERFORM VALIDATION 
     try {
       [company, reportingEmployee, grievanceType] = await Promise.all([
-        payrollCompanyService.getPayrollCompany(companyId),
-        employeeService.getEmployee(reportingEmployeeId),
+        payrollCompanyService.validatePayrollCompany(
+          companyId, { throwOnNotActive: true, organizationId }
+        ),
+        employeeService.validateEmployee(
+          reportingEmployeeId, authorizedUser, { throwOnNotActive: true, companyId }
+        ),
         grievanceTypeService.getGrievanceType(grievanceTypeId),
         employeeService.validateEmployees(reportedEmployeeId)
       ]);

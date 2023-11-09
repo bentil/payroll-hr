@@ -6,6 +6,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   SuccessResponse,
   Tags,
@@ -40,11 +41,12 @@ export class LeavePackageV1Controller {
 */
   @Post()
   @SuccessResponse(201, 'Created')
-  public async addLeavePackage(@Body() createData: CreateLeavePackageDto):
-    Promise<ApiSuccessResponse<LeavePackageDto>> {
+  public async addLeavePackage(
+    @Body() createData: CreateLeavePackageDto, @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<LeavePackageDto>> {
     this.logger.debug('Received request to add leavePackage');
     const leavePackage =
-      await leavePackageservice.createLeavePackage(createData);
+      await leavePackageservice.createLeavePackage(createData, req.user!);
     return { data: leavePackage };
   }
 

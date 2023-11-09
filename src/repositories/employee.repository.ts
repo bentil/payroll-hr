@@ -55,6 +55,10 @@ export async function findOne(
   });
 }
 
+export async function findFirst(where: Prisma.EmployeeWhereInput): Promise<Employee | null> {
+  return prisma.employee.findFirst({ where });
+}
+
 export async function update(params: {
   where: Prisma.EmployeeWhereUniqueInput,
   data: Prisma.EmployeeUpdateInput

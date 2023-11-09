@@ -12,6 +12,7 @@ import * as leavePackageService from './leave-package.service';
 import * as companyLevelService from './company-level.service';
 import { ListWithPagination } from '../repositories/types';
 import { KafkaService } from '../components/kafka.component';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'CompanyLevelLeavePackageService' });
@@ -23,8 +24,10 @@ const events = {
 
 export async function createCompanyLevelLeavePackage(
   createCompanyLevelLeavePackageDto: CreateCompanyLevelLeavePackageDto,
+  authorizedUser: AuthorizedUser
 ): Promise<CompanyLevelLeavePackageDto[]> {
   const { companyLevelId, leavePackageIds } = createCompanyLevelLeavePackageDto;
+  const { companyIds } = authorizedUser;
 
   logger.debug(
     'Validating companyLevelId[%s] and leavePackageIds[%s]',
@@ -33,9 +36,8 @@ export async function createCompanyLevelLeavePackage(
   try {
     await Promise.all(
       [
-        companyLevelService.getCompanyLevelById(companyLevelId),
-        // eslint-disable-next-line max-len
-        leavePackageService.validateLeavePackageIds(leavePackageIds)
+        companyLevelService.validateCompanyLevel(companyLevelId, authorizedUser, { companyIds }),
+        leavePackageService.validateLeavePackageIds(leavePackageIds, { companyIds })
       ]);
     logger.info(
       'Validating companyLevelId[%s] and leavePackageIds[%s] was successful',
@@ -44,8 +46,8 @@ export async function createCompanyLevelLeavePackage(
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.error(
-      // eslint-disable-next-line max-len
-      'Validating companyLevelId[%s] and leavePackageIds[%s] for CompanyLevelLeavePackage creation failed',
+      'Validating companyLevelId[%s] and leavePackageIds[%s] ' +
+      'for CompanyLevelLeavePackage creation failed',
       companyLevelId, leavePackageIds, { error: err }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });

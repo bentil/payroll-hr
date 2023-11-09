@@ -42,6 +42,17 @@ import {
   SEARCH_LEAVE_TYPE_SCHEMA,
   INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA
 } from '../domain/request-schema/leave-type.schema';
+import {
+  CREATE_LEAVE_PLAN_SCHEMA,
+  UPDATE_LEAVE_PLAN_SCHEMA,
+  QUERY_LEAVE_PLAN_SCHEMA
+} from '../domain/request-schema/leave-plan.schema';
+import {
+  CREATE_LEAVE_REQUEST_SCHEMA,
+  UPDATE_LEAVE_REQUEST_SCHEMA,
+  QUERY_LEAVE_REQUEST_SCHEMA,
+  CREATE_LEAVE_RESPONSE_SCHEMA,
+} from '../domain/request-schema/leave-request.schema';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
 // eslint-disable-next-line max-len
@@ -54,6 +65,8 @@ import * as reportedEmployeesV1Controller from '../controllers/grievance-reporte
 import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary-action-type-v1.api.controller';
 // eslint-disable-next-line max-len
 import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
+import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
+import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
 import { authenticateClient, authenticatePlatformUser } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -311,6 +324,74 @@ router.delete(
   '/leave-types/:id',
   authenticatePlatformUser(),
   leaveTypeV1Controller.deleteLeaveType
+);
+
+// ### LEAVE PLAN ROUTES
+
+router.post(
+  '/leave-plans',
+  validateRequestBody(CREATE_LEAVE_PLAN_SCHEMA),
+  leavePlanV1Controller.addNewLeavePlan
+);
+
+router.patch(
+  '/leave-plans/:id',
+  validateRequestBody(UPDATE_LEAVE_PLAN_SCHEMA),
+  leavePlanV1Controller.updateLeavePlan
+);
+router.get(
+  '/leave-plans',
+  validateRequestQuery(QUERY_LEAVE_PLAN_SCHEMA),
+  leavePlanV1Controller.getLeavePlans
+);
+
+router.get(
+  '/leave-plans/:id',
+  leavePlanV1Controller.getLeavePlan
+);
+
+router.delete(
+  '/leave-plans/:id',
+  leaveTypeV1Controller.deleteLeaveType
+);
+
+// ### LEAVE REQUEST ROUTES
+router.post(
+  '/leave-requests',
+  validateRequestBody(CREATE_LEAVE_REQUEST_SCHEMA),
+  leaveReqV1Controller.addNewLeaveRequest
+);
+
+router.patch(
+  '/leave-requests/:id',
+  validateRequestBody(UPDATE_LEAVE_REQUEST_SCHEMA),
+  leaveReqV1Controller.updateLeaveRequest
+);
+router.get(
+  '/leave-requests',
+  validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
+  leaveReqV1Controller.getLeaveRequests
+);
+
+router.get(
+  '/leave-requests/:id',
+  leaveReqV1Controller.getLeaveRequest
+);
+
+router.delete(
+  '/leave-plans/:id',
+  leaveReqV1Controller.deleteLeaveRequest
+);
+
+router.post(
+  '/leave-requests/:id/response',
+  validateRequestBody(CREATE_LEAVE_RESPONSE_SCHEMA),
+  leaveReqV1Controller.addLeaveResponse
+);
+
+router.delete(
+  '/leave-plans/:id/cancel',
+  leaveReqV1Controller.cancelLeaveRequest
 );
 
 export default router;

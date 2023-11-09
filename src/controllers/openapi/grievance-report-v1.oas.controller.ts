@@ -7,6 +7,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -38,10 +39,10 @@ export class GrievanceReportV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addGrievanceReport(
-    @Body() createData: CreateGrievanceReportDto
+    @Body() createData: CreateGrievanceReportDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<GrievanceReport>> {
     this.logger.debug('Received request to add GrievanceReport', { data: createData, });
-    const grievanceReport = await grievanceReportService.addGrievanceReport(createData);
+    const grievanceReport = await grievanceReportService.addGrievanceReport(createData, req.user!);
     return { data: grievanceReport };
   }
 

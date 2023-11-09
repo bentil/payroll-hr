@@ -30,6 +30,7 @@ const events = {
 export async function addGrievanceType(creatData: CreateGrievanceTypeDto): Promise<GrievanceType> {
   const { companyId } = creatData;
 
+  // VALIDATION
   try {
     await payrollCompanyService.getPayrollCompany(companyId);
   } catch (err) {

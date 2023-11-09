@@ -7,7 +7,7 @@ const controller = new LeavePackageV1Controller();
 
 export async function addLeavePackage(req: Request, res: Response, next: NextFunction) {
   try {
-    const response = await controller.addLeavePackage(req.body);
+    const response = await controller.addLeavePackage(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);

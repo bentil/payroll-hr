@@ -5,6 +5,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   SuccessResponse,
   Tags,
@@ -37,11 +38,11 @@ export class CompanyLevelLeavePackageV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addCompanyLevelLeavePackage(
-    @Body() createData: CreateCompanyLevelLeavePackageDto,
+    @Body() createData: CreateCompanyLevelLeavePackageDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyLevelLeavePackage[]>> {
     this.logger.debug('Received request to add company-level-leave-package');
     const companyLevelLeavePackage = await compLevelLeavePackageService.
-      createCompanyLevelLeavePackage(createData);
+      createCompanyLevelLeavePackage(createData, req.user!);
     return { data: companyLevelLeavePackage };
   }
   /**
