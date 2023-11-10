@@ -300,7 +300,7 @@ export async function cancelLeaveRequest(
   let newLeaveRequest: LeaveRequestDto;
   try {
     newLeaveRequest = await leaveRequestRepository.cancel({
-      where: { id }, data: { 
+      where: { id }, updateData: { 
         status: 'CANCELLED', 
         cancelledByEmployeeId: employeeId, 
         cancelledAt: new Date()
@@ -315,7 +315,7 @@ export async function cancelLeaveRequest(
   return newLeaveRequest;
 }
 
-async function validate(employeeId: number, leavePackageId: number) {
+export async function validate(employeeId: number, leavePackageId: number) {
   const employee = await employeeService.getEmployee(employeeId);
   let leavePackage: CompanyLevelLeavePackage | null;
   if (employee.majorGradeLevelId) {
@@ -335,7 +335,7 @@ async function validate(employeeId: number, leavePackageId: number) {
 
   if (!leavePackage) {
     logger.warn('CompanyLevel[%s] does not exist for Employee[%s]',  leavePackageId, employee);
-    throw new NotFoundError({ 
+    throw new FailedDependencyError({ 
       message: 'the leave package either does not exist or is not available for the employee' 
     });
   }

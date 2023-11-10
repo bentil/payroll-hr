@@ -48,7 +48,6 @@ export async function addReportedEmployeesToReport(
 export async function deleteReportedEmployee(
   reportId: number, reportedEmployeeId: number
 ): Promise<void> {
-  console.log('reporotId -> ', reportId, 'reported employee ->', reportedEmployeeId);
   const reportedEmployee = await reportedEmployeesRepo.findReportedEmployee(
     { reportId_reportedEmployeeId: { reportId, reportedEmployeeId } });
   if (!reportedEmployee) {

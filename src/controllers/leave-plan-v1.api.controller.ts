@@ -7,7 +7,7 @@ const controller = new LeavePlanV1Controller();
 
 export const addNewLeavePlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const response = await controller.addLeavePlan(req.body, req);
+    const response = await controller.addLeavePlan(req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);

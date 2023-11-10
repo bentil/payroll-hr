@@ -8,7 +8,7 @@ import {
 } from '../domain/dto/leave-plan.dto';
 import * as leavePlanRepository from '../repositories/leave-plan.repository';
 import * as leavePackageService from '../services/leave-package.service';
-import * as employeeService from '../services/employee.service';
+// import * as employeeService from '../services/employee.service';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
@@ -19,8 +19,8 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
-import { AuthorizedUser } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
+import { validate } from './leave-request.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -31,17 +31,13 @@ const events = {
 };
 
 export async function addLeavePlan(
-  creatData: CreateLeavePlanDto, authorizedUser: AuthorizedUser
+  creatData: CreateLeavePlanDto
 ): Promise<LeavePlanDto> {
   const { employeeId, leavePackageId } = creatData;
-  const { companyIds } = authorizedUser;
 
   // VALIDATION
   try {
-    await Promise.all([
-      employeeService.validateEmployee(employeeId, authorizedUser, { companyIds }),
-      leavePackageService.getLeavePackageById(leavePackageId, { includeCompanyLevels: false })
-    ]);
+    await validate(employeeId, leavePackageId);
   } catch (err) {
     logger.warn('Validating employee[%s] and/or leavePackage[%s] fialed', 
       employeeId, leavePackageId

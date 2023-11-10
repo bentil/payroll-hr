@@ -7,7 +7,6 @@ import {
   Post,
   Queries,
   Response,
-  Request,
   Route,
   Security,
   SuccessResponse,
@@ -38,10 +37,10 @@ export class LeavePlanV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addLeavePlan(
-    @Body() createData: CreateLeavePlanDto, @Request() req: Express.Request
+    @Body() createData: CreateLeavePlanDto
   ): Promise<ApiSuccessResponse<LeavePlan>> {
     this.logger.debug('Received request to add LeavePlan', { data: createData, });
-    const leavePlan = await LeavePlanService.addLeavePlan(createData, req.user!);
+    const leavePlan = await LeavePlanService.addLeavePlan(createData);
     return { data: leavePlan };
   }
 

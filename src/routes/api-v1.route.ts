@@ -67,7 +67,11 @@ import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary
 import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
 import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
-import { authenticateClient, authenticatePlatformUser } from '../middleware/auth.middleware';
+import { 
+  authenticateClient,
+  authenticatePlatformUser, 
+  authenticateUser 
+} from '../middleware/auth.middleware';
 
 const router = Router();
 router.use(authenticateClient);
@@ -112,6 +116,7 @@ router.delete(
 
 router.post(
   '/grievance-reports',
+  authenticateUser(),
   validateRequestBody(CREATE_GRIEVANCE_REPORT_SCHEMA),
   grievnceReportV1Controller.addNewGrievanceReport
 );
@@ -233,6 +238,7 @@ router.delete(
 
 router.post(
   '/company-level-leave-packages',
+  authenticateUser(),
   validateRequestBody(CREATE_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA),
   companyLevelLeavePackageV1Controller.addCompanyLevelLeavePackage
 );
@@ -257,6 +263,7 @@ router.delete(
 
 router.post(
   '/leave-packages',
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_PACKAGE_SCHEMA),
   leavePackageV1Controller.addLeavePackage
 );
@@ -330,6 +337,7 @@ router.delete(
 
 router.post(
   '/leave-plans',
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.addNewLeavePlan
 );
@@ -352,45 +360,51 @@ router.get(
 
 router.delete(
   '/leave-plans/:id',
-  leaveTypeV1Controller.deleteLeaveType
+  leavePlanV1Controller.deleteLeavePlan
 );
 
 // ### LEAVE REQUEST ROUTES
 router.post(
   '/leave-requests',
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.addNewLeaveRequest
 );
 
 router.patch(
   '/leave-requests/:id',
+  authenticateUser(),
   validateRequestBody(UPDATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.updateLeaveRequest
 );
 router.get(
   '/leave-requests',
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.getLeaveRequests
 );
 
 router.get(
   '/leave-requests/:id',
+  authenticateUser(),
   leaveReqV1Controller.getLeaveRequest
 );
 
 router.delete(
-  '/leave-plans/:id',
+  '/leave-requests/:id',
   leaveReqV1Controller.deleteLeaveRequest
 );
 
 router.post(
   '/leave-requests/:id/response',
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_RESPONSE_SCHEMA),
   leaveReqV1Controller.addLeaveResponse
 );
 
-router.delete(
-  '/leave-plans/:id/cancel',
+router.post(
+  '/leave-requests/:id/cancel',
+  authenticateUser(),
   leaveReqV1Controller.cancelLeaveRequest
 );
 

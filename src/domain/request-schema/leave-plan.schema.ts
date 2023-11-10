@@ -19,14 +19,15 @@ export const CREATE_LEAVE_PLAN_SCHEMA = Joi.object({
     }),
   intendedStartDate: joi.date()
     .required()
-    .less(Date.now() - 24 * 60 * 60 * 1000)
+    .greater(Date.now())
     .format(['YYYY/MM/DD']),
   intendedReturnDate: joi.date()
     .required()
     .greater(Date.now())
     .format(['YYYY/MM/DD']),
-  commment: Joi.string()
+  comment: Joi.string()
     .optional()
+    .allow('')
     .default('')
     .trim(),
 });
@@ -36,17 +37,17 @@ export const UPDATE_LEAVE_PLAN_SCHEMA = Joi.object({
     .optional(),
   intendedStartDate: joi.date()
     .optional()
-    .less(Date.now() - 24 * 60 * 60 * 1000)
+    .greater(Date.now())
     .format(['YYYY/MM/DD']),
   intendedReturnDate: joi.date()
     .optional()
     .greater(Date.now())
     .format(['YYYY/MM/DD']),
-  commment: Joi.string()
+  comment: Joi.string()
     .optional()
-    .default('')
+    .allow('')
     .trim(),
-});
+}).or('leavePackageId', 'comment', 'intendedStartDate', 'intendedReturnDate');
 
 export const QUERY_LEAVE_PLAN_SCHEMA = Joi.object({
   employeeId: Joi.number(),

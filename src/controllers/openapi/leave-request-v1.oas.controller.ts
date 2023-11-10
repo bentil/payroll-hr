@@ -134,7 +134,7 @@ export class LeaveRequestV1Controller {
    * @param body Request body with leaveRequest to update to and leaveResponse to be added
    * @returns Updated leaveRequest
    */
-  @Patch('{id}')
+  @Post('{id}/response')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
     error: 'REQUEST_VALIDATION_FAILED',
     message: 'Request validation failed',
@@ -161,6 +161,7 @@ export class LeaveRequestV1Controller {
    * @param id leaveRequest ID
    * @returns Updated leaveRequest
    */
+  @Post('{id}/cancel')
   public async cancelLeaveRequest(
     @Path('id') id: number,
     @Request() req: Express.Request

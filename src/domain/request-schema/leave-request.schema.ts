@@ -20,13 +20,13 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     }),
   startDate: joi.date()
     .required()
-    .less(Date.now() - 24 * 60 * 60 * 1000)
+    .greater(Date.now())
     .format(['YYYY/MM/DD']),
   returnDate: joi.date()
     .required()
     .greater(Date.now())
     .format(['YYYY/MM/DD']),
-  commment: Joi.string()
+  comment: Joi.string()
     .optional()
     .default('')
     .trim(),
@@ -46,17 +46,17 @@ export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     .optional(),
   startDate: joi.date()
     .optional()
-    .less(Date.now() - 24 * 60 * 60 * 1000)
+    .greater(Date.now())
     .format(['YYYY/MM/DD']),
   returnDate: joi.date()
     .optional()
     .greater(Date.now())
     .format(['YYYY/MM/DD']),
-  commment: Joi.string()
+  comment: Joi.string()
     .optional()
-    .default('')
+    .allow('')
     .trim(),
-});
+}).or('leavePackageId', 'startDate', 'returnDate', 'comment');
 
 export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
@@ -99,8 +99,9 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
       LEAVE_RESPONSE_OPTIONS.APPROVED,
       LEAVE_RESPONSE_OPTIONS.DECLINED
     ),
-  commment: Joi.string()
+  comment: Joi.string()
     .optional()
+    .allow('')
     .default('')
     .trim(),
 });

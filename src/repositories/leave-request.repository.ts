@@ -121,10 +121,15 @@ export async function deleteLeaveRequest(where: Prisma.LeaveRequestWhereUniqueIn
 
 export async function cancel(params: {
     where: Prisma.LeaveRequestWhereUniqueInput,
-    data: CancelLeaveRequestDto,
+    updateData: CancelLeaveRequestDto,
     includeRelations?: boolean
   }) {
-  const { where, data, includeRelations } = params;
+  const { where, updateData, includeRelations } = params;
+  const { cancelledByEmployeeId, ...dtoData } = updateData;
+  const data: Prisma.LeaveRequestUpdateInput = {
+    ...dtoData,
+    cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
+  };
   return await prisma.leaveRequest.update({ 
     where, 
     data,
