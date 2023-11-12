@@ -5,11 +5,11 @@
   - You are about to alter the column `id` on the `employee` table. The data in that column could be lost. The data in that column will be cast from `Int` to `UnsignedInt`.
   - The primary key for the `payroll_company` table will be changed. If it partially fails, the table could be left without primary key constraint.
   - You are about to alter the column `id` on the `payroll_company` table. The data in that column could be lost. The data in that column will be cast from `Int` to `UnsignedInt`.
-  - You are about to drop the `grievancetype` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `GrievanceType` table. If the table is not empty, all the data it contains will be lost.
 
 */
 -- DropForeignKey
-ALTER TABLE `grievancetype` DROP FOREIGN KEY `GrievanceType_company_id_fkey`;
+ALTER TABLE `GrievanceType` DROP FOREIGN KEY `GrievanceType_company_id_fkey`;
 
 -- AlterTable
 ALTER TABLE `employee` DROP PRIMARY KEY,
@@ -22,7 +22,7 @@ ALTER TABLE `payroll_company` DROP PRIMARY KEY,
     ADD PRIMARY KEY (`id`);
 
 -- DropTable
-DROP TABLE `grievancetype`;
+DROP TABLE `GrievanceType`;
 
 -- CreateTable
 CREATE TABLE `grievance_type` (
