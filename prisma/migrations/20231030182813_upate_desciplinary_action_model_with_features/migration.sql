@@ -1,23 +1,23 @@
 /*
   Warnings:
 
-  - You are about to drop the `disciplinaryaction` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `DisciplinaryAction` table. If the table is not empty, all the data it contains will be lost.
 
 */
 -- DropForeignKey
-ALTER TABLE `disciplinaryaction` DROP FOREIGN KEY `DisciplinaryAction_action_type_id_fkey`;
+ALTER TABLE `DisciplinaryAction` DROP FOREIGN KEY `DisciplinaryAction_action_type_id_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `disciplinaryaction` DROP FOREIGN KEY `DisciplinaryAction_company_id_fkey`;
+ALTER TABLE `DisciplinaryAction` DROP FOREIGN KEY `DisciplinaryAction_company_id_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `disciplinaryaction` DROP FOREIGN KEY `DisciplinaryAction_employee_id_fkey`;
+ALTER TABLE `DisciplinaryAction` DROP FOREIGN KEY `DisciplinaryAction_employee_id_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `disciplinaryaction` DROP FOREIGN KEY `DisciplinaryAction_grievance_report_id_fkey`;
+ALTER TABLE `DisciplinaryAction` DROP FOREIGN KEY `DisciplinaryAction_grievance_report_id_fkey`;
 
 -- DropTable
-DROP TABLE `disciplinaryaction`;
+DROP TABLE `DisciplinaryAction`;
 
 -- CreateTable
 CREATE TABLE `disciplinary_action` (

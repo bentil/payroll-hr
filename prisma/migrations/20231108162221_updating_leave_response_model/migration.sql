@@ -1,17 +1,17 @@
 /*
   Warnings:
 
-  - You are about to drop the `leaveresponse` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `LeaveResponse` table. If the table is not empty, all the data it contains will be lost.
 
 */
 -- DropForeignKey
-ALTER TABLE `leaveresponse` DROP FOREIGN KEY `LeaveResponse_approving_employee_id_fkey`;
+ALTER TABLE `LeaveResponse` DROP FOREIGN KEY `LeaveResponse_approving_employee_id_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `leaveresponse` DROP FOREIGN KEY `LeaveResponse_leave_request_id_fkey`;
+ALTER TABLE `LeaveResponse` DROP FOREIGN KEY `LeaveResponse_leave_request_id_fkey`;
 
 -- DropTable
-DROP TABLE `leaveresponse`;
+DROP TABLE `LeaveResponse`;
 
 -- CreateTable
 CREATE TABLE `leave_response` (
