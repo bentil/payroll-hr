@@ -1,0 +1,8 @@
+**/build
+**/dist
+**/logs
+**/node_modules
+.env
+.gitignore
+Dockerfile*
+docker-compose*

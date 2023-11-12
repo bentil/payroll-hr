@@ -1,0 +1,22 @@
+# Compiled output
+/node_modules
+/dist
+
+# IDE
+.vscode
+
+# Environment variables / configurations
+.env
+
+# Logs
+/logs
+.log
+
+# RPC generated output
+**/pb
+*.pb*
+
+# Misc
+*~
+.DS_Store
+/.http
