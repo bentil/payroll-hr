@@ -23,7 +23,6 @@ import {
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import { generateDisciplinaryActionNumber } from '../utils/generator.util';
-import config from '../config';
 import * as dateutil from '../utils/date.util';
 
 const kafkaService = KafkaService.getInstance();
@@ -39,7 +38,7 @@ export async function addDisciplinaryAction(
 ): Promise<DisciplinaryActionDto> {
   const { companyId, employeeId, grievanceReportId, actionTypeId } = creatData;
 
-  const actionNumber = generateDisciplinaryActionNumber(config.alphaLength, config.numLength);
+  const actionNumber = generateDisciplinaryActionNumber();
   // validate comapnyId, employeeId, grievanceReportId and actionTypeId
   try {
     await Promise.all([

@@ -1,7 +1,7 @@
 import { 
   Employee,
-  LEAVE_REQUEST_OPTIONS, 
-  LEAVE_RESPONSE_OPTIONS, 
+  LEAVE_REQUEST_STATUS, 
+  LEAVE_RESPONSE_TYPE, 
   LeavePackage, 
   LeaveRequest 
 } from '@prisma/client';
@@ -13,7 +13,7 @@ export class CreateLeaveRequestDto{
   startDate!: Date;
   returnDate!: Date;
   comment!: string;
-  status!: LEAVE_REQUEST_OPTIONS;
+  status!: LEAVE_REQUEST_STATUS;
 }
 
 export class UpdateLeaveRequestDto{
@@ -37,7 +37,7 @@ export enum LeaveRequestOrderBy {
 export class QueryLeaveRequestDto {
   employeeId?: number;
   leavePackageId?: number;
-  status?: LEAVE_REQUEST_OPTIONS;
+  status?: LEAVE_REQUEST_STATUS;
   'startDate.gte'?: string;
   'startDate.lte'?: string;
   'returnDate.gte'?: string;
@@ -48,21 +48,21 @@ export class QueryLeaveRequestDto {
 }
 
 export class CreateLeaveResponseDto {
-  status!: LEAVE_REQUEST_OPTIONS;
+  status!: LEAVE_REQUEST_STATUS;
   responseCompletedAt!: Date;
   leaveRequestId!: number;
   approvingEmployeeId!: number;
-  responseType!: LEAVE_RESPONSE_OPTIONS;
+  responseType!: LEAVE_RESPONSE_TYPE;
   comment!: string;
 }
 
 export class ResponseObjectDto {
-  action!: LEAVE_RESPONSE_OPTIONS;
+  action!: LEAVE_RESPONSE_TYPE;
   comment!: string;
 }
 
 export class CancelLeaveRequestDto {
-  status!: LEAVE_REQUEST_OPTIONS;
+  status!: LEAVE_REQUEST_STATUS;
   cancelledByEmployeeId!: number;
   cancelledAt!: Date;
 }

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import util from 'util';
+import config from '../config';
 
 const ALPHA_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const NUM = '0123456789';
@@ -23,7 +24,7 @@ export function generateRandomPassword(): string {
   return crypto.randomBytes(16).toString('hex');
 }
 
-export function generateRandomAlph(length: number): string {
+export function generateRandomAlpha(length: number): string {
   const chars = ALPHA_UPPER;
   let result = '';
   for (let i = 0; i < length; i++) {
@@ -41,12 +42,14 @@ export function generateRandomNum(length: number): string {
   return result;
 }
 
-export function generateDisciplinaryActionNumber(alphaLength: number, numLength: number): string {
-  const result =  generateRandomAlph(alphaLength) + generateRandomNum(numLength);
+export function generateDisciplinaryActionNumber(): string {
+  const result = generateRandomAlpha(config.disciplinaryActionAlphaLength) 
+    + generateRandomNum(config.disciplinaryActionDigitsLength);
   return result;
 }
 
-export function generateGrievanceReportNumber(alphaLength: number, numLength: number): string {
-  const result =  generateRandomAlph(alphaLength) + generateRandomNum(numLength);
+export function generateGrievanceReportNumber(): string {
+  const result = generateRandomAlpha(config.grievanceReportAlphaLength) 
+    + generateRandomNum(config.grievanceReportDigitsLength);
   return result;
 }
