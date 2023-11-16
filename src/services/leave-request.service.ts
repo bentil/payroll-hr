@@ -1,4 +1,8 @@
-import { CompanyLevelLeavePackage, LeaveRequest } from '@prisma/client';
+import { 
+  CompanyLevelLeavePackage, 
+  LEAVE_REQUEST_STATUS, 
+  LeaveRequest 
+} from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   CreateLeaveRequestDto,
@@ -6,6 +10,7 @@ import {
   QueryLeaveRequestDto,
   UpdateLeaveRequestDto,
   ResponseObjectDto,
+  LEAVE_RESPONSE_ACTION,
 } from '../domain/dto/leave-request.dto';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 // eslint-disable-next-line max-len
@@ -250,18 +255,19 @@ export async function addLeaveResponse(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to add response to does not exisit'
     });
-  } else if (leaveRequest.status !== 'PENDING') {
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
     throw new UnauthorizedError({ message: 'Can not perform this action' });
   } 
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     where: { id }, data: {
-      status: action,
-      responseCompletedAt: new Date(),
+      status: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       approvingEmployeeId,
       leaveRequestId: id,
-      responseType: action,
+      responseType: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       comment
     }
   });
@@ -283,7 +289,8 @@ export async function cancelLeaveRequest(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to cancel does not exisit'
     });
-  } else if (leaveRequest.status === 'DECLINED' || leaveRequest.status === 'CANCELLED') {
+  } else if (leaveRequest.status === LEAVE_REQUEST_STATUS.DECLINED 
+    || leaveRequest.status === LEAVE_REQUEST_STATUS.CANCELLED) {
     throw new UnauthorizedError({ message: 'Can not perform this action' });
   }
   const leaveStartDate = new Date(leaveRequest.startDate);
@@ -301,9 +308,8 @@ export async function cancelLeaveRequest(
   try {
     newLeaveRequest = await leaveRequestRepository.cancel({
       where: { id }, updateData: { 
-        status: 'CANCELLED', 
-        cancelledByEmployeeId: employeeId, 
-        cancelledAt: new Date()
+        status: LEAVE_REQUEST_STATUS.CANCELLED, 
+        cancelledByEmployeeId: employeeId
       },
     });
     logger.info('LeaveRequest[%s] successfully deleted', id);

@@ -1,7 +1,6 @@
 import { 
   Employee,
   LEAVE_REQUEST_STATUS, 
-  LEAVE_RESPONSE_TYPE, 
   LeavePackage, 
   LeaveRequest 
 } from '@prisma/client';
@@ -47,24 +46,18 @@ export class QueryLeaveRequestDto {
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_ASC;
 }
 
-export class CreateLeaveResponseDto {
-  status!: LEAVE_REQUEST_STATUS;
-  responseCompletedAt!: Date;
-  leaveRequestId!: number;
-  approvingEmployeeId!: number;
-  responseType!: LEAVE_RESPONSE_TYPE;
-  comment!: string;
+export enum LEAVE_RESPONSE_ACTION {
+  APPROVE,
+  DECLINE
 }
+
+// export type LEAVE_RESPONSE_ACTION = 
+//   (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
+
 
 export class ResponseObjectDto {
-  action!: LEAVE_RESPONSE_TYPE;
+  action!: LEAVE_RESPONSE_ACTION;
   comment!: string;
-}
-
-export class CancelLeaveRequestDto {
-  status!: LEAVE_REQUEST_STATUS;
-  cancelledByEmployeeId!: number;
-  cancelledAt!: Date;
 }
 
 export interface LeaveRequestDto extends LeaveRequest {
