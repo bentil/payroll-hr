@@ -1,7 +1,6 @@
 import { LEAVE_REQUEST_STATUS, LEAVE_RESPONSE_TYPE, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { 
-  CreateLeaveRequestDto, 
   LeaveRequestDto, 
 } from '../domain/dto/leave-request.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
@@ -21,11 +20,20 @@ export interface CancelLeaveRequestDto {
   cancelledByEmployeeId: number;
 }
 
+export class CreateLeaveRequestObject{
+  employeeId!: number;
+  leavePackageId!: number;
+  startDate!: Date;
+  returnDate!: Date;
+  comment!: string;
+  status!: LEAVE_REQUEST_STATUS;
+}
+
 
 export async function create(
   { 
     employeeId, leavePackageId, ...dtoData 
-  }: CreateLeaveRequestDto,
+  }: CreateLeaveRequestObject,
   includeRelations?: boolean,
 ): Promise<LeaveRequestDto> {
   const data: Prisma.LeaveRequestCreateInput = {

@@ -12,10 +12,10 @@ export const CREATE_LEAVE_PLAN_SCHEMA = Joi.object({
     .messages({
       'number.base': 'Employee Id must be a number'
     }),
-  leavePackageId: Joi.number()
+  leaveTypeId: Joi.number()
     .required()
     .messages({
-      'number.base': 'Leave package id must be a number'
+      'number.base': 'Leave type id must be a number'
     }),
   intendedStartDate: joi.date()
     .required()
@@ -33,7 +33,7 @@ export const CREATE_LEAVE_PLAN_SCHEMA = Joi.object({
 });
 
 export const UPDATE_LEAVE_PLAN_SCHEMA = Joi.object({
-  leavePackageId: Joi.number()
+  leaveTypeId: Joi.number()
     .optional(),
   intendedStartDate: joi.date()
     .optional()

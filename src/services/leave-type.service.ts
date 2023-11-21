@@ -2,20 +2,27 @@ import {
   CreateLeaveTypeDto,
   LeaveTypeDto,
   LeaveTypeOrderBy,
+  QueryApplicableLeaveTypeDto,
   QueryLeaveTypeDto,
   SearchLeaveTypeDto,
   UpdateLeaveTypeDto
 } from '../domain/dto/leave-type.dto';
 import * as repository from '../repositories/leave-type';
 import {
+  FailedDependencyError,
   HttpError,
   NotFoundError,
   ServerError
 } from '../errors/http-errors';
 import { rootLogger } from '../utils/logger';
 import * as helpers from '../utils/helpers';
-import { LeaveType } from '@prisma/client';
+import { CompanyLevelLeavePackage, LeaveType } from '@prisma/client';
 import { ListWithPagination } from '../repositories/types';
+// eslint-disable-next-line max-len
+import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
+import * as employeeRepository from '../repositories/employee.repository';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
+import * as leaveTypeRepository from '../repositories/leave-type';
 
 const logger = rootLogger.child({ context: 'LeaveTypeService' });
 
@@ -88,6 +95,59 @@ export async function getLeaveTypes(
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+  return leaveType;
+}
+
+export async function getApplicableLeaveTypes(
+  query: QueryApplicableLeaveTypeDto
+): Promise<ListWithPagination<LeaveTypeDto>> {
+  const {
+    page,
+    limit: take,
+    orderBy,
+    employeeId,
+    companyLevelId,
+  } = query;
+  const skip = helpers.getSkip(page || 1, take);
+  const orderByInput = helpers.getOrderByInput(orderBy || LeaveTypeOrderBy.CREATED_AT_ASC);
+
+  let leaveType: ListWithPagination<LeaveTypeDto>;
+  try {
+    if (employeeId) {
+      const employee = await employeeRepository.findOne({ id: employeeId }, true);
+      if (employee?.majorGradeLevel?.companyLevelId) {
+        const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
+        leaveType = await leaveTypeRepository.find({
+          skip,
+          take,
+          where: { leavePackages: { some: { 
+            companyLevelLeavePackages: { some: { companyLevelId } } } 
+          } },
+          orderBy: orderByInput
+        });
+      } else {
+        throw new UnauthorizedError({});
+      }
+    } else if (companyLevelId) {
+      leaveType = await leaveTypeRepository.find({
+        skip,
+        take,
+        where:{ leavePackages: { some: { 
+          companyLevelLeavePackages: { some: { companyLevelId } } } 
+        } },
+        orderBy: orderByInput
+      });
+    } else {
+      throw new UnauthorizedError({});
+    }
+  } catch (err) {
+    logger.warn(
+      'Querying leaveTypes with query failed',
+      { query }, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
   return leaveType;
 }
 
@@ -167,3 +227,45 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 };
+
+// //move to leave type
+export async function validate(leaveTypeId: number, employeeId?: number): Promise<number> {
+  ///add a consumer for grade level, add the relation grade
+  let leavePackage: CompanyLevelLeavePackage | null;
+  const employee = await employeeRepository.findOne({ id: employeeId }, true);
+  if (employeeId) {
+    if (employee?.majorGradeLevel?.companyLevelId) {
+      try {
+        leavePackage = await compLevelLeavePackageRepository.findFirst({
+          leavePackage: { leaveTypeId },
+          companyLevelId: employee?.majorGradeLevel?.companyLevelId
+        });
+      } catch (err) {
+        logger.warn('Getting LeavePackage for Employee[%s] with MajorGradeLevel[%s] failed',
+          employee, employee.majorGradeLevelId, { error: (err as Error).stack });
+        throw new ServerError({ message: (err as Error).message, cause: err });
+      }
+    } else {
+      throw new UnauthorizedError({ message: 'employee does not exist or has no grade level' });
+    }
+  } else {
+    try {
+      leavePackage = await compLevelLeavePackageRepository.findFirst({
+        leavePackage: { leaveTypeId },
+      });
+    } catch (err) {
+      logger.warn('Getting LeavePackage failed', { error: (err as Error).stack });
+      throw new ServerError({ message: (err as Error).message, cause: err });
+    }
+  }
+
+  if (!leavePackage) {
+    logger.warn('LeavePackage does not exist for Employee[%s] or leaveType[%s]',
+      employee, leaveTypeId);
+    throw new FailedDependencyError({ 
+      message: 'the leave package either does not exist or is not available for the employee '+
+        'or leaveType' 
+    });
+  }
+  return leavePackage.leavePackageId;
+} 

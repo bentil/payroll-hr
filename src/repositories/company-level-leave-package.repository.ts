@@ -79,7 +79,15 @@ export const find = async (params: {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.companyLevelLeavePackage.findMany(params),
+    prisma.companyLevelLeavePackage.findMany({
+      skip: params.skip,
+      take: params.take,
+      where: params.where,
+      orderBy: params.orderBy,
+      include: params.include ? { leavePackage: {
+        include: { leaveType: true }
+      } } : undefined
+    }),
     paginate
       ? prisma.companyLevelLeavePackage.count({ where: params.where })
       : Promise.resolve(undefined),

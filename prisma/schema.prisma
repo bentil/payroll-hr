@@ -89,6 +89,8 @@ model Employee {
   completedReimbursementRequests          ReimbursementRequest[]           @relation(name: "completer")
   reimbursementRequestAttachments ReimbursementRequestAttachment[]
   reimbursementRequestComments          ReimbursementRequestComment[]
+  majorGradeLevel                   GradeLevel?             @relation(fields: [majorGradeLevelId], references: [id])
+
 
   @@map("employee")
 }
@@ -199,8 +201,32 @@ model CompanyLevel {
   modifiedAt                DateTime?                  @updatedAt @map("modified_at")
 
   companyLevelLeavePackages CompanyLevelLeavePackage[]
+  gradeLevels                    GradeLevel[]
+
 
   @@map("company_level")
+}
+
+enum GRADE_LEVEL_TYPE {
+  MAJOR
+  MINOR
+}
+
+model GradeLevel {
+  id             Int              @id @db.UnsignedInt()
+  companyId      Int              @map("company_id") @db.UnsignedInt()
+  companyLevelId Int              @map("company_level_id") @db.UnsignedInt()
+  name           String           @map("name") @db.VarChar(100)
+  code           String           @map("code") @db.VarChar(30)
+  description    String           @map("description") @db.Text()
+  type           GRADE_LEVEL_TYPE @map("type")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  modifiedAt     DateTime?        @updatedAt @map("modified_at")
+
+  companyLevel   CompanyLevel     @relation(fields: [companyLevelId], references: [id])
+  employees      Employee[]
+
+  @@map("grade_level")
 }
 
 model LeaveType {

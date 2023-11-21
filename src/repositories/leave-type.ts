@@ -38,12 +38,21 @@ export const find = async (params: {
   skip?: number,
   take?: number,
   where?: Prisma.LeaveTypeWhereInput,
-  orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput,
+  includeRelations?: boolean
 }) => {
-  const { skip, take } = params;
+  const { skip, take, } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.leaveType.findMany(params),
+    prisma.leaveType.findMany({
+      skip: params.skip,
+      take: params.take,
+      where: params.where,
+      orderBy: params.orderBy,
+      include: params.includeRelations ? { leavePackages: {
+        include: { leaveType: true }
+      } } : undefined
+    }),
     paginate
       ? prisma.leaveType.count({ where: params.where })
       : Promise.resolve(undefined),

@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { LeaveTypeV1Controller } from './openapi/leave-type.v1.oas.controller';
-import { QueryLeaveTypeDto, SearchLeaveTypeDto } from '../domain/dto/leave-type.dto';
+import { 
+  QueryApplicableLeaveTypeDto, 
+  QueryLeaveTypeDto, 
+  SearchLeaveTypeDto 
+} from '../domain/dto/leave-type.dto';
 
 const controller = new LeaveTypeV1Controller();
 
@@ -28,6 +32,17 @@ export async function listLeaveTypes(req: Request, res: Response, next: NextFunc
   try {
     const response = await controller.getLeaveTypes(
       query as unknown as QueryLeaveTypeDto);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listApplicableLeaveTypes(req: Request, res: Response, next: NextFunction) {
+  const { query } = req;
+  try {
+    const response = await controller.getApplicableLeaveTypes(
+      query as unknown as QueryApplicableLeaveTypeDto);
     res.json(response);
   } catch (err) {
     next(err);

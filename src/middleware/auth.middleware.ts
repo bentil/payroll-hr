@@ -13,7 +13,10 @@ export function authenticateClient(req: Request, _res: Response, next: NextFunct
   next();
 }
 
-export function authenticateUser(options?: { optional?: boolean }): RequestHandler {
+export function authenticateUser(
+  options?: { optional?: boolean, isEmployee?: boolean }
+): RequestHandler {
+  //add a checker for employeeId in authUser and throw forbidden error if not employees
   const optional = options?.optional !== undefined ? options.optional : false;
   return (req: Request, _res: Response, next: NextFunction) => {
     const data = req.headers['user-metadata'];
@@ -38,6 +41,14 @@ export function authenticateUser(options?: { optional?: boolean }): RequestHandl
       throw new UnauthorizedError({});
     }
     req.user = userData;
+
+    if (options?.isEmployee) {
+      if (!('empolyeeId' in req.user)) {
+        throw new ForbiddenError({});
+      }
+      next();
+    }
+
     authenticateRequest(req);
     next();
   };

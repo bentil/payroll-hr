@@ -8,7 +8,7 @@ import config from '../../config';
 
 export class CreateLeaveRequestDto{
   employeeId!: number;
-  leavePackageId!: number;
+  leaveTypeId!: number;
   startDate!: Date;
   returnDate!: Date;
   comment!: string;
@@ -16,7 +16,7 @@ export class CreateLeaveRequestDto{
 }
 
 export class UpdateLeaveRequestDto{
-  leavePackageId?: number;
+  leaveTypeId?: number;
   startDate?: Date;
   returnDate?: Date;
   comment?: string;
