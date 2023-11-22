@@ -7,8 +7,6 @@ import {
   UpdateLeavePlanDto,
 } from '../domain/dto/leave-plan.dto';
 import * as leavePlanRepository from '../repositories/leave-plan.repository';
-import * as leavePackageService from '../services/leave-package.service';
-// import * as employeeService from '../services/employee.service';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
@@ -20,7 +18,7 @@ import {
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
-import { validate } from './leave-request.service';
+import { validate } from './leave-type.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -31,16 +29,17 @@ const events = {
 };
 
 export async function addLeavePlan(
-  creatData: CreateLeavePlanDto
+  payload: CreateLeavePlanDto
 ): Promise<LeavePlanDto> {
-  const { employeeId, leavePackageId } = creatData;
-
+  const { employeeId, leaveTypeId } = payload;
+  let leavePackageId: number;
+  
   // VALIDATION
   try {
-    await validate(employeeId, leavePackageId);
+    leavePackageId = await validate(leaveTypeId, employeeId);
   } catch (err) {
-    logger.warn('Validating employee[%s] and/or leavePackage[%s] fialed', 
-      employeeId, leavePackageId
+    logger.warn('Validating employee[%s] and/or leaveTypeId[%s] fialed', 
+      employeeId, leaveTypeId
     );
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -48,7 +47,15 @@ export async function addLeavePlan(
       cause: err
     });
   }
-  logger.info('employee[%s] and leavePackage[%s] exists', employeeId, leavePackageId);
+  logger.info('LeavePackage for employee[%s] and leaveTypeId[%s] exists', employeeId, leaveTypeId);
+
+  const creatData: leavePlanRepository.CreateLeavePlanObject = {
+    employeeId: payload.employeeId,
+    intendedStartDate: payload.intendedStartDate,
+    intendedReturnDate: payload.intendedReturnDate,
+    comment: payload.comment,
+    leavePackageId
+  };
  
   logger.debug('Adding new Leave plan to the database...');
 
@@ -143,7 +150,7 @@ export async function updateLeavePlan(
   id: number, 
   updateData: UpdateLeavePlanDto
 ): Promise<LeavePlanDto> {
-  const { leavePackageId } = updateData;
+  const { leaveTypeId } = updateData;
   const leavePlan = await leavePlanRepository.findOne({ id }, true);
   if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
@@ -153,12 +160,11 @@ export async function updateLeavePlan(
     });
   }
 
-  // Validation
-  if (leavePackageId) {
+  if (leaveTypeId) {
     try {
-      leavePackageService.getLeavePackageById(leavePackageId, { includeCompanyLevels: false });
+      validate(leaveTypeId);
     } catch (err) {
-      logger.warn('Getting LeavePackage[%s] fialed', leavePackageId);
+      logger.warn('Getting LeaveTypeId[%s] fialed', leaveTypeId);
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
         message: 'Dependency check failed',

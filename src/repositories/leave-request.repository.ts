@@ -1,18 +1,39 @@
-import { Prisma } from '@prisma/client';
+import { LEAVE_REQUEST_STATUS, LEAVE_RESPONSE_TYPE, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { 
-  CancelLeaveRequestDto,
-  CreateLeaveRequestDto, 
-  CreateLeaveResponseDto, 
   LeaveRequestDto, 
 } from '../domain/dto/leave-request.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
+export interface CreateLeaveResponseDto {
+  status: LEAVE_REQUEST_STATUS;
+  //responseCompletedAt: Date;
+  leaveRequestId: number;
+  approvingEmployeeId: number;
+  responseType: LEAVE_RESPONSE_TYPE;
+  comment: string;
+}
+
+export interface CancelLeaveRequestDto {
+  status: LEAVE_REQUEST_STATUS;
+  cancelledByEmployeeId: number;
+}
+
+export class CreateLeaveRequestObject{
+  employeeId!: number;
+  leavePackageId!: number;
+  startDate!: Date;
+  returnDate!: Date;
+  comment!: string;
+  status!: LEAVE_REQUEST_STATUS;
+}
+
+
 export async function create(
   { 
     employeeId, leavePackageId, ...dtoData 
-  }: CreateLeaveRequestDto,
+  }: CreateLeaveRequestObject,
   includeRelations?: boolean,
 ): Promise<LeaveRequestDto> {
   const data: Prisma.LeaveRequestCreateInput = {
@@ -127,7 +148,7 @@ export async function cancel(params: {
   const { where, updateData, includeRelations } = params;
   const { cancelledByEmployeeId, ...dtoData } = updateData;
   const data: Prisma.LeaveRequestUpdateInput = {
-    ...dtoData,
+    ...dtoData, cancelledAt: new Date(),
     cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
   };
   return await prisma.leaveRequest.update({ 
@@ -148,7 +169,7 @@ export async function respond(params: {
   try {
     return await prisma.$transaction(async (transaction) => {
       const leaveRequest = await transaction.leaveRequest.update({
-        where, data: { status: data.status, responsecompletedat: data.responseCompletedAt }
+        where, data: { status: data.status, responsecompletedat: new Date() }
       });
       await transaction.leaveResponse.create({
         data: {

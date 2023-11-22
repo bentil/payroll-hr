@@ -1,16 +1,21 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { 
-  CreateLeavePlanDto, 
-  LeavePlanDto, 
-} from '../domain/dto/leave-plan.dto';
+import { LeavePlanDto } from '../domain/dto/leave-plan.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
+
+export interface CreateLeavePlanObject{
+  employeeId: number;
+  leavePackageId: number;
+  intendedStartDate: Date;
+  intendedReturnDate: Date;
+  comment: string;
+}
 
 export async function create(
   { 
     employeeId, leavePackageId, ...dtoData 
-  }: CreateLeavePlanDto,
+  }: CreateLeavePlanObject,
   includeRelations?: boolean,
 ): Promise<LeavePlanDto> {
   const data: Prisma.LeavePlanCreateInput = {

@@ -3,7 +3,7 @@ import { LeaveRequestOrderBy } from '../dto/leave-request.dto';
 import Joi from 'joi';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
-import { LEAVE_REQUEST_OPTIONS, LEAVE_RESPONSE_OPTIONS } from '@prisma/client';
+import { LEAVE_REQUEST_STATUS, LEAVE_RESPONSE_TYPE } from '@prisma/client';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -32,12 +32,12 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     .trim(),
   status: Joi.string()
     .optional()
-    .default(LEAVE_REQUEST_OPTIONS.PENDING)
+    .default(LEAVE_REQUEST_STATUS.PENDING)
     .valid(
-      LEAVE_REQUEST_OPTIONS.APPROVED,
-      LEAVE_REQUEST_OPTIONS.CANCELLED,
-      LEAVE_REQUEST_OPTIONS.DECLINED,
-      LEAVE_REQUEST_OPTIONS.PENDING
+      LEAVE_REQUEST_STATUS.APPROVED,
+      LEAVE_REQUEST_STATUS.CANCELLED,
+      LEAVE_REQUEST_STATUS.DECLINED,
+      LEAVE_REQUEST_STATUS.PENDING
     )
 });
 
@@ -96,8 +96,8 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
   action: Joi.string()
     .required()
     .valid(
-      LEAVE_RESPONSE_OPTIONS.APPROVED,
-      LEAVE_RESPONSE_OPTIONS.DECLINED
+      LEAVE_RESPONSE_TYPE.APPROVED,
+      LEAVE_RESPONSE_TYPE.DECLINED
     ),
   comment: Joi.string()
     .optional()

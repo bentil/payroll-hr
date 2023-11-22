@@ -1,7 +1,8 @@
-import { Prisma, Employee } from '@prisma/client';
+import { Prisma, Employee, GradeLevel } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
+import { EmployeeEvent } from '../domain/events/employee.event';
 
 export async function create(data: Prisma.EmployeeCreateInput): Promise<Employee> {
   try {
@@ -21,8 +22,12 @@ export async function create(data: Prisma.EmployeeCreateInput): Promise<Employee
 }
 
 export async function createOrUpdate(
-  data: Prisma.EmployeeCreateInput
+  { majorGradeLevelId, ...dtoData }: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<Employee> {
+  const data: Prisma.EmployeeCreateInput = {
+    ...dtoData,
+    majorGradeLevel: { connect: { id: majorGradeLevelId } },
+  };
   const { id, ...dataWithoutId } = data;
   return prisma.employee.upsert({
     where: { id },
@@ -47,13 +52,46 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
+export async function findDeep(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.EmployeeWhereInput,
+  orderBy?: Prisma.EmployeeOrderByWithRelationAndSearchRelevanceInput
+}): Promise<ListWithPagination<Employee>> {
+  const { skip, take } = params;
+  const paginate = skip !== undefined && take !== undefined;
+  const [data, totalCount] = await Promise.all([
+    prisma.employee.findMany({
+      skip: params.skip,
+      take: params.take,
+      where: params.where,
+      orderBy: params.orderBy,
+      include: { majorGradeLevel: {
+        include: { companyLevel: true }
+      } }
+    }),
+    
+    paginate ? prisma.employee.count({ where: params.where }) : Promise.resolve(undefined),
+  ]);
+
+  return getListWithPagination(data, { skip, take, totalCount });
+}
+
+export interface EmployeeDto extends Employee {
+  majorGradeLevel?: GradeLevel
+}
+
 export async function findOne(
-  whereUniqueInput: Prisma.EmployeeWhereUniqueInput
-): Promise<Employee | null>  {
+  whereUniqueInput: Prisma.EmployeeWhereUniqueInput,
+  includeRelations?: boolean
+): Promise<EmployeeDto | null>  {
   return await prisma.employee.findUnique({
-    where: whereUniqueInput
+    where: whereUniqueInput,
+    include: includeRelations ?
+      { majorGradeLevel: { include: { companyLevel: true } } } : undefined
   });
 }
+
 
 export async function findFirst(where: Prisma.EmployeeWhereInput): Promise<Employee | null> {
   return prisma.employee.findFirst({ where });

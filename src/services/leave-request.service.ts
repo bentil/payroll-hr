@@ -1,4 +1,7 @@
-import { CompanyLevelLeavePackage, LeaveRequest } from '@prisma/client';
+import { 
+  LEAVE_REQUEST_STATUS, 
+  LeaveRequest 
+} from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   CreateLeaveRequestDto,
@@ -6,12 +9,9 @@ import {
   QueryLeaveRequestDto,
   UpdateLeaveRequestDto,
   ResponseObjectDto,
+  LEAVE_RESPONSE_ACTION,
 } from '../domain/dto/leave-request.dto';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
-// eslint-disable-next-line max-len
-import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
-import * as employeeService from '../services/employee.service';
-import * as leavePackageService from '../services/leave-package.service';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
@@ -25,6 +25,7 @@ import { errors } from '../utils/constants';
 import { AuthorizedUser } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
+import { validate } from './leave-type.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -35,16 +36,17 @@ const events = {
 };
 
 export async function addLeaveRequest(
-  creatData: CreateLeaveRequestDto,
+  payload: CreateLeaveRequestDto,
 ): Promise<LeaveRequestDto> {
-  const { employeeId, leavePackageId } = creatData;
+  const { employeeId, leaveTypeId } = payload;
+  let leavePackageId: number;
 
   // VALIDATION
   try {
-    await validate(employeeId, leavePackageId);
+    leavePackageId = await validate(leaveTypeId, employeeId);
   } catch (err) {
-    logger.warn('Validating employee[%s] and/or leavePackage[%s] fialed', 
-      employeeId, leavePackageId
+    logger.warn('Validating employee[%s] and/or leaveType[%s] failed', 
+      employeeId, leaveTypeId
     );
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -52,13 +54,22 @@ export async function addLeaveRequest(
       cause: err
     });
   }
-  logger.info('employee[%s] and leavePackage[%s] exists', employeeId, leavePackageId);
+  logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
+
+  const createData: leaveRequestRepository.CreateLeaveRequestObject = {
+    employeeId: payload.employeeId,
+    leavePackageId,
+    startDate: payload.startDate,
+    returnDate: payload.returnDate,
+    comment: payload.comment,
+    status: payload.status,
+  };
  
   logger.debug('Adding new Leave plan to the database...');
 
   let newLeaveRequest: LeaveRequest;
   try {
-    newLeaveRequest = await leaveRequestRepository.create(creatData, true);
+    newLeaveRequest = await leaveRequestRepository.create(createData, true);
     logger.info('LeaveRequest[%s] added successfully!', newLeaveRequest.id);
   } catch (err) {
     logger.error('Adding LeaveRequest failed', { error: err });
@@ -163,7 +174,7 @@ export async function updateLeaveRequest(
   updateData: UpdateLeaveRequestDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { leavePackageId } = updateData;
+  const { leaveTypeId } = updateData;
   const { employeeId } = authorizedUser;
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
@@ -183,11 +194,11 @@ export async function updateLeaveRequest(
   }
 
   // Validation
-  if (leavePackageId) {
+  if (leaveTypeId) {
     try {
-      leavePackageService.getLeavePackageById(leavePackageId, { includeCompanyLevels: false });
+      validate(leaveTypeId);
     } catch (err) {
-      logger.warn('Getting LeavePackage[%s] fialed', leavePackageId);
+      logger.warn('Getting LeavePackage[%s] fialed', leaveTypeId);
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
         message: 'Dependency check failed',
@@ -250,18 +261,19 @@ export async function addLeaveResponse(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to add response to does not exisit'
     });
-  } else if (leaveRequest.status !== 'PENDING') {
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
     throw new UnauthorizedError({ message: 'Can not perform this action' });
   } 
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     where: { id }, data: {
-      status: action,
-      responseCompletedAt: new Date(),
+      status: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       approvingEmployeeId,
       leaveRequestId: id,
-      responseType: action,
+      responseType: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       comment
     }
   });
@@ -283,7 +295,8 @@ export async function cancelLeaveRequest(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to cancel does not exisit'
     });
-  } else if (leaveRequest.status === 'DECLINED' || leaveRequest.status === 'CANCELLED') {
+  } else if (leaveRequest.status === LEAVE_REQUEST_STATUS.DECLINED 
+    || leaveRequest.status === LEAVE_REQUEST_STATUS.CANCELLED) {
     throw new UnauthorizedError({ message: 'Can not perform this action' });
   }
   const leaveStartDate = new Date(leaveRequest.startDate);
@@ -301,9 +314,8 @@ export async function cancelLeaveRequest(
   try {
     newLeaveRequest = await leaveRequestRepository.cancel({
       where: { id }, updateData: { 
-        status: 'CANCELLED', 
-        cancelledByEmployeeId: employeeId, 
-        cancelledAt: new Date()
+        status: LEAVE_REQUEST_STATUS.CANCELLED, 
+        cancelledByEmployeeId: employeeId
       },
     });
     logger.info('LeaveRequest[%s] successfully deleted', id);
@@ -314,29 +326,3 @@ export async function cancelLeaveRequest(
 
   return newLeaveRequest;
 }
-
-export async function validate(employeeId: number, leavePackageId: number) {
-  const employee = await employeeService.getEmployee(employeeId);
-  let leavePackage: CompanyLevelLeavePackage | null;
-  if (employee.majorGradeLevelId) {
-    try {
-      leavePackage = await compLevelLeavePackageRepository.findFirst({
-        leavePackageId: leavePackageId,
-        companyLevelId: employee.majorGradeLevelId
-      });
-    } catch (err) {
-      logger.warn('Getting LeavePackage[%s] for Employee[%s] with MajorGradeLevel[%s] failed',
-        leavePackageId, employee, employee.majorGradeLevelId, { error: (err as Error).stack });
-      throw new ServerError({ message: (err as Error).message, cause: err });
-    }
-  } else {
-    throw new UnauthorizedError({ message: 'employee does not exist or has no grade level' });
-  }
-
-  if (!leavePackage) {
-    logger.warn('CompanyLevel[%s] does not exist for Employee[%s]',  leavePackageId, employee);
-    throw new FailedDependencyError({ 
-      message: 'the leave package either does not exist or is not available for the employee' 
-    });
-  }
-} 

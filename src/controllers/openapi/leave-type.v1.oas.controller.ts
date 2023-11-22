@@ -21,7 +21,8 @@ import {
   LeaveTypeDto,
   UpdateLeaveTypeDto,
   QueryLeaveTypeDto,
-  SearchLeaveTypeDto
+  SearchLeaveTypeDto,
+  QueryApplicableLeaveTypeDto
 } from '../../domain/dto/leave-type.dto';
 
 
@@ -95,6 +96,23 @@ export class LeaveTypeV1Controller {
   ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
     this.logger.info('Received request to get leaveType matching query', { query });
     const { data, pagination } = await leaveTypeService.getLeaveTypes(query);
+    this.logger.info('Returning %d leaveType that matched query', data.length);
+    return { data, pagination };
+  }
+
+  /**
+    * Get a list of leave types applicable to employee or company level
+    * 
+    * @param query Query parameters, including pagination and ordering details
+    * @returns List of applicable leave type
+    */
+
+  @Get('/applicable')
+  public async getApplicableLeaveTypes(
+    @Queries() query: QueryApplicableLeaveTypeDto,
+  ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
+    this.logger.info('Received request to get leaveType matching query', { query });
+    const { data, pagination } = await leaveTypeService.getApplicableLeaveTypes(query);
     this.logger.info('Returning %d leaveType that matched query', data.length);
     return { data, pagination };
   }

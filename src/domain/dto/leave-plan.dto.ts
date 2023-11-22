@@ -3,14 +3,14 @@ import config from '../../config';
 
 export class CreateLeavePlanDto{
   employeeId!: number;
-  leavePackageId!: number;
+  leaveTypeId!: number;
   intendedStartDate!: Date;
   intendedReturnDate!: Date;
   comment!: string;
 }
 
 export class UpdateLeavePlanDto{
-  leavePackageId?: number;
+  leaveTypeId?: number;
   intendedStartDate?: Date;
   intendedReturnDate?: Date;
   comment?: string;

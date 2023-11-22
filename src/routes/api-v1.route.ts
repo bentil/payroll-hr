@@ -40,7 +40,8 @@ import {
   UPDATE_LEAVE_TYPE_SCHEMA,
   QUERY_LEAVE_TYPE_SCHEMA,
   SEARCH_LEAVE_TYPE_SCHEMA,
-  INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA
+  INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA,
+  QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA
 } from '../domain/request-schema/leave-type.schema';
 import {
   CREATE_LEAVE_PLAN_SCHEMA,
@@ -314,6 +315,12 @@ router.get(
   '/leave-types',
   validateRequestQuery(QUERY_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.listLeaveTypes
+);
+
+router.get(
+  '/leave-types/applicable',
+  validateRequestQuery(QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA),
+  leaveTypeV1Controller.listApplicableLeaveTypes
 );
 
 router.get(
