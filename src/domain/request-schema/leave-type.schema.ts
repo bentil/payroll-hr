@@ -19,6 +19,8 @@ export const UPDATE_LEAVE_TYPE_SCHEMA = Joi.object({
     .optional(),
   name: Joi.string()
     .optional(),
+  colorCode: Joi.string()
+    .optional(),
   description: Joi.string()
     .optional()
     .trim(),

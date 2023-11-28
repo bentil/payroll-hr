@@ -10,6 +10,7 @@ export interface CreateLeavePlanObject{
   intendedStartDate: Date;
   intendedReturnDate: Date;
   comment: string;
+  numberOfDays: number;
 }
 
 export async function create(

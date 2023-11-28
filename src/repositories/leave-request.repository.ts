@@ -27,6 +27,7 @@ export class CreateLeaveRequestObject{
   returnDate!: Date;
   comment!: string;
   status!: LEAVE_REQUEST_STATUS;
+  numberOfDays!: number;
 }
 
 
@@ -96,6 +97,13 @@ export async function find(params: {
 
   return getListWithPagination(data, { skip, take, totalCount });
 }
+
+export const findFirst = async (
+  where: Prisma.LeaveRequestWhereInput,
+): Promise<LeaveRequestDto | null> => {
+  return prisma.leaveRequest.findFirst({ where });
+};
+
 
 export async function update(params: {
   where: Prisma.LeaveRequestWhereUniqueInput,

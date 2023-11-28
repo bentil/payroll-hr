@@ -17,9 +17,9 @@ export class CreateGrievanceReportDto {
 }
 
 export class UpdateGrievanceReportDto {
-  grievanceTypeId!: number;
-  reportDate!: Date;
-  note!: string;
+  grievanceTypeId?: number;
+  reportDate?: Date;
+  note?: string;
 }
 
 export interface GrievanceReportDto extends GrievanceReport {

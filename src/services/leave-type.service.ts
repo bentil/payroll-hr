@@ -126,7 +126,7 @@ export async function getApplicableLeaveTypes(
           orderBy: orderByInput
         });
       } else {
-        throw new UnauthorizedError({});
+        leaveType = { data: [] };
       }
     } else if (companyLevelId) {
       leaveType = await leaveTypeRepository.find({
@@ -138,8 +138,7 @@ export async function getApplicableLeaveTypes(
         orderBy: orderByInput
       });
     } else {
-      throw new UnauthorizedError({});
-    }
+      leaveType = { data: [] };    }
   } catch (err) {
     logger.warn(
       'Querying leaveTypes with query failed',

@@ -68,6 +68,7 @@ import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary
 import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
 import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
+import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -414,5 +415,13 @@ router.post(
   authenticateUser(),
   leaveReqV1Controller.cancelLeaveRequest
 );
+
+// ### Employee Leave Type summary 
+router.post(
+  '/employees/:employeeId/leave-types/:leaveTypeId/summary',
+  authenticateUser(),
+  summaryV1Controller.getSummary
+);
+
 
 export default router;

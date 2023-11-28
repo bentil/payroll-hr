@@ -26,6 +26,7 @@ import { AuthorizedUser } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { validate } from './leave-type.service';
+import { getApplicableLeavePackage } from './leave-package.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -56,6 +57,8 @@ export async function addLeaveRequest(
   }
   logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
 
+  const numberOfDays = 
+    await helpers.calculateDaysBetweenDates(payload.startDate, payload.returnDate);
   const createData: leaveRequestRepository.CreateLeaveRequestObject = {
     employeeId: payload.employeeId,
     leavePackageId,
@@ -63,6 +66,7 @@ export async function addLeaveRequest(
     returnDate: payload.returnDate,
     comment: payload.comment,
     status: payload.status,
+    numberOfDays
   };
  
   logger.debug('Adding new Leave plan to the database...');
@@ -174,7 +178,7 @@ export async function updateLeaveRequest(
   updateData: UpdateLeaveRequestDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { leaveTypeId } = updateData;
+  const { leaveTypeId, startDate, returnDate } = updateData;
   const { employeeId } = authorizedUser;
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
@@ -206,10 +210,23 @@ export async function updateLeaveRequest(
       });
     }
   }
+
+  let numberOfDays: number;
+  if (startDate && returnDate) {
+    numberOfDays = await helpers.calculateDaysBetweenDates(startDate, returnDate);
+  } else if (startDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(startDate, leaveRequest.returnDate);
+  } else if (returnDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(leaveRequest.startDate, returnDate);
+  } else {
+    numberOfDays = leaveRequest.numberOfDays!;
+  }
   
   logger.debug('Persisting update(s) to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.update({
-    where: { id }, data: updateData, includeRelations: true
+    where: { id }, data: { numberOfDays, ...updateData }, includeRelations: true
   });
   logger.info('Update(s) to LeaveRequest[%s] persisted successfully!', id);
 
@@ -325,4 +342,58 @@ export async function cancelLeaveRequest(
   }
 
   return newLeaveRequest;
+}
+
+
+export type employeLeaveTypeSummaryObject = {
+  numberOfDaysAllowed: number,
+  numberOfDaysUsed: number,
+  numberOfDaysPending: number,
+  numberOfDaysLeft: number
+}
+
+export async function getEmployeeLeaveTypeSummary(
+  employeeId: number, leaveTypeId: number
+): Promise<employeLeaveTypeSummaryObject> {
+  const leavePackage = await getApplicableLeavePackage(employeeId, leaveTypeId);
+  const numberOfDaysAllowed = leavePackage.maxDays;
+  const currentYear = new Date().getFullYear();
+  console.log(currentYear); // 👉️ 2023
+
+  const firstDay = new Date(currentYear, 0, 1);
+  console.log(firstDay); // 👉️ Sun Jan 01 2023
+
+  const lastDay = new Date(currentYear, 11, 31);
+  console.log(lastDay);
+
+  const [leaveRequestStatusApproved, leaveRequestStatusPending] = await Promise.all([
+    leaveRequestRepository.find({ where:{
+      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.APPROVED,
+      createdAt: {
+        gte: firstDay,
+        lte: lastDay
+      }
+    } }),
+    leaveRequestRepository.find({ where:{
+      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.PENDING,
+      createdAt: {
+        gte: firstDay,
+        lte: lastDay
+      }
+    } }),
+  ]);
+  //status, calender year
+
+  const numberOfDaysUsed = leaveRequestStatusApproved.data.reduce(
+    (accumulator, currentValue) => {
+      return accumulator + currentValue.numberOfDays!;
+    }, 0);
+  const numberOfDaysPending = leaveRequestStatusPending.data.reduce(
+    (accumulator, currentValue) => {
+      return accumulator + currentValue.numberOfDays!;
+    }, 0);
+
+  const numberOfDaysLeft = numberOfDaysAllowed - (numberOfDaysUsed + numberOfDaysPending);
+
+  return { numberOfDaysAllowed, numberOfDaysUsed, numberOfDaysPending, numberOfDaysLeft };
 }

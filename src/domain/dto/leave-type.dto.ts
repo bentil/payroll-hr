@@ -11,6 +11,7 @@ export class CreateLeaveTypeDto {
 export class UpdateLeaveTypeDto {
   code?: string;
   name?: string;
+  colorCode?: string;
   description?: string;
 }
 

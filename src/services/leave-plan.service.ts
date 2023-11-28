@@ -49,12 +49,15 @@ export async function addLeavePlan(
   }
   logger.info('LeavePackage for employee[%s] and leaveTypeId[%s] exists', employeeId, leaveTypeId);
 
+  const numberOfDays = 
+    await helpers.calculateDaysBetweenDates(payload.intendedStartDate, payload.intendedReturnDate);
   const creatData: leavePlanRepository.CreateLeavePlanObject = {
     employeeId: payload.employeeId,
     intendedStartDate: payload.intendedStartDate,
     intendedReturnDate: payload.intendedReturnDate,
     comment: payload.comment,
-    leavePackageId
+    leavePackageId,
+    numberOfDays
   };
  
   logger.debug('Adding new Leave plan to the database...');
@@ -150,7 +153,7 @@ export async function updateLeavePlan(
   id: number, 
   updateData: UpdateLeavePlanDto
 ): Promise<LeavePlanDto> {
-  const { leaveTypeId } = updateData;
+  const { leaveTypeId, intendedStartDate, intendedReturnDate } = updateData;
   const leavePlan = await leavePlanRepository.findOne({ id }, true);
   if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
@@ -172,10 +175,22 @@ export async function updateLeavePlan(
       });
     }
   }
+  let numberOfDays: number;
+  if (intendedStartDate && intendedReturnDate) {
+    numberOfDays = await helpers.calculateDaysBetweenDates(intendedStartDate, intendedReturnDate);
+  } else if (intendedStartDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(intendedStartDate, leavePlan.intendedReturnDate);
+  } else if (intendedReturnDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(leavePlan.intendedStartDate, intendedReturnDate);
+  } else {
+    numberOfDays = leavePlan.numberOfDays;
+  }
   
   logger.debug('Persisting update(s) to LeavePlan[%s]', id);
   const updatedLeavePlan = await leavePlanRepository.update({
-    where: { id }, data: updateData, includeRelations: true
+    where: { id }, data: { numberOfDays, ...updateData }, includeRelations: true
   });
   logger.info('Update(s) to LeavePlan[%s] persisted successfully!', id);
 

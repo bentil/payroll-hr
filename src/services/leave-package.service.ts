@@ -14,11 +14,11 @@ import { LeavePackage, Prisma } from '@prisma/client';
 import * as payrollCompanyService from '../services/payroll-company.service';
 import * as leaveTypeservice from './leave-type.service';
 import * as companyLevelService from './company-level.service';
+import * as employeeRepository from '../repositories/employee.repository';
 import { errors } from '../utils/constants';
 import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
 import { ListWithPagination } from '../repositories/types';
 import { AuthorizedUser } from '../domain/user.domain';
-
 
 const logger = rootLogger.child({ context: 'LeavePackageService' });
 
@@ -192,6 +192,40 @@ export const getLeavePackageById = async (
   logger.info('Leave Package[%s] details retrieved!', id);
   return leavePackage;
 };
+
+export async function getApplicableLeavePackage(
+  employeeId: number, leaveTypeId: number
+): Promise<LeavePackageDto> {
+  logger.debug('Getting applicable leave package for employee[%s] for leaveType[%s]',
+    employeeId, leaveTypeId);
+
+  let leavePackage: LeavePackageDto | null;
+  try {
+    const employee = await employeeRepository.findOne({ id: employeeId }, true);
+    if (employee?.majorGradeLevel?.companyLevelId) {
+      const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
+      leavePackage = await repository.findFirst({
+        leaveTypeId,
+        companyLevelLeavePackages:  { some: { companyLevelId } 
+        } 
+      });
+    } else {
+      leavePackage = null;
+    }
+  } catch (err) {
+    logger.warn('Getting applicable Leave Packagefor employee[%s] for leaveType[%s]', 
+      employeeId, leaveTypeId, { error: (err as Error).stack });
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!leavePackage) {
+    logger.warn('Getting applicable Leave Packagefor employee[%s] for leaveType[%s]', 
+      employeeId, leaveTypeId,);
+    throw new NotFoundError({ message: 'Leave Package does not exist' });
+  }
+
+  return leavePackage;
+}
 
 export const searchLeavePackages = async (
   query: SearchLeavePackageDto,
