@@ -185,7 +185,7 @@ export async function updateLeavePlan(
     numberOfDays = 
       await helpers.calculateDaysBetweenDates(leavePlan.intendedStartDate, intendedReturnDate);
   } else {
-    numberOfDays = leavePlan.numberOfDays;
+    numberOfDays = leavePlan.numberOfDays!;
   }
   
   logger.debug('Persisting update(s) to LeavePlan[%s]', id);
