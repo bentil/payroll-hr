@@ -46,13 +46,13 @@ export class QueryLeaveRequestDto {
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_ASC;
 }
 
-export enum LEAVE_RESPONSE_ACTION {
-  APPROVE,
-  DECLINE
-}
+export const LEAVE_RESPONSE_ACTION = {
+  APPROVE: 'APPROVE',
+  DECLINE: 'DECLINE'
+};
 
-// export type LEAVE_RESPONSE_ACTION = 
-//   (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
+type LEAVE_RESPONSE_ACTION = 
+  (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
 
 
 export class ResponseObjectDto {

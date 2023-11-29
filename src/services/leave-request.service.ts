@@ -285,11 +285,11 @@ export async function addLeaveResponse(
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     where: { id }, data: {
-      status: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+      status: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
         LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       approvingEmployeeId,
       leaveRequestId: id,
-      responseType: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+      responseType: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
         LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       comment
     }
@@ -358,13 +358,10 @@ export async function getEmployeeLeaveTypeSummary(
   const leavePackage = await getApplicableLeavePackage(employeeId, leaveTypeId);
   const numberOfDaysAllowed = leavePackage.maxDays;
   const currentYear = new Date().getFullYear();
-  console.log(currentYear); // 👉️ 2023
 
   const firstDay = new Date(currentYear, 0, 1);
-  console.log(firstDay); // 👉️ Sun Jan 01 2023
 
   const lastDay = new Date(currentYear, 11, 31);
-  console.log(lastDay);
 
   const [leaveRequestStatusApproved, leaveRequestStatusPending] = await Promise.all([
     leaveRequestRepository.find({ where:{
@@ -382,7 +379,7 @@ export async function getEmployeeLeaveTypeSummary(
       }
     } }),
   ]);
-  //status, calender year
+  console.log(leaveRequestStatusPending);
 
   const numberOfDaysUsed = leaveRequestStatusApproved.data.reduce(
     (accumulator, currentValue) => {
