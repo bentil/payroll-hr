@@ -92,7 +92,7 @@ export const QUERY_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .valid(
       ...Object.values(LeavePackageOrderBy)
     )
-    .default(LeavePackageOrderBy.CREATED_AT_ASC)
+    .default(LeavePackageOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(LeavePackageOrderBy)}`
     })
@@ -116,7 +116,7 @@ export const SEARCH_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .valid(
       ...Object.values(LeavePackageOrderBy)
     )
-    .default(LeavePackageOrderBy.CREATED_AT_ASC)
+    .default(LeavePackageOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(LeavePackageOrderBy)}`
     })

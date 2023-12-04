@@ -23,6 +23,8 @@ model PayrollCompany {
   currencyId                       Int                      @map("currency_id")
   countryId                        Int?                     @map("country_id")
   allowNegativeRates               Boolean                  @default(false) @map("allow_negative_rates")
+  considerPublicHolidayAsWorkday   Boolean                  @default(false) @map("consider_public_holiday_as_workday")
+  considerWeekendAsWorkday         Boolean                  @default(false) @map("consider_weekend_as_workday")
   createdAt                        DateTime                 @default(now()) @map("created_at")
   modifiedAt                       DateTime?                @updatedAt @map("modified_at")
   statusLastModifiedAt             DateTime?                @map("status_last_modified_at")
@@ -341,6 +343,7 @@ model LeaveRequest {
 enum LEAVE_RESPONSE_TYPE {
   APPROVED
   DECLINED
+  ADJUSTED
 }
 
 model LeaveResponse {

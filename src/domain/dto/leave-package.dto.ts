@@ -59,14 +59,14 @@ export class QueryLeavePackageDto {
   includeCompanyLevels?: boolean;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeavePackageOrderBy = LeavePackageOrderBy.CREATED_AT_ASC;
+  orderBy: LeavePackageOrderBy = LeavePackageOrderBy.CREATED_AT_DESC;
 }
 
 export class SearchLeavePackageDto {
   q?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeavePackageOrderBy = LeavePackageOrderBy.CREATED_AT_ASC;
+  orderBy: LeavePackageOrderBy = LeavePackageOrderBy.CREATED_AT_DESC;
 }
 
 export enum LeavePackageOrderBy {

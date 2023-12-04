@@ -31,7 +31,7 @@ export const QUERY_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .valid(
       ...Object.values(CompanyLevelLeavePackageOrderBy)
     )
-    .default(CompanyLevelLeavePackageOrderBy.LEAVE_PACKAGE_CREATED_AT_ASC)
+    .default(CompanyLevelLeavePackageOrderBy.LEAVE_PACKAGE_CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(CompanyLevelLeavePackageOrderBy)}`
     })

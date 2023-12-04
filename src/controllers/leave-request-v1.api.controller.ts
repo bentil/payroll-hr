@@ -74,3 +74,13 @@ export async function cancelLeaveRequest(req: Request, res: Response, next: Next
     next(err);
   }
 }
+
+export async function adjustDays(req: Request, res: Response, next: NextFunction) {
+  const { id } = req.params;
+  try {
+    const response = await controller.adjustDays(+id, req.body, req);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}

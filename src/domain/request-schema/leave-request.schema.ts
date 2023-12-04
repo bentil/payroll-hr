@@ -1,9 +1,12 @@
 import config from '../../config';
-import { LEAVE_RESPONSE_ACTION, LeaveRequestOrderBy } from '../dto/leave-request.dto'; 
+import { 
+  ADJUSTMENT_OPTIONS, 
+  LEAVE_RESPONSE_ACTION, 
+  LeaveRequestOrderBy 
+} from '../dto/leave-request.dto'; 
 import Joi from 'joi';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
-import { LEAVE_REQUEST_STATUS } from '@prisma/client';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -30,15 +33,6 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     .optional()
     .default('')
     .trim(),
-  status: Joi.string()
-    .optional()
-    .default(LEAVE_REQUEST_STATUS.PENDING)
-    .valid(
-      LEAVE_REQUEST_STATUS.APPROVED,
-      LEAVE_REQUEST_STATUS.CANCELLED,
-      LEAVE_REQUEST_STATUS.DECLINED,
-      LEAVE_REQUEST_STATUS.PENDING
-    )
 });
 
 export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
@@ -104,4 +98,19 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
     .allow('')
     .default('')
     .trim(),
+});
+
+export const ADJUST_DAYS_SCHEMA = Joi.object({
+  adjustment: Joi.string()
+    .required()
+    .valid(ADJUSTMENT_OPTIONS.DECREASE, ADJUSTMENT_OPTIONS.INCREASE),
+  count: Joi.number()
+    .required(),
+  comment: Joi.string()
+    .required()
+    .messages({
+      'string.base': 'comment must be a string',
+      'string.empty': 'comment must not be blank',
+      'any.required': 'comment field is required'
+    })
 });

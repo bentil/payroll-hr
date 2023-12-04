@@ -53,6 +53,7 @@ import {
   UPDATE_LEAVE_REQUEST_SCHEMA,
   QUERY_LEAVE_REQUEST_SCHEMA,
   CREATE_LEAVE_RESPONSE_SCHEMA,
+  ADJUST_DAYS_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
@@ -414,6 +415,13 @@ router.post(
   '/leave-requests/:id/cancel',
   authenticateUser(),
   leaveReqV1Controller.cancelLeaveRequest
+);
+
+router.post(
+  '/leave-requests/:id/number-of-days',
+  authenticateUser(),
+  validateRequestBody(ADJUST_DAYS_SCHEMA),
+  leaveReqV1Controller.adjustDays
 );
 
 // ### Employee Leave Type summary 

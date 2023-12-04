@@ -1,5 +1,6 @@
 import { 
   LEAVE_REQUEST_STATUS, 
+  LEAVE_RESPONSE_TYPE, 
   LeaveRequest 
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
@@ -10,6 +11,8 @@ import {
   UpdateLeaveRequestDto,
   ResponseObjectDto,
   LEAVE_RESPONSE_ACTION,
+  AdjustDaysDto,
+  ADJUSTMENT_OPTIONS,
 } from '../domain/dto/leave-request.dto';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import * as helpers from '../utils/helpers';
@@ -65,7 +68,6 @@ export async function addLeaveRequest(
     startDate: payload.startDate,
     returnDate: payload.returnDate,
     comment: payload.comment,
-    status: payload.status,
     numberOfDays
   };
  
@@ -393,4 +395,36 @@ export async function getEmployeeLeaveTypeSummary(
   const numberOfDaysLeft = numberOfDaysAllowed - (numberOfDaysUsed + numberOfDaysPending);
 
   return { numberOfDaysAllowed, numberOfDaysUsed, numberOfDaysPending, numberOfDaysLeft };
+}
+
+export async function adjustDays(
+  id: number, authorizedUser: AuthorizedUser, payload: AdjustDaysDto
+): Promise<LeaveRequestDto> {
+  const { employeeId } = authorizedUser;
+  const leaveRequest = await leaveRequestRepository.findOne({ id });
+  const { adjustment, comment, count } = payload;
+
+  // will have a check for employee being an hr
+  if (!leaveRequest) {
+    throw new NotFoundError({
+      name: errors.LEAVE_REQUEST_NOT_FOUND,
+      message: 'LeaveRequest does not exist'
+    });
+  } else if ((leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) || 
+    (leaveRequest.employeeId === employeeId)) {
+    throw new UnauthorizedError({ message: 'you can not perform this action' });
+  }
+
+  let numberOfDays: number;
+  if (adjustment === ADJUSTMENT_OPTIONS.INCREASE) {
+    numberOfDays = leaveRequest.numberOfDays! + count;
+  } else {
+    numberOfDays = leaveRequest.numberOfDays! - count;
+  }
+
+  const adjustedLeaveRequest = leaveRequestRepository.adjustDays({ id, data: {
+    numberOfDays, comment, responseType: LEAVE_RESPONSE_TYPE.ADJUSTED
+  } });
+
+  return adjustedLeaveRequest;
 }

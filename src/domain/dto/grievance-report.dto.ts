@@ -38,14 +38,14 @@ export class QueryGrievanceReportDto {
   'createdAt.lte'?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_ASC;
+  orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_DESC;
 }
 
 export class SearchGrievanceReportDto {
   q?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_ASC;
+  orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_DESC;
 }
 
 export enum GrievanceReportOrderBy {

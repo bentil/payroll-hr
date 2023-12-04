@@ -1,8 +1,6 @@
 import { LEAVE_REQUEST_STATUS, LEAVE_RESPONSE_TYPE, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { 
-  LeaveRequestDto, 
-} from '../domain/dto/leave-request.dto';
+import { LeaveRequestDto } from '../domain/dto/leave-request.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
@@ -26,8 +24,13 @@ export class CreateLeaveRequestObject{
   startDate!: Date;
   returnDate!: Date;
   comment!: string;
-  status!: LEAVE_REQUEST_STATUS;
   numberOfDays!: number;
+}
+
+export interface adjustDaysObject {
+  numberOfDays: number;
+  comment: string;
+  responseType: LEAVE_RESPONSE_TYPE;
 }
 
 
@@ -194,6 +197,32 @@ export async function respond(params: {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
           message: 'Leave package already exists',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
+}
+
+export async function adjustDays(params: { id: number,  data: adjustDaysObject }) {
+  const { id, data } = params;
+
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const leaveRequest = await transaction.leaveRequest.update({
+        where: { id }, data: { numberOfDays: data.numberOfDays }
+      });
+      await transaction.leaveResponse.update({
+        where: { id }, data: { comment: data.comment, responseType: data.responseType }
+      });
+      return leaveRequest;
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        throw new AlreadyExistsError({
+          message: 'Leave request already exists',
           cause: err
         });
       }
