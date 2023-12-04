@@ -179,7 +179,7 @@ export class LeaveRequestV1Controller {
    * @param body Request body with adjustment details
    * @returns Updated leaveRequest
    */
-  @Post('{id}/number-of-days')
+  @Patch('{id}/number-of-days')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
     error: 'REQUEST_VALIDATION_FAILED',
     message: 'Request validation failed',

@@ -417,7 +417,7 @@ router.post(
   leaveReqV1Controller.cancelLeaveRequest
 );
 
-router.post(
+router.patch(
   '/leave-requests/:id/number-of-days',
   authenticateUser(),
   validateRequestBody(ADJUST_DAYS_SCHEMA),
