@@ -302,7 +302,7 @@ model LeavePlan {
   comment            String       @db.Text()
   createdAt          DateTime     @default(now()) @map("created_at")
   modifiedAt         DateTime?    @updatedAt @map("modified_at")
-  numberOfDays       Int?          @map("numberOfDays")
+  numberOfDays       Int?          @map("number_of_days")
 
   employee           Employee     @relation(fields: [employeeId], references: [id])
   leavePackage       LeavePackage @relation(fields: [leavePackageId], references: [id])
@@ -330,7 +330,7 @@ model LeaveRequest {
   modifiedAt            DateTime?             @updatedAt @map("modified_at")
   responsecompletedat   DateTime?             @updatedAt @map("response_completed_at")
   cancelledAt           DateTime?             @updatedAt @map("cancelled_at")
-  numberOfDays          Int?                   @map("numberOfDays") 
+  numberOfDays          Int?                   @map("number_of_days") 
 
   employee              Employee              @relation(fields: [employeeId], references: [id], name: "employee")
   leavePackage          LeavePackage          @relation(fields: [leavePackageId], references: [id])
