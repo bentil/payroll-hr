@@ -19,6 +19,7 @@ import {
   QueryLeaveRequestDto,
   UpdateLeaveRequestDto,
   ResponseObjectDto,
+  AdjustDaysDto,
 } from '../../domain/dto/leave-request.dto';
 import * as leaveReqService from '../../services/leave-request.service';
 import { rootLogger } from '../../utils/logger';
@@ -170,6 +171,34 @@ export class LeaveRequestV1Controller {
     const leaveRequest = await leaveReqService.cancelLeaveRequest(id, req.user!);
     this.logger.info('LeaveRequest[%s] cancelled successfully!', id);
     return { data: leaveRequest };
+  }
+
+  /**
+   * Change the number of days of an existing leaveRequest
+   * @param id leaveRequest ID
+   * @param body Request body with adjustment details
+   * @returns Updated leaveRequest
+   */
+  @Post('{id}/response')
+  @Response<ApiErrorResponse>(400, 'Bad Request', {
+    error: 'REQUEST_VALIDATION_FAILED',
+    message: 'Request validation failed',
+    details: ['fieldA is required', 'fieldB must not be blank'],
+  })
+  @Response<ApiErrorResponse>(409, 'Conflict', {
+    error: 'INVALID_STATE',
+    message: 'Resource of interest is in an invalid state',
+    details: [],
+  })
+  public async adjustDays(
+    @Path('id') id: number,
+    @Body() updateDto: AdjustDaysDto,
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<LeaveRequest>> {
+    this.logger.debug('Received request to adjust the number of days for LeaveRequest[%s]', id);
+    const updateLeaveRequest = await leaveReqService.adjustDays(id, req.user!, updateDto);
+    this.logger.info('Number of days for LeaveRequest[%s] adjusted successfully!', id);
+    return { data: updateLeaveRequest };
   }
 
 }

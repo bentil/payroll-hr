@@ -11,6 +11,7 @@ export class CreateLeaveTypeDto {
 export class UpdateLeaveTypeDto {
   code?: string;
   name?: string;
+  colorCode?: string;
   description?: string;
 }
 
@@ -20,7 +21,7 @@ export class QueryLeaveTypeDto {
   code?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeaveTypeOrderBy = LeaveTypeOrderBy.CREATED_AT_ASC;
+  orderBy: LeaveTypeOrderBy = LeaveTypeOrderBy.CREATED_AT_DESC;
 }
 
 
@@ -30,14 +31,14 @@ export class QueryApplicableLeaveTypeDto {
   
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: ApplicableLeaveTypeOrderBy = ApplicableLeaveTypeOrderBy.CREATED_AT_ASC;
+  orderBy: ApplicableLeaveTypeOrderBy = ApplicableLeaveTypeOrderBy.CREATED_AT_DESC;
 }
 
 export class SearchLeaveTypeDto {
   q?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeaveTypeOrderBy = LeaveTypeOrderBy.CREATED_AT_ASC;
+  orderBy: LeaveTypeOrderBy = LeaveTypeOrderBy.CREATED_AT_DESC;
 }
 
 export class IncludeCompanyLevelsQueryDto {

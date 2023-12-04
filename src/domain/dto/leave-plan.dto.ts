@@ -36,7 +36,7 @@ export class QueryLeavePlanDto {
   'intendedReturnDate.lte'?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeavePlanOrderBy = LeavePlanOrderBy.CREATED_AT_ASC;
+  orderBy: LeavePlanOrderBy = LeavePlanOrderBy.CREATED_AT_DESC;
 }
 
 export interface LeavePlanDto extends LeavePlan {

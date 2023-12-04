@@ -1,5 +1,6 @@
 import { 
   LEAVE_REQUEST_STATUS, 
+  LEAVE_RESPONSE_TYPE, 
   LeaveRequest 
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
@@ -10,6 +11,8 @@ import {
   UpdateLeaveRequestDto,
   ResponseObjectDto,
   LEAVE_RESPONSE_ACTION,
+  AdjustDaysDto,
+  ADJUSTMENT_OPTIONS,
 } from '../domain/dto/leave-request.dto';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import * as helpers from '../utils/helpers';
@@ -26,6 +29,7 @@ import { AuthorizedUser } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { validate } from './leave-type.service';
+import { getApplicableLeavePackage } from './leave-package.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -56,13 +60,15 @@ export async function addLeaveRequest(
   }
   logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
 
+  const numberOfDays = 
+    await helpers.calculateDaysBetweenDates(payload.startDate, payload.returnDate);
   const createData: leaveRequestRepository.CreateLeaveRequestObject = {
     employeeId: payload.employeeId,
     leavePackageId,
     startDate: payload.startDate,
     returnDate: payload.returnDate,
     comment: payload.comment,
-    status: payload.status,
+    numberOfDays
   };
  
   logger.debug('Adding new Leave plan to the database...');
@@ -174,7 +180,7 @@ export async function updateLeaveRequest(
   updateData: UpdateLeaveRequestDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { leaveTypeId } = updateData;
+  const { leaveTypeId, startDate, returnDate } = updateData;
   const { employeeId } = authorizedUser;
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
@@ -206,10 +212,23 @@ export async function updateLeaveRequest(
       });
     }
   }
+
+  let numberOfDays: number;
+  if (startDate && returnDate) {
+    numberOfDays = await helpers.calculateDaysBetweenDates(startDate, returnDate);
+  } else if (startDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(startDate, leaveRequest.returnDate);
+  } else if (returnDate) {
+    numberOfDays = 
+      await helpers.calculateDaysBetweenDates(leaveRequest.startDate, returnDate);
+  } else {
+    numberOfDays = leaveRequest.numberOfDays!;
+  }
   
   logger.debug('Persisting update(s) to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.update({
-    where: { id }, data: updateData, includeRelations: true
+    where: { id }, data: { numberOfDays, ...updateData }, includeRelations: true
   });
   logger.info('Update(s) to LeaveRequest[%s] persisted successfully!', id);
 
@@ -268,11 +287,11 @@ export async function addLeaveResponse(
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     where: { id }, data: {
-      status: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+      status: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
         LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       approvingEmployeeId,
       leaveRequestId: id,
-      responseType: action === LEAVE_RESPONSE_ACTION.APPROVE ?
+      responseType: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
         LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
       comment
     }
@@ -325,4 +344,87 @@ export async function cancelLeaveRequest(
   }
 
   return newLeaveRequest;
+}
+
+
+export type employeLeaveTypeSummaryObject = {
+  numberOfDaysAllowed: number,
+  numberOfDaysUsed: number,
+  numberOfDaysPending: number,
+  numberOfDaysLeft: number
+}
+
+export async function getEmployeeLeaveTypeSummary(
+  employeeId: number, leaveTypeId: number
+): Promise<employeLeaveTypeSummaryObject> {
+  const leavePackage = await getApplicableLeavePackage(employeeId, leaveTypeId);
+  const numberOfDaysAllowed = leavePackage.maxDays;
+  const currentYear = new Date().getFullYear();
+
+  const firstDay = new Date(currentYear, 0, 1);
+
+  const lastDay = new Date(currentYear, 11, 31);
+
+  const [leaveRequestStatusApproved, leaveRequestStatusPending] = await Promise.all([
+    leaveRequestRepository.find({ where:{
+      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.APPROVED,
+      createdAt: {
+        gte: firstDay,
+        lte: lastDay
+      }
+    } }),
+    leaveRequestRepository.find({ where:{
+      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.PENDING,
+      createdAt: {
+        gte: firstDay,
+        lte: lastDay
+      }
+    } }),
+  ]);
+  console.log(leaveRequestStatusPending);
+
+  const numberOfDaysUsed = leaveRequestStatusApproved.data.reduce(
+    (accumulator, currentValue) => {
+      return accumulator + currentValue.numberOfDays!;
+    }, 0);
+  const numberOfDaysPending = leaveRequestStatusPending.data.reduce(
+    (accumulator, currentValue) => {
+      return accumulator + currentValue.numberOfDays!;
+    }, 0);
+
+  const numberOfDaysLeft = numberOfDaysAllowed - (numberOfDaysUsed + numberOfDaysPending);
+
+  return { numberOfDaysAllowed, numberOfDaysUsed, numberOfDaysPending, numberOfDaysLeft };
+}
+
+export async function adjustDays(
+  id: number, authorizedUser: AuthorizedUser, payload: AdjustDaysDto
+): Promise<LeaveRequestDto> {
+  const { employeeId } = authorizedUser;
+  const leaveRequest = await leaveRequestRepository.findOne({ id });
+  const { adjustment, comment, count } = payload;
+
+  // will have a check for employee being an hr
+  if (!leaveRequest) {
+    throw new NotFoundError({
+      name: errors.LEAVE_REQUEST_NOT_FOUND,
+      message: 'LeaveRequest does not exist'
+    });
+  } else if ((leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) || 
+    (leaveRequest.employeeId !== employeeId)) {
+    throw new UnauthorizedError({ message: 'you can not perform this action' });
+  }
+
+  let numberOfDays: number;
+  if (adjustment === ADJUSTMENT_OPTIONS.INCREASE) {
+    numberOfDays = leaveRequest.numberOfDays! + count;
+  } else {
+    numberOfDays = leaveRequest.numberOfDays! - count;
+  }
+
+  const adjustedLeaveRequest = leaveRequestRepository.adjustDays({ id, data: {
+    numberOfDays, comment, responseType: LEAVE_RESPONSE_TYPE.ADJUSTED
+  } });
+
+  return adjustedLeaveRequest;
 }

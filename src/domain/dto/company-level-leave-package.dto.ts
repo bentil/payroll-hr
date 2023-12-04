@@ -28,7 +28,7 @@ export class QueryCompanyLevelLeavePackageDto {
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: CompanyLevelLeavePackageOrderBy =
-    CompanyLevelLeavePackageOrderBy.COMPANY_LEVEL_CREATED_AT_ASC;
+    CompanyLevelLeavePackageOrderBy.COMPANY_LEVEL_CREATED_AT_DESC;
 }
 
 

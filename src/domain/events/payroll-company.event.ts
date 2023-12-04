@@ -12,6 +12,8 @@ export interface PayrollCompanyMessage {
   contactMsisdn?: string | null;
   status: string;
   allowNegativeRates?: boolean;
+  considerPublicHolidayAsWorkday?: boolean; 
+  considerWeekendAsWorkday?: boolean;
 }
 
 export interface PayrollCompanyCreatedEvent extends PayrollCompanyMessage {

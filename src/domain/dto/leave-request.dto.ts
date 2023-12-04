@@ -12,7 +12,6 @@ export class CreateLeaveRequestDto{
   startDate!: Date;
   returnDate!: Date;
   comment!: string;
-  status!: LEAVE_REQUEST_STATUS;
 }
 
 export class UpdateLeaveRequestDto{
@@ -43,16 +42,16 @@ export class QueryLeaveRequestDto {
   'returnDate.lte'?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
-  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_ASC;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
 
-export enum LEAVE_RESPONSE_ACTION {
-  APPROVE,
-  DECLINE
-}
+export const LEAVE_RESPONSE_ACTION = {
+  APPROVE: 'APPROVE',
+  DECLINE: 'DECLINE'
+};
 
-// export type LEAVE_RESPONSE_ACTION = 
-//   (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
+type LEAVE_RESPONSE_ACTION = 
+  (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
 
 
 export class ResponseObjectDto {
@@ -63,4 +62,18 @@ export class ResponseObjectDto {
 export interface LeaveRequestDto extends LeaveRequest {
 	employee?: Employee,
 	leavePackage?: LeavePackage
+}
+
+export const ADJUSTMENT_OPTIONS = {
+  INCREASE: 'INCREASE',
+  DECREASE: 'DECREASE'
+};
+
+export type ADJUSTMENT_OPTIONS = 
+  (typeof ADJUSTMENT_OPTIONS)[keyof typeof ADJUSTMENT_OPTIONS];
+
+export class AdjustDaysDto {
+  adjustment!: ADJUSTMENT_OPTIONS;
+  count!: number;
+  comment!: string;
 }
