@@ -411,7 +411,7 @@ export async function adjustDays(
       message: 'LeaveRequest does not exist'
     });
   } else if ((leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) || 
-    (leaveRequest.employeeId === employeeId)) {
+    (leaveRequest.employeeId !== employeeId)) {
     throw new UnauthorizedError({ message: 'you can not perform this action' });
   }
 
