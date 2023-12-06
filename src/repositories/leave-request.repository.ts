@@ -104,7 +104,7 @@ export const findFirst = async (
 
 export async function update(params: {
   where: Prisma.LeaveRequestWhereUniqueInput,
-  data: Prisma.LeaveRequestUpdateInput,
+  data: Prisma.LeaveRequestUpdateInput | Prisma.LeaveRequestUncheckedUpdateInput,
   includeRelations?: boolean
 }) {
   const { where, data, includeRelations } = params;
@@ -191,7 +191,7 @@ export async function respond(params: {
         where: { id },
         data: {
           status: requestStatus,
-          responsecompletedat: new Date()
+          responseCompletedAt: new Date()
         },
         include: includeRelations 
           ? { leavePackage: { include: { leaveType: true } } } 

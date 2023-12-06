@@ -227,7 +227,6 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
   }
 };
 
-// //move to leave type
 export async function validate(leaveTypeId: number, employeeId?: number): Promise<number> {
   ///add a consumer for grade level, add the relation grade
   let leavePackage: CompanyLevelLeavePackage | null;
@@ -245,7 +244,7 @@ export async function validate(leaveTypeId: number, employeeId?: number): Promis
         throw new ServerError({ message: (err as Error).message, cause: err });
       }
     } else {
-      throw new UnauthorizedError({ message: 'employee does not exist or has no grade level' });
+      throw new NotFoundError({ message: 'Employee does not exist or has no grade level' });
     }
   } else {
     try {
@@ -261,9 +260,8 @@ export async function validate(leaveTypeId: number, employeeId?: number): Promis
   if (!leavePackage) {
     logger.warn('LeavePackage does not exist for Employee[%s] or leaveType[%s]',
       employee, leaveTypeId);
-    throw new FailedDependencyError({ 
-      message: 'the leave package either does not exist or is not available for the employee '+
-        'or leaveType' 
+    throw new NotFoundError({ 
+      message: 'No applicable leave package found' 
     });
   }
   return leavePackage.leavePackageId;

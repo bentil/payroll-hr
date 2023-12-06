@@ -23,7 +23,7 @@ import {
 import { CompanyLevelLeavePackage } from '@prisma/client';
 
 
-@Tags('Company Level Leave Packages')
+@Tags('company-level-leave-packages')
 @Route('/api/v1/company-level-leave-packages')
 @Security('api_key')
 export class CompanyLevelLeavePackageV1Controller {
