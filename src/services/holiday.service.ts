@@ -2,7 +2,7 @@ import { Holiday, HOLIDAY_TYPE } from '@prisma/client';
 import { HolidayEvent } from '../domain/events/holiday.event';
 import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/holiday.repository';
-import { countQueryObject } from '../domain/dto/holiday.dto';
+import { CountQueryObject } from '../domain/dto/holiday.dto';
 import { ServerError } from '../errors/http-errors';
 import { calculateDaysBetweenDates } from '../utils/helpers';
 
@@ -32,7 +32,7 @@ export async function createOrUpdateHoliday(
   return gradeLevel;
 }
 
-export async function getWorkingDays(params: countQueryObject): Promise<number> {
+export async function getWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
@@ -71,7 +71,7 @@ export async function getWorkingDays(params: countQueryObject): Promise<number> 
   return numberOfDays;
 }
 
-export async function getNonWorkingDays(params: countQueryObject): Promise<number> {
+export async function getNonWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,

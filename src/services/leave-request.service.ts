@@ -512,7 +512,7 @@ export async function adjustDays(
   } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) {
     logger.warn(
       'LeaveRequest[%s] status is not approved. Status: %s',
-      id, leaveRequest. status
+      id, leaveRequest.status
     );
     throw new InvalidStateError({ message: 'Leave request cannot be adjusted' });
   }

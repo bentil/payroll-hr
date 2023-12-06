@@ -1,4 +1,4 @@
-export interface countQueryObject {
+export interface CountQueryObject {
     startDate:Date;
     endDate: Date;
     excludeHolidays: boolean;
