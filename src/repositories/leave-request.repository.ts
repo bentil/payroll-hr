@@ -1,6 +1,15 @@
-import { LEAVE_REQUEST_STATUS, LEAVE_RESPONSE_TYPE, Prisma } from '@prisma/client';
+import {
+  LEAVE_REQUEST_STATUS,
+  LEAVE_RESPONSE_TYPE,
+  LeaveRequest,
+  Prisma
+} from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { LeaveRequestDto } from '../domain/dto/leave-request.dto';
+import {
+  ADJUSTMENT_OPTIONS,
+  AdjustDaysDto,
+  LeaveRequestDto
+} from '../domain/dto/leave-request.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
@@ -26,13 +35,6 @@ export class CreateLeaveRequestObject{
   comment!: string;
   numberOfDays!: number;
 }
-
-export interface adjustDaysObject {
-  numberOfDays: number;
-  comment: string;
-  responseType: LEAVE_RESPONSE_TYPE;
-}
-
 
 export async function create(
   { 
@@ -65,14 +67,15 @@ export async function create(
   }
 }
 
-
 export async function findOne(
-  whereUniqueInput: Prisma.LeaveRequestWhereUniqueInput, includeRelations?: boolean,
+  whereUniqueInput: Prisma.LeaveRequestWhereUniqueInput,
+  includeRelations?: boolean,
 ): Promise<LeaveRequestDto | null> {
   return await prisma.leaveRequest.findUnique({
     where: whereUniqueInput,
     include: includeRelations 
-      ? { employee: true, leavePackage: { include: { leaveType: true } } } : undefined
+      ? { employee: true, leavePackage: { include: { leaveType: true } } }
+      : undefined
   });
 }
 
@@ -107,7 +110,6 @@ export const findFirst = async (
   return prisma.leaveRequest.findFirst({ where });
 };
 
-
 export async function update(params: {
   where: Prisma.LeaveRequestWhereUniqueInput,
   data: Prisma.LeaveRequestUpdateInput,
@@ -135,7 +137,7 @@ export async function update(params: {
   }
 }
 
-export async function deleteLeaveRequest(where: Prisma.LeaveRequestWhereUniqueInput) {
+export async function remove(where: Prisma.LeaveRequestWhereUniqueInput) {
   try {
     return await prisma.leaveRequest.delete({ where });
   } catch (err) {
@@ -205,17 +207,36 @@ export async function respond(params: {
   }
 }
 
-export async function adjustDays(params: { id: number,  data: adjustDaysObject }) {
+export async function adjustDays(params: {
+  id: number,
+  data: AdjustDaysDto & { respondingEmployeeId: number }
+}): Promise<LeaveRequest> {
   const { id, data } = params;
 
   try {
-    return await prisma.$transaction(async (transaction) => {
-      const leaveRequest = await transaction.leaveRequest.update({
-        where: { id }, data: { numberOfDays: data.numberOfDays }
+    return await prisma.$transaction(async (txn) => {
+      const leaveRequest = await txn.leaveRequest.update({
+        where: { id },
+        data: {
+          numberOfDays: data.adjustment === ADJUSTMENT_OPTIONS.DECREASE
+            ? { decrement: data.count }
+            : { increment: data.count }
+        },
+        include: {
+          leavePackage: {
+            include: { leaveType: true }
+          }
+        }
       });
-      await transaction.leaveResponse.update({
-        where: { id }, data: { comment: data.comment, responseType: data.responseType }
+      await txn.leaveResponse.create({
+        data: {
+          leaveRequest: { connect: { id } },
+          comment: data.comment,
+          responseType: LEAVE_RESPONSE_TYPE.ADJUSTED,
+          employee: { connect: { id: data.respondingEmployeeId } }
+        }
       });
+      
       return leaveRequest;
     });
   } catch (err) {

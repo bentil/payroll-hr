@@ -105,6 +105,7 @@ export const ADJUST_DAYS_SCHEMA = Joi.object({
     .required()
     .valid(ADJUSTMENT_OPTIONS.DECREASE, ADJUSTMENT_OPTIONS.INCREASE),
   count: Joi.number()
+    .positive()
     .required(),
   comment: Joi.string()
     .required()

@@ -15,7 +15,14 @@ export class UpdateLeaveTypeDto {
   description?: string;
 }
 
-export interface LeaveTypeDto extends LeaveType { }
+export interface LeaveTypeDto extends LeaveType {}
+
+export type EmployeLeaveTypeSummary = {
+  numberOfDaysAllowed: number,
+  numberOfDaysUsed: number,
+  numberOfDaysPending: number,
+  numberOfDaysLeft: number
+}
 
 export class QueryLeaveTypeDto {
   code?: string;
@@ -23,7 +30,6 @@ export class QueryLeaveTypeDto {
   limit: number = config.pagination.limit;
   orderBy: LeaveTypeOrderBy = LeaveTypeOrderBy.CREATED_AT_DESC;
 }
-
 
 export class QueryApplicableLeaveTypeDto {
   employeeId?:number;
