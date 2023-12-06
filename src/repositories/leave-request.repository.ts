@@ -8,24 +8,16 @@ import { prisma } from '../components/db.component';
 import {
   ADJUSTMENT_OPTIONS,
   AdjustDaysDto,
-  LeaveRequestDto
+  LEAVE_RESPONSE_ACTION,
+  LeaveRequestDto,
+  LeaveResponseInputDto
 } from '../domain/dto/leave-request.dto';
-import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
+import {
+  AlreadyExistsError,
+  InputError,
+  RecordInUse
+} from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
-
-export interface CreateLeaveResponseDto {
-  status: LEAVE_REQUEST_STATUS;
-  //responseCompletedAt: Date;
-  leaveRequestId: number;
-  approvingEmployeeId: number;
-  responseType: LEAVE_RESPONSE_TYPE;
-  comment: string;
-}
-
-export interface CancelLeaveRequestDto {
-  status: LEAVE_REQUEST_STATUS;
-  cancelledByEmployeeId: number;
-}
 
 export class CreateLeaveRequestObject{
   employeeId!: number;
@@ -154,19 +146,18 @@ export async function remove(where: Prisma.LeaveRequestWhereUniqueInput) {
 }
 
 export async function cancel(params: {
-    where: Prisma.LeaveRequestWhereUniqueInput,
-    updateData: CancelLeaveRequestDto,
-    includeRelations?: boolean
-  }) {
-  const { where, updateData, includeRelations } = params;
-  const { cancelledByEmployeeId, ...dtoData } = updateData;
-  const data: Prisma.LeaveRequestUpdateInput = {
-    ...dtoData, cancelledAt: new Date(),
-    cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
-  };
+    id: number;
+    cancelledByEmployeeId: number;
+    includeRelations?: boolean;
+  }): Promise<LeaveRequest> {
+  const { id, cancelledByEmployeeId, includeRelations } = params;
   return await prisma.leaveRequest.update({ 
-    where, 
-    data,
+    where: { id }, 
+    data: {
+      status: LEAVE_REQUEST_STATUS.CANCELLED,
+      cancelledAt: new Date(),
+      cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
+    },
     include: includeRelations 
       ? { leavePackage: { include: { leaveType: true } } } 
       : undefined
@@ -174,31 +165,54 @@ export async function cancel(params: {
 }
 
 export async function respond(params: {
-  where: Prisma.LeaveRequestWhereUniqueInput,
-  data: CreateLeaveResponseDto,
-  }) {
-  const { where, data } = params;
+  id: number;
+  data: LeaveResponseInputDto & { approvingEmployeeId: number };
+  includeRelations?: boolean;
+}): Promise<LeaveRequest> {
+  const { id, data, includeRelations } = params;
+  
+  let requestStatus: LEAVE_REQUEST_STATUS, responseType: LEAVE_RESPONSE_TYPE;
+  switch (data.action) {
+    case LEAVE_RESPONSE_ACTION.APPROVE:
+      requestStatus = LEAVE_REQUEST_STATUS.APPROVED;
+      responseType = LEAVE_RESPONSE_TYPE.APPROVED;
+      break;
+    case LEAVE_RESPONSE_ACTION.DECLINE:
+      requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
+      responseType = LEAVE_RESPONSE_TYPE.DECLINED;
+      break;
+    default:
+      throw new InputError({ message: 'Invalid leave response type' });
+  }
 
   try {
-    return await prisma.$transaction(async (transaction) => {
-      const leaveRequest = await transaction.leaveRequest.update({
-        where, data: { status: data.status, responsecompletedat: new Date() }
-      });
-      await transaction.leaveResponse.create({
+    return await prisma.$transaction(async (txn) => {
+      const leaveRequest = await txn.leaveRequest.update({
+        where: { id },
         data: {
-          leaveRequestId: data.leaveRequestId,
-          approvingEmployeeId: data.approvingEmployeeId,
+          status: requestStatus,
+          responsecompletedat: new Date()
+        },
+        include: includeRelations 
+          ? { leavePackage: { include: { leaveType: true } } } 
+          : undefined
+      });
+      await txn.leaveResponse.create({
+        data: {
+          leaveRequest: { connect: { id } },
+          employee: { connect: { id: data.approvingEmployeeId } },
           comment: data.comment,
-          responseType: data.responseType
+          responseType
         }
       });
+
       return leaveRequest;
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Leave package already exists',
+          message: 'Leave request already exists',
           cause: err
         });
       }
@@ -208,7 +222,7 @@ export async function respond(params: {
 }
 
 export async function adjustDays(params: {
-  id: number,
+  id: number;
   data: AdjustDaysDto & { respondingEmployeeId: number }
 }): Promise<LeaveRequest> {
   const { id, data } = params;

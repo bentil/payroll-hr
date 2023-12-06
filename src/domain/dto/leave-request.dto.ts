@@ -6,7 +6,7 @@ import {
 } from '@prisma/client';
 import config from '../../config';
 
-export class CreateLeaveRequestDto{
+export class CreateLeaveRequestDto {
   employeeId!: number;
   leaveTypeId!: number;
   startDate!: Date;
@@ -14,7 +14,7 @@ export class CreateLeaveRequestDto{
   comment!: string;
 }
 
-export class UpdateLeaveRequestDto{
+export class UpdateLeaveRequestDto {
   leaveTypeId?: number;
   startDate?: Date;
   returnDate?: Date;
@@ -54,7 +54,7 @@ type LEAVE_RESPONSE_ACTION =
   (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
 
 
-export class ResponseObjectDto {
+export class LeaveResponseInputDto {
   action!: LEAVE_RESPONSE_ACTION;
   comment!: string;
 }

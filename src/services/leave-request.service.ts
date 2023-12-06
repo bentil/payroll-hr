@@ -6,10 +6,9 @@ import { KafkaService } from '../components/kafka.component';
 import {
   AdjustDaysDto,
   CreateLeaveRequestDto,
-  LEAVE_RESPONSE_ACTION,
   LeaveRequestDto,
   QueryLeaveRequestDto,
-  ResponseObjectDto,
+  LeaveResponseInputDto,
   UpdateLeaveRequestDto,
 } from '../domain/dto/leave-request.dto';
 import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
@@ -264,10 +263,9 @@ export async function deleteLeaveRequest(id: number): Promise<void> {
 
 export async function addLeaveResponse(
   id: number, 
-  responseData: ResponseObjectDto,
+  responseData: LeaveResponseInputDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { action, comment } = responseData;
   const { employeeId } = authorizedUser;
   let approvingEmployeeId: number;
   if (employeeId) {
@@ -275,6 +273,8 @@ export async function addLeaveResponse(
   } else {
     throw new UnauthorizedError({});
   }
+
+  logger.debug('Finding LeaveRequest[%s] to respond to', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to add response to does not exist', id);
@@ -283,23 +283,21 @@ export async function addLeaveResponse(
       message: 'Leave request to add response to does not exist'
     });
   } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
+    logger.warn(
+      'LeaveRequest[%s] cannot be responded to due to current status[%s]',
+      id, leaveRequest.status
+    );
     throw new InvalidStateError({
-      message: 'Response not allowed for this leave type'
+      message: 'Response not allowed for this leave request'
     });
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
-    where: { id }, data: {
-      status: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
-        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
-      approvingEmployeeId,
-      leaveRequestId: id,
-      responseType: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
-        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
-      comment
-    }
+    id,
+    data: { ...responseData, approvingEmployeeId },
+    includeRelations: true
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
 
@@ -359,11 +357,9 @@ export async function cancelLeaveRequest(
   let cancelledLeaveRequest: LeaveRequestDto;
   try {
     cancelledLeaveRequest = await leaveRequestRepository.cancel({
-      where: { id },
-      updateData: { 
-        status: LEAVE_REQUEST_STATUS.CANCELLED, 
-        cancelledByEmployeeId: employeeId
-      },
+      id,
+      cancelledByEmployeeId: employeeId,
+      includeRelations: true
     });
     logger.info('LeaveRequest[%s] cancelled successfully', id);
   } catch (err) {
