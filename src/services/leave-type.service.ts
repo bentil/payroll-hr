@@ -5,11 +5,11 @@ import {
   QueryApplicableLeaveTypeDto,
   QueryLeaveTypeDto,
   SearchLeaveTypeDto,
-  UpdateLeaveTypeDto
+  UpdateLeaveTypeDto,
+  ValidationReturnObject
 } from '../domain/dto/leave-type.dto';
 import * as repository from '../repositories/leave-type';
 import {
-  FailedDependencyError,
   HttpError,
   NotFoundError,
   ServerError
@@ -21,7 +21,6 @@ import { ListWithPagination } from '../repositories/types';
 // eslint-disable-next-line max-len
 import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
 import * as employeeRepository from '../repositories/employee.repository';
-import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as leaveTypeRepository from '../repositories/leave-type';
 
 const logger = rootLogger.child({ context: 'LeaveTypeService' });
@@ -227,7 +226,10 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
   }
 };
 
-export async function validate(leaveTypeId: number, employeeId?: number): Promise<number> {
+export async function validate(
+  leaveTypeId: number, 
+  employeeId?: number
+): Promise<ValidationReturnObject> {
   ///add a consumer for grade level, add the relation grade
   let leavePackage: CompanyLevelLeavePackage | null;
   const employee = await employeeRepository.findOne({ id: employeeId }, true);
@@ -264,5 +266,9 @@ export async function validate(leaveTypeId: number, employeeId?: number): Promis
       message: 'No applicable leave package found' 
     });
   }
-  return leavePackage.leavePackageId;
+  return { 
+    leavePackageId: leavePackage.leavePackageId, 
+    considerPublicHolidayAsWorkday: employee?.company?.considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday: employee?.company?.considerWeekendAsWorkday
+  };
 } 

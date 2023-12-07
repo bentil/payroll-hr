@@ -173,16 +173,16 @@ export async function respond(params: {
   
   let requestStatus: LEAVE_REQUEST_STATUS, responseType: LEAVE_RESPONSE_TYPE;
   switch (data.action) {
-    case LEAVE_RESPONSE_ACTION.APPROVE:
-      requestStatus = LEAVE_REQUEST_STATUS.APPROVED;
-      responseType = LEAVE_RESPONSE_TYPE.APPROVED;
-      break;
-    case LEAVE_RESPONSE_ACTION.DECLINE:
-      requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
-      responseType = LEAVE_RESPONSE_TYPE.DECLINED;
-      break;
-    default:
-      throw new InputError({ message: 'Invalid leave response type' });
+  case LEAVE_RESPONSE_ACTION.APPROVE:
+    requestStatus = LEAVE_REQUEST_STATUS.APPROVED;
+    responseType = LEAVE_RESPONSE_TYPE.APPROVED;
+    break;
+  case LEAVE_RESPONSE_ACTION.DECLINE:
+    requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
+    responseType = LEAVE_RESPONSE_TYPE.DECLINED;
+    break;
+  default:
+    throw new InputError({ message: 'Invalid leave response type' });
   }
 
   try {

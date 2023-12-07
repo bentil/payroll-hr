@@ -31,6 +31,8 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
+import { getWorkingDays } from './holiday.service';
+import * as employeeRepository from '../repositories/employee.repository';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -45,11 +47,11 @@ export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
-  let leavePackageId: number;
+  let validateData;
 
   // VALIDATION
   try {
-    leavePackageId = await validate(leaveTypeId, employeeId);
+    validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
     logger.warn('Validating employee[%s] and/or leaveType[%s] failed', 
       employeeId, leaveTypeId
@@ -62,8 +64,14 @@ export async function addLeaveRequest(
   }
   logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
 
-  const numberOfDays = 
-    await helpers.calculateDaysBetweenDates(payload.startDate, payload.returnDate);
+  const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
+
+  const numberOfDays = await getWorkingDays({ 
+    startDate: payload.startDate, 
+    endDate: payload.returnDate, 
+    includeHolidays: considerPublicHolidayAsWorkday,
+    includeWeekends: considerWeekendAsWorkday 
+  });
   const createData: leaveRequestRepository.CreateLeaveRequestObject = {
     employeeId: payload.employeeId,
     leavePackageId,
@@ -73,7 +81,7 @@ export async function addLeaveRequest(
     numberOfDays
   };
  
-  logger.debug('Adding new Leave plan to the database...');
+  logger.debug('Adding new Leave request to the database...');
 
   let newLeaveRequest: LeaveRequest;
   try {
@@ -215,14 +223,18 @@ export async function updateLeaveRequest(
   }
 
   // Obtain applicable leave package for new leave type id
-  let leavePackageId: number | undefined;
+  let leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday ;
+
   if (leaveTypeId) {
     logger.debug(
       'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s]',
       leaveTypeId, employeeId
     );
     try {
-      leavePackageId = await validate(leaveTypeId, employeeId);
+      const validateData = await validate(leaveTypeId, employeeId);
+      leavePackageId = validateData.leavePackageId;
+      considerPublicHolidayAsWorkday = validateData.considerPublicHolidayAsWorkday;
+      considerWeekendAsWorkday = validateData.considerWeekendAsWorkday;
       logger.info(
         'Obtained applicable LeavePackage of LeaveType[%s] for Employee[%s]',
         leaveTypeId, employeeId
@@ -238,17 +250,34 @@ export async function updateLeaveRequest(
         cause: err
       });
     }
+  } else {
+    const employee = await employeeRepository.findOne({ id: employeeId }, true);
+    considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+    considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
   }
 
   let numberOfDays: number | undefined;
   if (startDate && returnDate) {
-    numberOfDays = await helpers.calculateDaysBetweenDates(startDate, returnDate);
+    numberOfDays = await getWorkingDays({ 
+      startDate, 
+      endDate: returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (startDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(startDate, leaveRequest.returnDate);
+    numberOfDays = await getWorkingDays({ 
+      startDate, 
+      endDate: leaveRequest.returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (returnDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(leaveRequest.startDate, returnDate);
+    numberOfDays = await getWorkingDays({ 
+      startDate: leaveRequest.startDate, 
+      endDate: returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   }
   
   logger.debug('Persisting update(s) to LeaveRequest[%s]', id);

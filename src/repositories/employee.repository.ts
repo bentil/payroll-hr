@@ -1,4 +1,4 @@
-import { Prisma, Employee, GradeLevel } from '@prisma/client';
+import { Prisma, Employee, GradeLevel, PayrollCompany } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
@@ -22,11 +22,12 @@ export async function create(data: Prisma.EmployeeCreateInput): Promise<Employee
 }
 
 export async function createOrUpdate(
-  { majorGradeLevelId, ...dtoData }: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
+  { majorGradeLevelId, companyId, ...dtoData }: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<Employee> {
   const data: Prisma.EmployeeCreateInput = {
     ...dtoData,
     majorGradeLevel: { connect: { id: majorGradeLevelId } },
+    company: { connect: { id: companyId } },
   };
   const { id, ...dataWithoutId } = data;
   return prisma.employee.upsert({
@@ -78,7 +79,8 @@ export async function findDeep(params: {
 }
 
 export interface EmployeeDto extends Employee {
-  majorGradeLevel?: GradeLevel
+  majorGradeLevel?: GradeLevel,
+  company?: PayrollCompany,
 }
 
 export async function findOne(
@@ -88,7 +90,7 @@ export async function findOne(
   return await prisma.employee.findUnique({
     where: whereUniqueInput,
     include: includeRelations ?
-      { majorGradeLevel: { include: { companyLevel: true } } } : undefined
+      { majorGradeLevel: { include: { companyLevel: true } }, company: true } : undefined
   });
 }
 

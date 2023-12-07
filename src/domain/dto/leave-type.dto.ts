@@ -70,3 +70,9 @@ export enum ApplicableLeaveTypeOrderBy {
   CREATED_AT_ASC = 'createdAt:asc',
   CREATED_AT_DESC = 'createdAt:desc',
 }
+
+export interface ValidationReturnObject {
+  leavePackageId: number,
+  considerPublicHolidayAsWorkday?:  boolean,
+  considerWeekendAsWorkday?: boolean
+}

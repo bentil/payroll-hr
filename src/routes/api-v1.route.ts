@@ -353,6 +353,7 @@ router.post(
 
 router.patch(
   '/leave-plans/:id',
+  authenticateUser(),
   validateRequestBody(UPDATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.updateLeavePlan
 );

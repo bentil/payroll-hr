@@ -11,6 +11,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
   NotFoundError, 
   ServerError 
@@ -19,6 +20,10 @@ import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import { validate } from './leave-type.service';
+import { getWorkingDays } from './holiday.service';
+import { AuthorizedUser } from '../domain/user.domain';
+import * as employeeRepository from '../repositories/employee.repository';
+
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -32,11 +37,11 @@ export async function addLeavePlan(
   payload: CreateLeavePlanDto
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
-  let leavePackageId: number;
+  let validateData;
   
   // VALIDATION
   try {
-    leavePackageId = await validate(leaveTypeId, employeeId);
+    validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
     logger.warn('Validating employee[%s] and/or leaveTypeId[%s] fialed', 
       employeeId, leaveTypeId
@@ -49,8 +54,15 @@ export async function addLeavePlan(
   }
   logger.info('LeavePackage for employee[%s] and leaveTypeId[%s] exists', employeeId, leaveTypeId);
 
-  const numberOfDays = 
-    await helpers.calculateDaysBetweenDates(payload.intendedStartDate, payload.intendedReturnDate);
+  const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
+
+
+  const numberOfDays = await getWorkingDays({ 
+    startDate: payload.intendedStartDate, 
+    endDate: payload.intendedReturnDate, 
+    includeHolidays: considerPublicHolidayAsWorkday,
+    includeWeekends: considerWeekendAsWorkday 
+  });
   const creatData: leavePlanRepository.CreateLeavePlanObject = {
     employeeId: payload.employeeId,
     intendedStartDate: payload.intendedStartDate,
@@ -151,15 +163,31 @@ export async function getLeavePlan(id: number): Promise<LeavePlanDto> {
 
 export async function updateLeavePlan(
   id: number, 
-  updateData: UpdateLeavePlanDto
+  updateData: UpdateLeavePlanDto,
+  authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
   const { leaveTypeId, intendedStartDate, intendedReturnDate } = updateData;
+  const { employeeId } = authorizedUser;
+
   const leavePlan = await leavePlanRepository.findOne({ id }, true);
+
+  const employee = await employeeRepository.findOne({ id: employeeId }, true);
+  const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+  const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
+
   if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_PLAN_NOT_FOUND,
       message: 'Leave plan to update does not exisit'
+    });
+  } else if (employeeId !== leavePlan.employeeId) {
+    logger.warn(
+      'LeavePlan[%s] was not created by Employee[%s]. Update rejected',
+      id, employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
     });
   }
 
@@ -175,17 +203,29 @@ export async function updateLeavePlan(
       });
     }
   }
-  let numberOfDays: number;
+  
+  let numberOfDays: number | undefined;
   if (intendedStartDate && intendedReturnDate) {
-    numberOfDays = await helpers.calculateDaysBetweenDates(intendedStartDate, intendedReturnDate);
+    numberOfDays = await getWorkingDays({ 
+      startDate: intendedStartDate, 
+      endDate: intendedReturnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (intendedStartDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(intendedStartDate, leavePlan.intendedReturnDate);
+    numberOfDays = await getWorkingDays({ 
+      startDate: intendedStartDate, 
+      endDate: leavePlan.intendedReturnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (intendedReturnDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(leavePlan.intendedStartDate, intendedReturnDate);
-  } else {
-    numberOfDays = leavePlan.numberOfDays!;
+    numberOfDays = await getWorkingDays({ 
+      startDate: leavePlan.intendedStartDate, 
+      endDate: intendedReturnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   }
   
   logger.debug('Persisting update(s) to LeavePlan[%s]', id);

@@ -26,6 +26,8 @@ export async function createOrUpdatePayrollCompany(
     currencyId: data.currencyId,
     status: data.status,
     allowNegativeRates: data.allowNegativeRates,
+    considerPublicHolidayAsWorkday: data.considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday: data.considerWeekendAsWorkday
   });
   logger.info(
     'PayrollCompany[%s] saved for Organization[%s]',

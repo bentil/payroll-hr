@@ -8,6 +8,7 @@ import {
   Queries,
   Response,
   Route,
+  Request,
   Security,
   SuccessResponse,
   Tags,
@@ -98,10 +99,11 @@ export class LeavePlanV1Controller {
   })
   public async updateLeavePlan(
     @Path('id') id: number,
-    @Body() updateDto: UpdateLeavePlanDto
+    @Body() updateDto: UpdateLeavePlanDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<LeavePlan>> {
     this.logger.debug('Received request to update LeavePlan[%s]', id);
-    const updateLeavePlan = await LeavePlanService.updateLeavePlan(id, updateDto);
+    const updateLeavePlan = await LeavePlanService.updateLeavePlan(id, updateDto, req.user!);
     this.logger.info('LeavePlan[%s] updated successfully!', id);
     return { data: updateLeavePlan };
   }

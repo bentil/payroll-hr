@@ -34,7 +34,8 @@ model PayrollCompany {
   grievanceReports                 GrievanceReport[]
   disciplinaryActionTypes           DisciplinaryActionType[]
   disciplinaryActions               DisciplinaryAction[]
-  companyCurrencies     CompanyCurrency[]
+  companyCurrencies     CompanyCurrency[]   
+  employees              Employee[]
 
   @@map("payroll_company")
 }
@@ -92,6 +93,7 @@ model Employee {
   reimbursementRequestAttachments ReimbursementRequestAttachment[]
   reimbursementRequestComments          ReimbursementRequestComment[]
   majorGradeLevel                   GradeLevel?             @relation(fields: [majorGradeLevelId], references: [id])
+  company                             PayrollCompany        @relation(fields: [companyId], references: [id])
 
 
   @@map("employee")
