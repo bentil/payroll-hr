@@ -20,11 +20,11 @@ export const CREATE_LEAVE_PLAN_SCHEMA = Joi.object({
   intendedStartDate: joi.date()
     .required()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   intendedReturnDate: joi.date()
     .required()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   comment: Joi.string()
     .optional()
     .allow('')
@@ -38,11 +38,11 @@ export const UPDATE_LEAVE_PLAN_SCHEMA = Joi.object({
   intendedStartDate: joi.date()
     .optional()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   intendedReturnDate: joi.date()
     .optional()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   comment: Joi.string()
     .optional()
     .allow('')

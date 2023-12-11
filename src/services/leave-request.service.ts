@@ -31,7 +31,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
-import { getWorkingDays } from './holiday.service';
+import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
 
 const kafkaService = KafkaService.getInstance();
@@ -66,7 +66,7 @@ export async function addLeaveRequest(
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
-  const numberOfDays = await getWorkingDays({ 
+  const numberOfDays = await countWorkingDays({ 
     startDate: payload.startDate, 
     endDate: payload.returnDate, 
     includeHolidays: considerPublicHolidayAsWorkday,
@@ -258,21 +258,21 @@ export async function updateLeaveRequest(
 
   let numberOfDays: number | undefined;
   if (startDate && returnDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: returnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,
       includeWeekends: considerWeekendAsWorkday 
     });
   } else if (startDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: leaveRequest.returnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,
       includeWeekends: considerWeekendAsWorkday 
     });
   } else if (returnDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate: leaveRequest.startDate, 
       endDate: returnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,

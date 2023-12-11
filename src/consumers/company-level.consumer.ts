@@ -2,7 +2,7 @@ import { CompanyLevelEvent } from '../domain/events/company-level.event';
 import * as companyLevelService from '../services/company-level.service';
 import { rootLogger } from '../utils/logger';
 
-const _logger = rootLogger.child({ context: 'EmployeeCompanyCosumer' });
+const _logger = rootLogger.child({ context: 'CompanyLevelConsumer' });
 
 export default class EmployeeConsumer {
   public static async handleCreated(data: CompanyLevelEvent): Promise<void> {

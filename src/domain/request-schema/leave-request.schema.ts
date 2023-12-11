@@ -24,11 +24,11 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
   startDate: joi.date()
     .required()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   returnDate: joi.date()
     .required()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   comment: Joi.string()
     .optional()
     .default('')
@@ -41,11 +41,11 @@ export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
   startDate: joi.date()
     .optional()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   returnDate: joi.date()
     .optional()
     .greater(Date.now())
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   comment: Joi.string()
     .optional()
     .allow('')

@@ -20,7 +20,7 @@ import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import { validate } from './leave-type.service';
-import { getWorkingDays } from './holiday.service';
+import { countWorkingDays } from './holiday.service';
 import { AuthorizedUser } from '../domain/user.domain';
 import * as employeeRepository from '../repositories/employee.repository';
 
@@ -57,7 +57,7 @@ export async function addLeavePlan(
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
 
-  const numberOfDays = await getWorkingDays({ 
+  const numberOfDays = await countWorkingDays({ 
     startDate: payload.intendedStartDate, 
     endDate: payload.intendedReturnDate, 
     includeHolidays: considerPublicHolidayAsWorkday,
@@ -206,21 +206,21 @@ export async function updateLeavePlan(
   
   let numberOfDays: number | undefined;
   if (intendedStartDate && intendedReturnDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate: intendedStartDate, 
       endDate: intendedReturnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,
       includeWeekends: considerWeekendAsWorkday 
     });
   } else if (intendedStartDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate: intendedStartDate, 
       endDate: leavePlan.intendedReturnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,
       includeWeekends: considerWeekendAsWorkday 
     });
   } else if (intendedReturnDate) {
-    numberOfDays = await getWorkingDays({ 
+    numberOfDays = await countWorkingDays({ 
       startDate: leavePlan.intendedStartDate, 
       endDate: intendedReturnDate, 
       includeHolidays: considerPublicHolidayAsWorkday,

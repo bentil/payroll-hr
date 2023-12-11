@@ -32,43 +32,15 @@ export async function createOrUpdateHoliday(
   return gradeLevel;
 }
 
-export async function getWorkingDays(params: CountQueryObject): Promise<number> {
+export async function countWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
-    includeHolidays,
-    includeWeekends
   } = params;
-  let exclude, nonWorkingDays: number;
 
-  if (includeHolidays && includeWeekends) {
-    nonWorkingDays = 0;
-  } else {
-    if (includeHolidays) {
-      exclude = HOLIDAY_TYPE.PUBLIC_HOLIDAY;
-    } else if (includeWeekends) {
-      exclude = HOLIDAY_TYPE.WEEKEND;
-    } else {
-      exclude = undefined;
-    }
   
-    try {
-      nonWorkingDays = await repository.count({
-        date: {
-          lte: endDate,
-          gte: startDate,
-        },
-        type: { not: exclude }
-      });
-    } catch (err) {
-      logger.warn('Getting non working days failed', { error: err as Error });
-      throw new ServerError({
-        message: (err as Error).message,
-        cause: err
-      });
-    }
-  } 
-  
+  const nonWorkingDays = await countNonWorkingDays(params);
+
   const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
 
   const numberOfDays = differenceInDays - nonWorkingDays;
@@ -76,7 +48,7 @@ export async function getWorkingDays(params: CountQueryObject): Promise<number> 
   return numberOfDays;
 }
 
-export async function getNonWorkingDays(params: CountQueryObject): Promise<number> {
+export async function countNonWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
