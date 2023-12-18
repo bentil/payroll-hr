@@ -5,7 +5,7 @@ import {
 import * as payrollCompService from '../services/payroll-company.service';
 import { rootLogger } from '../utils/logger';
 
-const _logger = rootLogger.child({ context: 'PayrollCompanyCosumer' });
+const _logger = rootLogger.child({ context: 'PayrollCompanyConsumer' });
 
 export default class PayrollCompanyConsumer {
   public static async handleCreated(data: PayrollCompanyCreatedEvent): Promise<void> {

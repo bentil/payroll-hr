@@ -1,35 +1,38 @@
 import { 
-  LEAVE_REQUEST_STATUS, 
-  LEAVE_RESPONSE_TYPE, 
+  LEAVE_REQUEST_STATUS,
   LeaveRequest 
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
+  AdjustDaysDto,
   CreateLeaveRequestDto,
   LeaveRequestDto,
   QueryLeaveRequestDto,
+  LeaveResponseInputDto,
   UpdateLeaveRequestDto,
-  ResponseObjectDto,
-  LEAVE_RESPONSE_ACTION,
-  AdjustDaysDto,
-  ADJUSTMENT_OPTIONS,
 } from '../domain/dto/leave-request.dto';
+import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
+import { AuthorizedUser } from '../domain/user.domain';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
-import * as helpers from '../utils/helpers';
-import { rootLogger } from '../utils/logger';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
+  InvalidStateError, 
   NotFoundError, 
+  RequirementNotMetError, 
   ServerError 
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
-import { AuthorizedUser } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
-import { UnauthorizedError } from '../errors/unauthorized-errors';
-import { validate } from './leave-type.service';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
 import { getApplicableLeavePackage } from './leave-package.service';
+import { validate } from './leave-type.service';
+import { countWorkingDays } from './holiday.service';
+import * as employeeRepository from '../repositories/employee.repository';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -37,17 +40,18 @@ const logger = rootLogger.child({ context: 'GrievanceType' });
 const events = {
   created: 'event.LeaveRequest.created',
   modified: 'event.LeaveRequest.modified',
+  deleted: 'event.LeaveRequest.deleted',
 };
 
 export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
-  let leavePackageId: number;
+  let validateData;
 
   // VALIDATION
   try {
-    leavePackageId = await validate(leaveTypeId, employeeId);
+    validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
     logger.warn('Validating employee[%s] and/or leaveType[%s] failed', 
       employeeId, leaveTypeId
@@ -60,8 +64,14 @@ export async function addLeaveRequest(
   }
   logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
 
-  const numberOfDays = 
-    await helpers.calculateDaysBetweenDates(payload.startDate, payload.returnDate);
+  const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
+
+  const numberOfDays = await countWorkingDays({ 
+    startDate: payload.startDate, 
+    endDate: payload.returnDate, 
+    includeHolidays: considerPublicHolidayAsWorkday,
+    includeWeekends: considerWeekendAsWorkday 
+  });
   const createData: leaveRequestRepository.CreateLeaveRequestObject = {
     employeeId: payload.employeeId,
     leavePackageId,
@@ -71,7 +81,7 @@ export async function addLeaveRequest(
     numberOfDays
   };
  
-  logger.debug('Adding new Leave plan to the database...');
+  logger.debug('Adding new Leave request to the database...');
 
   let newLeaveRequest: LeaveRequest;
   try {
@@ -146,12 +156,13 @@ export async function getLeaveRequests(
 
 //Access to deal with on supervisor stuff
 export async function getLeaveRequest(
-  id: number, authorizedUser: AuthorizedUser
+  id: number,
+  authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
   const { employeeId } = authorizedUser;
+
   logger.debug('Getting details for LeaveRequest[%s]', id);
   let leaveRequest: LeaveRequestDto | null;
-
   try {
     leaveRequest = await leaveRequestRepository.findOne({ id }, true);
   } catch (err) {
@@ -160,16 +171,18 @@ export async function getLeaveRequest(
   }
 
   if (!leaveRequest) {
+    logger.warn('LeaveRequest[%s] does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_REQUEST_NOT_FOUND,
-      message: 'LeaveRequest does not exist'
+      message: 'Leave request does not exist'
     });
   }
 
-  if (!employeeId || (employeeId !== leaveRequest.employeeId)) {
-    throw new UnauthorizedError({});
+  if (!employeeId || employeeId !== leaveRequest.employeeId) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   }
-
 
   logger.info('LeaveRequest[%s] details retrieved!', id);
   return leaveRequest;
@@ -180,8 +193,10 @@ export async function updateLeaveRequest(
   updateData: UpdateLeaveRequestDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { leaveTypeId, startDate, returnDate } = updateData;
+  const { leaveTypeId, startDate, returnDate, comment } = updateData;
   const { employeeId } = authorizedUser;
+
+  logger.debug('Finding LeaveRequest[%s] to update', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to update does not exist', id);
@@ -189,46 +204,93 @@ export async function updateLeaveRequest(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to update does not exisit'
     });
-  }
-
-  if ((employeeId !== leaveRequest.employeeId) || 
-    ((leaveRequest.status !== 'PENDING') && (leaveRequest.responsecompletedat === null))
-  ) {
-    throw new UnauthorizedError({
+  } else if (employeeId !== leaveRequest.employeeId) {
+    logger.warn(
+      'LeaveRequest[%s] was not created by Employee[%s]. Update rejected',
+      id, employeeId
+    );
+    throw new ForbiddenError({
       message: 'You are not allowed to perform this action'
+    });
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
+    logger.warn(
+      'LeaveRequest[%s] cannot be updated due to current status[%s]',
+      id, leaveRequest.status
+    );
+    throw new InvalidStateError({
+      message: 'Update not allowed due to the current state of the leave request'
     });
   }
 
-  // Validation
+  // Obtain applicable leave package for new leave type id
+  let leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday ;
+
   if (leaveTypeId) {
+    logger.debug(
+      'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+      leaveTypeId, employeeId
+    );
     try {
-      validate(leaveTypeId);
+      const validateData = await validate(leaveTypeId, employeeId);
+      leavePackageId = validateData.leavePackageId;
+      considerPublicHolidayAsWorkday = validateData.considerPublicHolidayAsWorkday;
+      considerWeekendAsWorkday = validateData.considerWeekendAsWorkday;
+      logger.info(
+        'Obtained applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+        leaveTypeId, employeeId
+      );
     } catch (err) {
-      logger.warn('Getting LeavePackage[%s] fialed', leaveTypeId);
+      logger.warn(
+        'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s] failed',
+        leaveTypeId, employeeId, { error: err }
+      );
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
-        message: 'Dependency check failed',
+        message: 'Failed to get applicable leave package',
         cause: err
       });
     }
+  } else {
+    const employee = await employeeRepository.findOne({ id: employeeId }, true);
+    considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+    considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
   }
 
-  let numberOfDays: number;
+  let numberOfDays: number | undefined;
   if (startDate && returnDate) {
-    numberOfDays = await helpers.calculateDaysBetweenDates(startDate, returnDate);
+    numberOfDays = await countWorkingDays({ 
+      startDate, 
+      endDate: returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (startDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(startDate, leaveRequest.returnDate);
+    numberOfDays = await countWorkingDays({ 
+      startDate, 
+      endDate: leaveRequest.returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   } else if (returnDate) {
-    numberOfDays = 
-      await helpers.calculateDaysBetweenDates(leaveRequest.startDate, returnDate);
-  } else {
-    numberOfDays = leaveRequest.numberOfDays!;
+    numberOfDays = await countWorkingDays({ 
+      startDate: leaveRequest.startDate, 
+      endDate: returnDate, 
+      includeHolidays: considerPublicHolidayAsWorkday,
+      includeWeekends: considerWeekendAsWorkday 
+    });
   }
   
   logger.debug('Persisting update(s) to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.update({
-    where: { id }, data: { numberOfDays, ...updateData }, includeRelations: true
+    where: { id },
+    data: {
+      numberOfDays,
+      startDate,
+      returnDate,
+      comment,
+      leavePackageId
+    },
+    includeRelations: true
   });
   logger.info('Update(s) to LeaveRequest[%s] persisted successfully!', id);
 
@@ -241,60 +303,73 @@ export async function updateLeaveRequest(
 }
 
 export async function deleteLeaveRequest(id: number): Promise<void> {
+  logger.debug('Finding LeaveRequest[%s] to delete', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to delete does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_REQUEST_NOT_FOUND,
-      message: 'Leave request to delete does not exisit'
+      message: 'Leave request to delete does not exist'
     });
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
+    logger.warn(
+      'LeaveRequest[%s] cannot be deleted due to current status[%s]',
+      id, leaveRequest.status
+    );
   }
 
   logger.debug('Deleting LeaveRequest[%s] from database...', id);
   try {
-    await leaveRequestRepository.deleteLeaveRequest({ id });
+    await leaveRequestRepository.remove({ id });
     logger.info('LeaveRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting LeaveRequest[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.LeaveRequest.deleted event
+  logger.debug(`Emitting ${events.deleted}`);
+  kafkaService.send(events.deleted, leaveRequest);
+  logger.info(`${events.deleted} event emitted successfully!`);
 }
 
 export async function addLeaveResponse(
   id: number, 
-  responseData: ResponseObjectDto,
+  responseData: LeaveResponseInputDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { action, comment } = responseData;
   const { employeeId } = authorizedUser;
-  let  approvingEmployeeId: number;
+  let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
   } else {
     throw new UnauthorizedError({});
   }
+
+  logger.debug('Finding LeaveRequest[%s] to respond to', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to add response to does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_REQUEST_NOT_FOUND,
-      message: 'Leave request to add response to does not exisit'
+      message: 'Leave request to add response to does not exist'
     });
   } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING) {
-    throw new UnauthorizedError({ message: 'Can not perform this action' });
+    logger.warn(
+      'LeaveRequest[%s] cannot be responded to due to current status[%s]',
+      id, leaveRequest.status
+    );
+    throw new InvalidStateError({
+      message: 'Response not allowed for this leave request'
+    });
   } 
+  logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
-    where: { id }, data: {
-      status: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
-        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
-      approvingEmployeeId,
-      leaveRequestId: id,
-      responseType: (action === LEAVE_RESPONSE_ACTION.APPROVE) ?
-        LEAVE_REQUEST_STATUS.APPROVED : LEAVE_REQUEST_STATUS.DECLINED,
-      comment
-    }
+    id,
+    data: { ...responseData, approvingEmployeeId },
+    includeRelations: true
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
 
@@ -307,6 +382,7 @@ export async function cancelLeaveRequest(
 ): Promise<LeaveRequestDto> {
   const { employeeId } = authorizedUser;
   
+  logger.debug('Finding LeaveRequest[%s] to cancel', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to cancel does not exist', id);
@@ -314,75 +390,111 @@ export async function cancelLeaveRequest(
       name: errors.LEAVE_REQUEST_NOT_FOUND,
       message: 'Leave request to cancel does not exisit'
     });
-  } else if (leaveRequest.status === LEAVE_REQUEST_STATUS.DECLINED 
-    || leaveRequest.status === LEAVE_REQUEST_STATUS.CANCELLED) {
-    throw new UnauthorizedError({ message: 'Can not perform this action' });
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.PENDING 
+    && leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) {
+    logger.warn(
+      'LeaveReqeust[%s] cannot be cancelled due to current status[%s]',
+      id, leaveRequest.status
+    );
+    throw new InvalidStateError({
+      message: 'Leave request cannot be cancelled'
+    });
   }
-  const leaveStartDate = new Date(leaveRequest.startDate);
-  const todaysDate = new Date();
-  if ( leaveStartDate.getTime() >= todaysDate.getTime()) {
-    throw new UnauthorizedError({});
+  logger.info('LeaveRequest[%s] exists and can be cancelled', id);
+
+  // TODO: Check is authUser employee is an HR employee
+  if (!employeeId || employeeId !== leaveRequest.employeeId) {
+    logger.warn(
+      'LeaveRequest[%s] can only be cancelled by Employee[%s] or HR employee',
+      id, leaveRequest.employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to cancel this leave request'
+    });
   }
 
-  if (!employeeId || (employeeId !== leaveRequest.employeeId)) {
-    throw new UnauthorizedError({});
+  const leaveStartDate = new Date(leaveRequest.startDate);
+  const now = new Date();
+  if (leaveStartDate.getTime() <= now.getTime()) {
+    logger.warn(
+      'LeaveRequest[%s] cannot be cancelled because start date[%s] is past',
+      id, leaveStartDate
+    );
+    throw new RequirementNotMetError({
+      message: 'Leave request start date exceeded'
+    });
   }
 
   logger.debug('Cancelling LeaveRequest[%s]', id);
-  let newLeaveRequest: LeaveRequestDto;
+  let cancelledLeaveRequest: LeaveRequestDto;
   try {
-    newLeaveRequest = await leaveRequestRepository.cancel({
-      where: { id }, updateData: { 
-        status: LEAVE_REQUEST_STATUS.CANCELLED, 
-        cancelledByEmployeeId: employeeId
-      },
+    cancelledLeaveRequest = await leaveRequestRepository.cancel({
+      id,
+      cancelledByEmployeeId: employeeId,
+      includeRelations: true
     });
-    logger.info('LeaveRequest[%s] successfully deleted', id);
+    logger.info('LeaveRequest[%s] cancelled successfully', id);
   } catch (err) {
-    logger.error('Deleting LeaveRequest[%] failed', id);
+    logger.error('Cancelling LeaveRequest[%] failed', id, { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  return newLeaveRequest;
-}
-
-
-export type employeLeaveTypeSummaryObject = {
-  numberOfDaysAllowed: number,
-  numberOfDaysUsed: number,
-  numberOfDaysPending: number,
-  numberOfDaysLeft: number
+  return cancelledLeaveRequest;
 }
 
 export async function getEmployeeLeaveTypeSummary(
-  employeeId: number, leaveTypeId: number
-): Promise<employeLeaveTypeSummaryObject> {
+  employeeId: number,
+  leaveTypeId: number
+): Promise<EmployeLeaveTypeSummary> {
+  logger.debug(
+    'Finding applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+    leaveTypeId, employeeId
+  );
   const leavePackage = await getApplicableLeavePackage(employeeId, leaveTypeId);
-  const numberOfDaysAllowed = leavePackage.maxDays;
+  logger.info(
+    'Found applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+    leaveTypeId, employeeId
+  );
+  const { maxDays: numberOfDaysAllowed } = leavePackage;
+  
   const currentYear = new Date().getFullYear();
-
   const firstDay = new Date(currentYear, 0, 1);
-
   const lastDay = new Date(currentYear, 11, 31);
 
+  logger.debug(
+    'Fetching APPROVED and PENDING LeaveRequests of LeavePackage[%s] for Employee[%s] for %s',
+    leavePackage.id, employeeId, currentYear
+  );
   const [leaveRequestStatusApproved, leaveRequestStatusPending] = await Promise.all([
-    leaveRequestRepository.find({ where:{
-      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.APPROVED,
-      createdAt: {
-        gte: firstDay,
-        lte: lastDay
+    leaveRequestRepository.find({
+      where:{
+        employeeId,
+        leavePackageId: leavePackage.id,
+        status: LEAVE_REQUEST_STATUS.APPROVED,
+        createdAt: {
+          gte: firstDay,
+          lte: lastDay
+        }
       }
-    } }),
-    leaveRequestRepository.find({ where:{
-      employeeId, leavePackageId: leavePackage.id, status: LEAVE_REQUEST_STATUS.PENDING,
-      createdAt: {
-        gte: firstDay,
-        lte: lastDay
+    }),
+    leaveRequestRepository.find({
+      where: {
+        employeeId,
+        leavePackageId: leavePackage.id,
+        status: LEAVE_REQUEST_STATUS.PENDING,
+        createdAt: {
+          gte: firstDay,
+          lte: lastDay
+        }
       }
-    } }),
+    }),
   ]);
-  console.log(leaveRequestStatusPending);
+  logger.info(
+    'Fetched APPROVED and PENDING LeaveRequests of LeavePackage[%s] for Employee[%s] for %s',
+    leavePackage.id, employeeId, currentYear
+  );
 
+  logger.debug('Computing Employee[%s] LeaveType[%s] summary', employeeId, leaveTypeId);
   const numberOfDaysUsed = leaveRequestStatusApproved.data.reduce(
     (accumulator, currentValue) => {
       return accumulator + currentValue.numberOfDays!;
@@ -391,40 +503,58 @@ export async function getEmployeeLeaveTypeSummary(
     (accumulator, currentValue) => {
       return accumulator + currentValue.numberOfDays!;
     }, 0);
-
   const numberOfDaysLeft = numberOfDaysAllowed - (numberOfDaysUsed + numberOfDaysPending);
+  logger.info('Employee[%s] LeaveType[%s] summary computed', employeeId, leaveTypeId);
 
-  return { numberOfDaysAllowed, numberOfDaysUsed, numberOfDaysPending, numberOfDaysLeft };
+  return {
+    numberOfDaysAllowed,
+    numberOfDaysUsed,
+    numberOfDaysPending,
+    numberOfDaysLeft
+  };
 }
 
 export async function adjustDays(
-  id: number, authorizedUser: AuthorizedUser, payload: AdjustDaysDto
+  id: number,
+  authorizedUser: AuthorizedUser,
+  payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
   const { employeeId } = authorizedUser;
+  
+  logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
-  const { adjustment, comment, count } = payload;
-
   // will have a check for employee being an hr
   if (!leaveRequest) {
+    logger.debug('LeaveRequest[%s] to adjust does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_REQUEST_NOT_FOUND,
-      message: 'LeaveRequest does not exist'
+      message: 'Leave request does not exist'
     });
-  } else if ((leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) || 
-    (leaveRequest.employeeId !== employeeId)) {
-    throw new UnauthorizedError({ message: 'you can not perform this action' });
+  } else if (leaveRequest.employeeId === employeeId) {
+    logger.warn(
+      'LeaveRequest[%s] cannot be adjsted by the same Employee[%s] who requested leave',
+      id, employeeId
+    );
+    throw new ForbiddenError({
+      message: 'Action has to be performed by another user'
+    });
+  } else if (leaveRequest.status !== LEAVE_REQUEST_STATUS.APPROVED) {
+    logger.warn(
+      'LeaveRequest[%s] status is not approved. Status: %s',
+      id, leaveRequest.status
+    );
+    throw new InvalidStateError({ message: 'Leave request cannot be adjusted' });
   }
 
-  let numberOfDays: number;
-  if (adjustment === ADJUSTMENT_OPTIONS.INCREASE) {
-    numberOfDays = leaveRequest.numberOfDays! + count;
-  } else {
-    numberOfDays = leaveRequest.numberOfDays! - count;
-  }
-
-  const adjustedLeaveRequest = leaveRequestRepository.adjustDays({ id, data: {
-    numberOfDays, comment, responseType: LEAVE_RESPONSE_TYPE.ADJUSTED
-  } });
+  logger.debug('Adjusting number of days for LeaveRequest[%s]', id);
+  const adjustedLeaveRequest = await leaveRequestRepository.adjustDays({
+    id,
+    data: {
+      ...payload,
+      respondingEmployeeId: authorizedUser.employeeId!
+    }
+  });
+  logger.info('Number of days adjusted for LeaveRequest[%s] successfully!', id);
 
   return adjustedLeaveRequest;
 }

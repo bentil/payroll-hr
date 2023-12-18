@@ -27,7 +27,7 @@ import {
 import { IncludeCompanyLevelsQueryDto } from '../../domain/dto/leave-type.dto';
 
 
-@Tags('Leave Packages')
+@Tags('leave-packages')
 @Route('/api/v1/leave-packages')
 @Security('api_key')
 export class LeavePackageV1Controller {

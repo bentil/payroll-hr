@@ -2,7 +2,7 @@ import { Holiday, HOLIDAY_TYPE } from '@prisma/client';
 import { HolidayEvent } from '../domain/events/holiday.event';
 import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/holiday.repository';
-import { countQueryObject } from '../domain/dto/holiday.dto';
+import { CountQueryObject } from '../domain/dto/holiday.dto';
 import { ServerError } from '../errors/http-errors';
 import { calculateDaysBetweenDates } from '../utils/helpers';
 
@@ -32,56 +32,33 @@ export async function createOrUpdateHoliday(
   return gradeLevel;
 }
 
-export async function getWorkingDays(params: countQueryObject): Promise<number> {
+export async function countWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
-    excludeHolidays,
-    excludeWeekends
   } = params;
-  let exclude;
-  if (excludeHolidays) {
-    exclude = HOLIDAY_TYPE.PUBLIC_HOLIDAY;
-  } else if (excludeWeekends) {
-    exclude = HOLIDAY_TYPE.WEEKEND;
-  } else {
-    exclude = undefined;
-  }
 
-  let nonWorkingDays: number;
-  try {
-    nonWorkingDays = await repository.count({
-      date: {
-        lte: endDate,
-        gte: startDate,
-      },
-      type: { not: exclude }
-    });
-  } catch (err) {
-    logger.warn('Getting non working days failed', { error: err as Error });
-    throw new ServerError({
-      message: (err as Error).message,
-      cause: err
-    });
-  }
-  const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
   
+  const nonWorkingDays = await countNonWorkingDays(params);
+
+  const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
+
   const numberOfDays = differenceInDays - nonWorkingDays;
 
   return numberOfDays;
 }
 
-export async function getNonWorkingDays(params: countQueryObject): Promise<number> {
+export async function countNonWorkingDays(params: CountQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
-    excludeHolidays,
-    excludeWeekends
+    includeHolidays,
+    includeWeekends
   } = params;
   let exclude;
-  if (excludeHolidays) {
+  if (includeHolidays) {
     exclude = HOLIDAY_TYPE.PUBLIC_HOLIDAY;
-  } else if (excludeWeekends) {
+  } else if (includeWeekends) {
     exclude = HOLIDAY_TYPE.WEEKEND;
   } else {
     exclude = undefined;

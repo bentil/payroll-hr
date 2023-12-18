@@ -5,11 +5,11 @@ import {
   QueryApplicableLeaveTypeDto,
   QueryLeaveTypeDto,
   SearchLeaveTypeDto,
-  UpdateLeaveTypeDto
+  UpdateLeaveTypeDto,
+  ValidationReturnObject
 } from '../domain/dto/leave-type.dto';
 import * as repository from '../repositories/leave-type';
 import {
-  FailedDependencyError,
   HttpError,
   NotFoundError,
   ServerError
@@ -21,7 +21,6 @@ import { ListWithPagination } from '../repositories/types';
 // eslint-disable-next-line max-len
 import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
 import * as employeeRepository from '../repositories/employee.repository';
-import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as leaveTypeRepository from '../repositories/leave-type';
 
 const logger = rootLogger.child({ context: 'LeaveTypeService' });
@@ -227,8 +226,10 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
   }
 };
 
-// //move to leave type
-export async function validate(leaveTypeId: number, employeeId?: number): Promise<number> {
+export async function validate(
+  leaveTypeId: number, 
+  employeeId?: number
+): Promise<ValidationReturnObject> {
   ///add a consumer for grade level, add the relation grade
   let leavePackage: CompanyLevelLeavePackage | null;
   const employee = await employeeRepository.findOne({ id: employeeId }, true);
@@ -245,7 +246,7 @@ export async function validate(leaveTypeId: number, employeeId?: number): Promis
         throw new ServerError({ message: (err as Error).message, cause: err });
       }
     } else {
-      throw new UnauthorizedError({ message: 'employee does not exist or has no grade level' });
+      throw new NotFoundError({ message: 'Employee does not exist or has no grade level' });
     }
   } else {
     try {
@@ -261,10 +262,13 @@ export async function validate(leaveTypeId: number, employeeId?: number): Promis
   if (!leavePackage) {
     logger.warn('LeavePackage does not exist for Employee[%s] or leaveType[%s]',
       employee, leaveTypeId);
-    throw new FailedDependencyError({ 
-      message: 'the leave package either does not exist or is not available for the employee '+
-        'or leaveType' 
+    throw new NotFoundError({ 
+      message: 'No applicable leave package found' 
     });
   }
-  return leavePackage.leavePackageId;
+  return { 
+    leavePackageId: leavePackage.leavePackageId, 
+    considerPublicHolidayAsWorkday: employee?.company?.considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday: employee?.company?.considerWeekendAsWorkday
+  };
 } 

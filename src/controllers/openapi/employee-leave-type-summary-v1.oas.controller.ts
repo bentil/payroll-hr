@@ -6,6 +6,7 @@ import {
   Tags,
 } from 'tsoa';
 import { ApiSuccessResponse } from '../../domain/api-responses';
+import { EmployeLeaveTypeSummary } from '../../domain/dto/leave-type.dto';
 import * as leaveReqService from '../../services/leave-request.service';
 import { rootLogger } from '../../utils/logger';
 
@@ -21,13 +22,13 @@ export class EmployeeLeaveTypeSummaryV1Controller {
    * Get Employee Leave Type summary
    * @returns Employee Leave Type summary
    */
-  @Get('employees/{employeeId}/leave-types/{leaveTypeId}/summary ')
+  @Get('employees/{employeeId}/leave-types/{leaveTypeId}/summary')
   public async getSummary(
-  @Path('employeeId') employeeId: number,
-  @Path('leaveTypeId') leaveTypeId: number
-  ): Promise<ApiSuccessResponse<leaveReqService.employeLeaveTypeSummaryObject>> {
+    @Path('employeeId') employeeId: number,
+    @Path('leaveTypeId') leaveTypeId: number
+  ): Promise<ApiSuccessResponse<EmployeLeaveTypeSummary>> {
     this.logger.debug(
-      'Received request to get  Employee[%s] LeaveType[%s] summary', employeeId, leaveTypeId
+      'Received request to get Employee[%s] LeaveType[%s] summary', employeeId, leaveTypeId
     );
     const summary = await leaveReqService.getEmployeeLeaveTypeSummary(employeeId, leaveTypeId);
     this.logger.info(
@@ -35,5 +36,4 @@ export class EmployeeLeaveTypeSummaryV1Controller {
     );
     return { data: summary };
   }
-
 }

@@ -2,7 +2,7 @@ import { EmployeeEvent } from '../domain/events/employee.event';
 import * as employeeService from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
-const _logger = rootLogger.child({ context: 'EmployeeCosumer' });
+const _logger = rootLogger.child({ context: 'EmployeeConsumer' });
 
 export default class EmployeeConsumer {
   public static async handleCreated(data: EmployeeEvent): Promise<void> {

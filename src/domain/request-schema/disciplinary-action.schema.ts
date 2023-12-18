@@ -38,9 +38,9 @@ export const CREATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   actionDate: joi.date()
     .required()
     .less(Date.now() + 24 * 60 * 60 * 1000)
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
 });
-
+///change date format from / to -
 export const UPDATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   actionTypeId: Joi.number()
     .optional(),
@@ -51,7 +51,7 @@ export const UPDATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   actionDate: joi.date()
     .optional()
     .less(Date.now() + 24 * 60 * 60 * 1000)
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
 }).or('actionTypeId', 'grievanceReportId', 'notes', 'actionDate');
 
 export const QUERY_DISCIPLINARY_ACTION_SCHEMA = Joi.object({

@@ -18,7 +18,7 @@ import {
   CreateLeaveRequestDto,
   QueryLeaveRequestDto,
   UpdateLeaveRequestDto,
-  ResponseObjectDto,
+  LeaveResponseInputDto,
   AdjustDaysDto,
 } from '../../domain/dto/leave-request.dto';
 import * as leaveReqService from '../../services/leave-request.service';
@@ -148,7 +148,7 @@ export class LeaveRequestV1Controller {
   })
   public async addLeaveResponse(
     @Path('id') id: number,
-    @Body() updateDto: ResponseObjectDto,
+    @Body() updateDto: LeaveResponseInputDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<LeaveRequest>> {
     this.logger.debug('Received request to add LeaveResponse for LeaveRequest[%s]', id);

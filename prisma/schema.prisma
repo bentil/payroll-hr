@@ -34,7 +34,8 @@ model PayrollCompany {
   grievanceReports                 GrievanceReport[]
   disciplinaryActionTypes           DisciplinaryActionType[]
   disciplinaryActions               DisciplinaryAction[]
-  companyCurrencies     CompanyCurrency[]
+  companyCurrencies     CompanyCurrency[]   
+  employees              Employee[]
 
   @@map("payroll_company")
 }
@@ -92,6 +93,7 @@ model Employee {
   reimbursementRequestAttachments ReimbursementRequestAttachment[]
   reimbursementRequestComments          ReimbursementRequestComment[]
   majorGradeLevel                   GradeLevel?             @relation(fields: [majorGradeLevelId], references: [id])
+  company                             PayrollCompany        @relation(fields: [companyId], references: [id])
 
 
   @@map("employee")
@@ -328,7 +330,7 @@ model LeaveRequest {
   cancelledByEmployeeId Int?                  @map("cancelled_by_employee_id") @db.UnsignedInt()
   createdAt             DateTime              @default(now()) @map("created_at")
   modifiedAt            DateTime?             @updatedAt @map("modified_at")
-  responsecompletedat   DateTime?             @updatedAt @map("response_completed_at")
+  responseCompletedAt   DateTime?             @updatedAt @map("response_completed_at")
   cancelledAt           DateTime?             @updatedAt @map("cancelled_at")
   numberOfDays          Int?                   @map("number_of_days") 
 

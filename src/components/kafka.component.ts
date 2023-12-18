@@ -90,4 +90,19 @@ export class KafkaService {
   public createClient() {
     return this.client ?? new Kafka(this.options);
   }
+
+  public async sendList<T>(
+    topic: string,
+    items: { key?: any; headers?: Record<string, any>; data: T }[]
+  ): Promise<void> {
+    await this.producer?.send({
+      topic,
+      messages: items.map(obj => ({
+        key: KafkaSerializer.encode(obj.key),
+        value: KafkaSerializer.encode(obj.data),
+        headers: obj.headers,
+      }))
+    });
+  }
+
 }

@@ -25,7 +25,7 @@ export const CREATE_GRIEVANCE_REPORT_SCHEMA = Joi.object({
   reportDate: joi.date()
     .required()
     .less(Date.now() + 24 * 60 * 60 * 1000)
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   note: Joi.string()
     .required()
     .trim()
@@ -49,7 +49,7 @@ export const UPDATE_GRIEVANCE_REPORT_SCHEMA = Joi.object({
   reportDate: joi.date()
     .optional()
     .min(Date.now() - 24 * 60 * 60 * 1000)
-    .format(['YYYY/MM/DD']),
+    .format(['YYYY-MM-DD']),
   note: Joi.string()
     .optional()
 }).or(

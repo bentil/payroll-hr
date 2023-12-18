@@ -38,7 +38,7 @@ export async function getLeavePlan(req: Request, res: Response, next: NextFuncti
 export async function updateLeavePlan(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.updateLeavePlan(+id, req.body);
+    const response = await controller.updateLeavePlan(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);

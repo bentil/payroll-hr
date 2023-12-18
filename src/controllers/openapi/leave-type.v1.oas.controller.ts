@@ -26,7 +26,7 @@ import {
 } from '../../domain/dto/leave-type.dto';
 
 
-@Tags('Leave Types')
+@Tags('leave-types')
 @Route('/api/v1/leave-types')
 @Security('api_key')
 export class LeaveTypeV1Controller {
