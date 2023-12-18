@@ -26,7 +26,7 @@ export async function createOrUpdate(
 ): Promise<Employee> {
   const data: Prisma.EmployeeCreateInput = {
     ...dtoData,
-    majorGradeLevel: { connect: { id: majorGradeLevelId } },
+    majorGradeLevel: majorGradeLevelId?  { connect: { id: majorGradeLevelId } } : undefined,
     company: { connect: { id: companyId } },
   };
   const { id, ...dataWithoutId } = data;
