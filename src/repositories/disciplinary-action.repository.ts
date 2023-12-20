@@ -70,7 +70,10 @@ export async function find(params: {
       where: params.where,
       orderBy: params.orderBy,
       include: params.includeRelations 
-        ? { actionType: true, grievanceReport: { include: { grievanceType: true } } } : undefined
+        ? { 
+          actionType: true, employee: true, grievanceReport: { include: { grievanceType: true } } 
+        }
+        : undefined
     }),
     paginate 
       ? prisma.disciplinaryAction.count({ where: params.where }) : Promise.resolve(undefined),
