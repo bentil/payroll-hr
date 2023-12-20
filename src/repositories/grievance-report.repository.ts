@@ -114,7 +114,9 @@ export async function find(params: {
       take: params.take,
       where: params.where,
       orderBy: params.orderBy,
-      include: params.includeRelations ? { grievanceType: true } : undefined
+      include: params.includeRelations 
+        ? { grievanceType: true, reportingEmployee: true } 
+        : undefined
     }),
     paginate ? prisma.grievanceReport.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
