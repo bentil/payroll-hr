@@ -25,9 +25,9 @@ export async function getCompanyTree(req: Request, res: Response, next: NextFunc
 }
 
 export async function getCompanyTreeNode(req: Request, res: Response, next: NextFunction) {
-  const { id } = req.params;
+  const { companyId, nodeId } = req.params;
   try {
-    const response = await controller.getCompanyTreeNode(+id);
+    const response = await controller.getCompanyTreeNode(+companyId, +nodeId);
     res.json(response);
   } catch (err) {
     next(err);
@@ -35,9 +35,9 @@ export async function getCompanyTreeNode(req: Request, res: Response, next: Next
 }
 
 export async function updateCompanyTreeNode(req: Request, res: Response, next: NextFunction) {
-  const { id } = req.params;
+  const { companyId, nodeId } = req.params;
   try {
-    const response = await controller.updateCompanyTreeNode(+id, req.body);
+    const response = await controller.updateCompanyTreeNode(+companyId, +nodeId, req.body);
     res.json(response);
   } catch (err) {
     next(err);

@@ -5,7 +5,6 @@ import {
   Patch,
   Path,
   Post,
-  Queries,
   Response,
   Route,
   Security,
@@ -23,7 +22,7 @@ import {
 } from '../../domain/dto/company-tree-node.dto';
 
 @Tags('company-tree-nodes')
-@Route('/api/v1/company-tree-nodes')
+@Route('/api/v1/payroll-company')
 @Security('api_key')
 export class CompanyTreeNodeV1Controller {
   private readonly logger = rootLogger.child({ context: CompanyTreeNodeV1Controller.name, });
@@ -32,9 +31,10 @@ export class CompanyTreeNodeV1Controller {
    * Create a company tree node
    *
    * @param createData Request body
+   * @param id CompanyId
    * @returns API response
    */
-  @Post()
+  @Post('/{id}/tree/nodes')
   @SuccessResponse(201, 'Created')
   public async addCompanyTreeNode(
     @Body() createData: CreateCompanyTreeNodeDto, @Path('id') id: number
@@ -45,14 +45,14 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Get a list of company tree node matching query
+   * Get a Company tree 
    *
-   * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Company tree nodes
+   * @param id companyId,
+   * @returns Get matching Company tree
    */
-  @Get()
+  @Get('/{id}/tree')
   public async getCompanyTree(
-    @Queries() id: number
+    @Path() id: number
   ): Promise<ApiSuccessResponse<CompanyTreeNodeDto[]>> {
     this.logger.debug('Received request to get CompanyTree for company[%s] matching query', id);
     const companyTree = await service.getCompanyTree(id);
@@ -62,30 +62,33 @@ export class CompanyTreeNodeV1Controller {
 
   /**
    * Get a companyTreeNode by ID
-   * @param id companyTreeNode ID
+   * @param companyId companyID
+   * @param nodeId  CompanyTreeNodeId
    * @returns companyTreeNode
    */
-  @Get('{id}')
+  @Get('/{companyId}/tree/nodes/{nodeId}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
     error: errors.COMPANY_TREE_NODE_NOT_FOUND,
     message: 'CompanyTreeNode does not exist',
     details: [],
   })
   public async getCompanyTreeNode(
-    @Path('id') id: number
+    @Path('companyId') companyId: number,
+    @Path('nodeId') nodeId: number,
   ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
-    this.logger.debug('Received request to get CompanyTreeNode[%s]', id);
-    const companyTreeNode = await service.getCompanyTreeNode(id);
+    this.logger.debug('Received request to get CompanyTreeNode[%s]', nodeId);
+    const companyTreeNode = await service.getCompanyTreeNode(nodeId, companyId);
     return { data: companyTreeNode };
   }
 
   /**
    * Change the details of an existing companyTreeNode
-   * @param id companyTreeNode ID
+   * @param nodeId companyTreeNode ID
+   * @param companyId companyId
    * @param body Request body with companyTreeNode to update to
    * @returns Updated companyTreeNode
    */
-  @Patch('{id}')
+  @Patch('/{companyId}/tree/nodes/{nodeId}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
     error: 'REQUEST_VALIDATION_FAILED',
     message: 'Request validation failed',
@@ -97,12 +100,13 @@ export class CompanyTreeNodeV1Controller {
     details: [],
   })
   public async updateCompanyTreeNode(
-    @Path('id') id: number,
+    @Path('companyId') companyId: number,
+    @Path('nodeId') nodeId: number,
     @Body() updateDto: UpdateCompanyTreeNodeDto
   ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
-    this.logger.debug('Received request to update CompanyTreeNode[%s]', id);
-    const updateCompanyTreeNode = await service.updateCompanyTreeNode(id, updateDto);
-    this.logger.info('CompanyTreeNode[%s] updated successfully!', id);
+    this.logger.debug('Received request to update CompanyTreeNode[%s]', nodeId);
+    const updateCompanyTreeNode = await service.updateCompanyTreeNode(nodeId, companyId, updateDto);
+    this.logger.info('CompanyTreeNode[%s] updated successfully!', nodeId);
     return { data: updateCompanyTreeNode };
   }
 }

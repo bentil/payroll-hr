@@ -135,14 +135,16 @@ export async function getCompanyTree(
   return result;
 }
  
-export async function getCompanyTreeNode(id: number): Promise<CompanyTreeNodeDto> {
-  logger.debug('Getting details for CompanyTreeNode[%s]', id);
+export async function getCompanyTreeNode(
+  nodeId: number, companyId: number
+): Promise<CompanyTreeNodeDto> {
+  logger.debug('Getting details for CompanyTreeNode[%s]', nodeId);
   let companyTreeNode: CompanyTreeNode | null;
 
   try {
-    companyTreeNode = await repository.findOne({ id }, true);
+    companyTreeNode = await repository.findOne({ id: nodeId, companyId }, true);
   } catch (err) {
-    logger.warn('Getting CompanyTreeNode[%s] failed', id, { error: (err as Error).stack });
+    logger.warn('Getting CompanyTreeNode[%s] failed', nodeId, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
@@ -153,18 +155,19 @@ export async function getCompanyTreeNode(id: number): Promise<CompanyTreeNodeDto
     });
   }
 
-  logger.info('CompanyTreeNode[%s] details retrieved!', id);
+  logger.info('CompanyTreeNode[%s] details retrieved!', nodeId);
   return companyTreeNode;
 }
 
 export async function updateCompanyTreeNode(
-  id: number,
+  nodeId: number,
+  companyId: number,
   updateData: UpdateCompanyTreeNodeDto,
 ): Promise<CompanyTreeNodeDto> {
   const { parentId, employeeId } = updateData;
-  const companyTreeNode = await repository.findOne({ id });
+  const companyTreeNode = await repository.findOne({ id: nodeId, companyId });
   if (!companyTreeNode) {
-    logger.warn('CompanyTreeNode[%s] to update does not exist', id);
+    logger.warn('CompanyTreeNode[%s] to update does not exist', nodeId);
     throw new NotFoundError({
       name: errors.COMPANY_TREE_NODE_NOT_FOUND,
       message: 'Company tree node to update does not exist'
@@ -187,11 +190,11 @@ export async function updateCompanyTreeNode(
     validateCompanyId(companyTreeNode.companyId, employee.companyId);
   }
 
-  logger.debug('Persisting update(s) to CompanyTreeNode[%s]', id);
+  logger.debug('Persisting update(s) to CompanyTreeNode[%s]', nodeId);
   const updatedCompanyTreeNode = await repository.update({
-    where: { id }, data: updateData
+    where: { id: nodeId, companyId }, data: updateData
   });
-  logger.info('Update(s) to CompanyTreeNode[%s] persisted successfully!', id);
+  logger.info('Update(s) to CompanyTreeNode[%s] persisted successfully!', nodeId);
 
   // Emit event.CompanyTreeNode.modified event
   logger.debug(`Emitting ${events.modified}`);
