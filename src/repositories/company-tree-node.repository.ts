@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client';
-import { CompanyTreeNodeDto, childNode } from '../domain/dto/company-tree-node.dto';
+import {
+  CompanyTreeNodeDto, 
+  UpdateCompanyTreeNodeDto, 
+  childNode 
+} from '../domain/dto/company-tree-node.dto';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
 // import { ListWithPagination, getListWithPagination } from './types';
@@ -114,11 +118,16 @@ export async function find(
 }
 
 export async function update(params: {
+  updateData: UpdateCompanyTreeNodeDto,
   where: Prisma.CompanyTreeNodeWhereUniqueInput,
-  data: Prisma.CompanyTreeNodeUpdateInput,
   includeRelations?: boolean
 }) {
-  const { where, data, includeRelations } = params;
+  const { where, updateData, includeRelations } = params;
+  const { employeeId, parentId } = updateData;
+  const data: Prisma.CompanyTreeNodeUpdateInput = {
+    employee: employeeId? { connect: { id: employeeId } }: undefined,
+    parent: { connect: { id: parentId } },
+  };
   try {
     return await prisma.companyTreeNode.update({
       where,

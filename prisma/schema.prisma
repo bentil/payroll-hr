@@ -514,9 +514,11 @@ model CompanyTreeNode {
   createdAt  DateTime  @default(now()) @map("created_at")
   modifiedAt DateTime? @updatedAt @map("modified_at")
 
-  employee Employee?      @relation(fields: [employeeId], references: [id])
-  company  PayrollCompany @relation(fields: [companyId], references: [id])
-  jobTitle JobTitle       @relation(fields: [jobTitleId], references: [id])
+  employee         Employee?         @relation(fields: [employeeId], references: [id])
+  company          PayrollCompany    @relation(fields: [companyId], references: [id])
+  jobTitle         JobTitle          @relation(fields: [jobTitleId], references: [id])
+  parent           CompanyTreeNode?  @relation(fields: [parentId], references: [id], name: "child")
+  companyTreeNodes CompanyTreeNode[] @relation(name: "child")
 
   @@map("company_tree_node")
 }
