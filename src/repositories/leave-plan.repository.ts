@@ -4,7 +4,7 @@ import { LeavePlanDto } from '../domain/dto/leave-plan.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
-export interface CreateLeavePlanObject{
+export interface CreateLeavePlanObject {
   employeeId: number;
   leavePackageId: number;
   intendedStartDate: Date;

@@ -12,101 +12,102 @@ datasource db {
 }
 
 model PayrollCompany {
-  id                               Int                      @id @db.UnsignedInt()
-  organizationId                   String                   @map("organization_id")
-  name                             String                   @db.VarChar(255)
-  address                          String                   @map("address")
-  logoUrl                          String?                  @map("logo_url") @db.VarChar(255)
-  contactEmail                     String                   @map("contact_email") @db.VarChar(255)
-  contactMsisdn                    String?                  @map("contact_misdn") @db.VarChar(20)
+  id                               Int       @id @db.UnsignedInt()
+  organizationId                   String    @map("organization_id")
+  name                             String    @db.VarChar(255)
+  address                          String    @map("address")
+  logoUrl                          String?   @map("logo_url") @db.VarChar(255)
+  contactEmail                     String    @map("contact_email") @db.VarChar(255)
+  contactMsisdn                    String?   @map("contact_misdn") @db.VarChar(20)
   status                           String
-  currencyId                       Int                      @map("currency_id")
-  countryId                        Int?                     @map("country_id")
-  allowNegativeRates               Boolean                  @default(false) @map("allow_negative_rates")
-  considerPublicHolidayAsWorkday   Boolean                  @default(false) @map("consider_public_holiday_as_workday")
-  considerWeekendAsWorkday         Boolean                  @default(false) @map("consider_weekend_as_workday")
-  createdAt                        DateTime                 @default(now()) @map("created_at")
-  modifiedAt                       DateTime?                @updatedAt @map("modified_at")
-  statusLastModifiedAt             DateTime?                @map("status_last_modified_at")
-  allowNegativeRatesLastModifiedAt DateTime?                @map("allow_negative_rates_last_modified_at")
+  currencyId                       Int       @map("currency_id")
+  countryId                        Int?      @map("country_id")
+  allowNegativeRates               Boolean   @default(false) @map("allow_negative_rates")
+  considerPublicHolidayAsWorkday   Boolean   @default(false) @map("consider_public_holiday_as_workday")
+  considerWeekendAsWorkday         Boolean   @default(false) @map("consider_weekend_as_workday")
+  createdAt                        DateTime  @default(now()) @map("created_at")
+  modifiedAt                       DateTime? @updatedAt @map("modified_at")
+  statusLastModifiedAt             DateTime? @map("status_last_modified_at")
+  allowNegativeRatesLastModifiedAt DateTime? @map("allow_negative_rates_last_modified_at")
 
-  grievanceTypes                   GrievanceType[]
-  grievanceReports                 GrievanceReport[]
-  disciplinaryActionTypes           DisciplinaryActionType[]
-  disciplinaryActions               DisciplinaryAction[]
-  companyCurrencies     CompanyCurrency[]   
-  employees              Employee[]
+  grievanceTypes          GrievanceType[]
+  grievanceReports        GrievanceReport[]
+  disciplinaryActionTypes DisciplinaryActionType[]
+  disciplinaryActions     DisciplinaryAction[]
+  companyCurrencies       CompanyCurrency[]
+  employees               Employee[]
+  companyTreeNodes        CompanyTreeNode[]
 
   @@map("payroll_company")
 }
 
 model Employee {
-  id                                     Int                              @id @db.UnsignedInt()
-  companyId                              Int                              @map("company_id") @db.UnsignedInt()
-  notchId                                Int?                             @map("notch_id") @db.UnsignedInt()
-  employeeNumber                         String                           @map("employee_number") @db.VarChar(40)
-  title                                  String                           @map("title") @db.VarChar(10)
-  firstName                              String                           @map("first_name") @db.VarChar(100)
-  lastName                               String                           @map("last_name") @db.VarChar(100)
-  otherNames                             String?                          @map("other_names") @db.VarChar(255)
-  gender                                 String                           @map("gender")
-  dateOfBirth                            DateTime                         @map("date_of_birth")
-  photoUrl                               String?                          @map("photo_url")
-  ssn                                    String                           @map("ssn") @db.VarChar(30)
-  taxIdentificationNumber                String?                          @map("tax_identification_number") @db.VarChar(30)
-  majorGradeLevelId                      Int?                             @map("major_grade_level_id") @db.UnsignedInt()
-  minorGradeLevelId                      Int?                             @map("minor_grade_level_id") @db.UnsignedInt()
-  nationality                            String                           @map("nationality")
-  regionId                               Int?                             @map("region_id") @db.UnsignedInt()
-  tribeId                                Int?                             @map("tribe_id") @db.UnsignedInt()
-  email                                  String?                          @map("email") @db.VarChar(255)
-  privateEmail                           String?                          @map("private_email") @db.VarChar(255)
-  msisdn                                 String?                          @map("msisdn") @db.VarChar(20)
-  alternateMsisdn                        String?                          @map("alternate_msisdn") @db.VarChar(20)
-  address                                String?                          @map("address")
-  digitalAddress                         String?                          @map("digital_address") @db.VarChar(30)
-  jobTitleId                             Int?                             @map("job_title_id") @db.UnsignedInt()
-  departmentId                           Int?                             @map("department_id") @db.UnsignedInt()
-  divisionId                             Int?                             @map("division_id") @db.UnsignedInt()
-  stationId                              Int?                             @map("station_id") @db.UnsignedInt()
-  costAreaId                             Int?                             @map("cost_area_id") @db.UnsignedInt()
-  status                                 String
-  employmentDate                         DateTime                         @map("employment_date")
-  terminationDate                        DateTime?                        @map("termination_date")
-  reemployed                             Boolean?                         @default(false)
-  resident                               Boolean?                         @default(false)
-  unionMember                            Boolean?                         @default(false) @map("union_member")
-  statusLastModifiedAt                   DateTime?                        @map("status_last_modified_at")
-  createdAt                              DateTime                         @default(now()) @map("created_at")
-  modifiedAt                             DateTime?                        @updatedAt @map("modified_at")
+  id                      Int       @id @db.UnsignedInt()
+  companyId               Int       @map("company_id") @db.UnsignedInt()
+  notchId                 Int?      @map("notch_id") @db.UnsignedInt()
+  employeeNumber          String    @map("employee_number") @db.VarChar(40)
+  title                   String    @map("title") @db.VarChar(10)
+  firstName               String    @map("first_name") @db.VarChar(100)
+  lastName                String    @map("last_name") @db.VarChar(100)
+  otherNames              String?   @map("other_names") @db.VarChar(255)
+  gender                  String    @map("gender")
+  dateOfBirth             DateTime  @map("date_of_birth")
+  photoUrl                String?   @map("photo_url")
+  ssn                     String    @map("ssn") @db.VarChar(30)
+  taxIdentificationNumber String?   @map("tax_identification_number") @db.VarChar(30)
+  majorGradeLevelId       Int?      @map("major_grade_level_id") @db.UnsignedInt()
+  minorGradeLevelId       Int?      @map("minor_grade_level_id") @db.UnsignedInt()
+  nationality             String    @map("nationality")
+  regionId                Int?      @map("region_id") @db.UnsignedInt()
+  tribeId                 Int?      @map("tribe_id") @db.UnsignedInt()
+  email                   String?   @map("email") @db.VarChar(255)
+  privateEmail            String?   @map("private_email") @db.VarChar(255)
+  msisdn                  String?   @map("msisdn") @db.VarChar(20)
+  alternateMsisdn         String?   @map("alternate_msisdn") @db.VarChar(20)
+  address                 String?   @map("address")
+  digitalAddress          String?   @map("digital_address") @db.VarChar(30)
+  jobTitleId              Int?      @map("job_title_id") @db.UnsignedInt()
+  departmentId            Int?      @map("department_id") @db.UnsignedInt()
+  divisionId              Int?      @map("division_id") @db.UnsignedInt()
+  stationId               Int?      @map("station_id") @db.UnsignedInt()
+  costAreaId              Int?      @map("cost_area_id") @db.UnsignedInt()
+  status                  String
+  employmentDate          DateTime  @map("employment_date")
+  terminationDate         DateTime? @map("termination_date")
+  reemployed              Boolean?  @default(false)
+  resident                Boolean?  @default(false)
+  unionMember             Boolean?  @default(false) @map("union_member")
+  statusLastModifiedAt    DateTime? @map("status_last_modified_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  modifiedAt              DateTime? @updatedAt @map("modified_at")
 
-  grievanceReports             GrievanceReport[]
-  grievanceReportedEmployees             GrievanceReportedEmployee[]
-  disciplinaryActions                     DisciplinaryAction[]
-  leavePlans                              LeavePlan[]
-  leaveRequests                           LeaveRequest[]                   @relation(name: "employee")
-  leaveResponses                          LeaveResponse[]
-  cancelledLeaveRequests                  LeaveRequest[]                   @relation(name: "cancelledByEmployee")
-  reimbursementRequests                  ReimbursementRequest[]           @relation(name: "employee")
-  approvedReimbursementRequests           ReimbursementRequest[]           @relation(name: "approver")
-  completedReimbursementRequests          ReimbursementRequest[]           @relation(name: "completer")
+  grievanceReports                GrievanceReport[]
+  grievanceReportedEmployees      GrievanceReportedEmployee[]
+  disciplinaryActions             DisciplinaryAction[]
+  leavePlans                      LeavePlan[]
+  leaveRequests                   LeaveRequest[]                   @relation(name: "employee")
+  leaveResponses                  LeaveResponse[]
+  cancelledLeaveRequests          LeaveRequest[]                   @relation(name: "cancelledByEmployee")
+  reimbursementRequests           ReimbursementRequest[]           @relation(name: "employee")
+  approvedReimbursementRequests   ReimbursementRequest[]           @relation(name: "approver")
+  completedReimbursementRequests  ReimbursementRequest[]           @relation(name: "completer")
   reimbursementRequestAttachments ReimbursementRequestAttachment[]
-  reimbursementRequestComments          ReimbursementRequestComment[]
-  majorGradeLevel                   GradeLevel?             @relation(fields: [majorGradeLevelId], references: [id])
-  company                             PayrollCompany        @relation(fields: [companyId], references: [id])
-
+  reimbursementRequestComments    ReimbursementRequestComment[]
+  majorGradeLevel                 GradeLevel?                      @relation(fields: [majorGradeLevelId], references: [id])
+  company                         PayrollCompany                   @relation(fields: [companyId], references: [id])
+  companyTreeNodes                CompanyTreeNode[]
 
   @@map("employee")
 }
 
 model GrievanceType {
-  id               Int               @id @default(autoincrement()) @db.UnsignedInt()
-  companyId        Int               @map("company_id") @db.UnsignedInt()
-  code             String            @db.VarChar(30)
-  name             String            @db.VarChar(30)
-  description      String            @db.Text()
-  createdAt        DateTime          @default(now()) @map("created_at")
-  modifiedAt       DateTime?         @updatedAt @map("modified_at")
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int       @map("company_id") @db.UnsignedInt()
+  code        String    @db.VarChar(30)
+  name        String    @db.VarChar(30)
+  description String    @db.Text()
+  createdAt   DateTime  @default(now()) @map("created_at")
+  modifiedAt  DateTime? @updatedAt @map("modified_at")
 
   company          PayrollCompany    @relation(fields: [companyId], references: [id])
   grievanceReports GrievanceReport[]
@@ -118,15 +119,15 @@ model GrievanceType {
 }
 
 model GrievanceReport {
-  id                         Int                         @id @default(autoincrement()) @db.UnsignedInt()
-  companyId                  Int                         @map("company_id") @db.UnsignedInt()
-  grievanceTypeId            Int                         @map("grievance_type_id") @db.UnsignedInt()
-  reportNumber               String                      @map("report_number") @db.VarChar(30)
-  reportingEmployeeId        Int                         @map("reporting_employee_id") @db.UnsignedInt()
-  reportDate                 DateTime                    @map("report_date")
-  note                       String                      @db.Text()
-  createdAt                  DateTime                    @default(now()) @map("created_at")
-  modifiedAt                 DateTime?                   @updatedAt @map("modified_at")
+  id                  Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId           Int       @map("company_id") @db.UnsignedInt()
+  grievanceTypeId     Int       @map("grievance_type_id") @db.UnsignedInt()
+  reportNumber        String    @map("report_number") @db.VarChar(30)
+  reportingEmployeeId Int       @map("reporting_employee_id") @db.UnsignedInt()
+  reportDate          DateTime  @map("report_date")
+  note                String    @db.Text()
+  createdAt           DateTime  @default(now()) @map("created_at")
+  modifiedAt          DateTime? @updatedAt @map("modified_at")
 
   company                    PayrollCompany              @relation(fields: [companyId], references: [id])
   reportingEmployee          Employee                    @relation(fields: [reportingEmployeeId], references: [id])
@@ -140,28 +141,28 @@ model GrievanceReport {
 }
 
 model GrievanceReportedEmployee {
-  id                 Int             @id @default(autoincrement()) @db.UnsignedInt()
-  reportId           Int             @map("report_id") @db.UnsignedInt()
-  reportedEmployeeId Int             @map("reported_employee_id") @db.UnsignedInt()
-  createdAt          DateTime        @default(now()) @map("created_at")
+  id                 Int      @id @default(autoincrement()) @db.UnsignedInt()
+  reportId           Int      @map("report_id") @db.UnsignedInt()
+  reportedEmployeeId Int      @map("reported_employee_id") @db.UnsignedInt()
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  grievanceReport    GrievanceReport @relation(fields: [reportId], references: [id])
-  reportedEmployee   Employee        @relation(fields: [reportedEmployeeId], references: [id])
+  grievanceReport  GrievanceReport @relation(fields: [reportId], references: [id])
+  reportedEmployee Employee        @relation(fields: [reportedEmployeeId], references: [id])
 
   @@unique([reportId, reportedEmployeeId])
   @@map("grievance_reported_employee")
 }
 
 model DisciplinaryActionType {
-  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt()
-  companyId          Int                  @map("company_id") @db.UnsignedInt()
-  code               String               @db.VarChar(30)
-  name               String               @db.VarChar(30)
-  description        String               @db.Text()
-  createdAt          DateTime             @default(now()) @map("created_at")
-  modifiedAt         DateTime?            @updatedAt @map("modified_at")
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int       @map("company_id") @db.UnsignedInt()
+  code        String    @db.VarChar(30)
+  name        String    @db.VarChar(30)
+  description String    @db.Text()
+  createdAt   DateTime  @default(now()) @map("created_at")
+  modifiedAt  DateTime? @updatedAt @map("modified_at")
 
-  company            PayrollCompany       @relation(fields: [companyId], references: [id])
+  company             PayrollCompany       @relation(fields: [companyId], references: [id])
   disciplinaryActions DisciplinaryAction[]
 
   @@unique([code, companyId])
@@ -171,21 +172,21 @@ model DisciplinaryActionType {
 }
 
 model DisciplinaryAction {
-  id                Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  companyId         Int                    @map("company_id") @db.UnsignedInt()
-  employeeId        Int                    @map("employee_id") @db.UnsignedInt()
-  actionTypeId      Int                    @map("action_type_id") @db.UnsignedInt()
-  actionNumber      String                 @map("action_number") @db.VarChar(30)
-  grievanceReportId Int?                   @map("grievance_report_id") @db.UnsignedInt()
-  notes             String                 @db.Text()
-  actionDate        DateTime               @map("action_date")
-  createdAt         DateTime               @default(now()) @map("created_at")
-  modifiedAt        DateTime?              @updatedAt @map("modified_at")
-  
-  company           PayrollCompany         @relation(fields: [companyId], references: [id])
-  employee          Employee               @relation(fields: [employeeId], references: [id])
-  actionType        DisciplinaryActionType @relation(fields: [actionTypeId], references: [id])
-  grievanceReport   GrievanceReport?       @relation(fields: [grievanceReportId], references: [id])
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId         Int       @map("company_id") @db.UnsignedInt()
+  employeeId        Int       @map("employee_id") @db.UnsignedInt()
+  actionTypeId      Int       @map("action_type_id") @db.UnsignedInt()
+  actionNumber      String    @map("action_number") @db.VarChar(30)
+  grievanceReportId Int?      @map("grievance_report_id") @db.UnsignedInt()
+  notes             String    @db.Text()
+  actionDate        DateTime  @map("action_date")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  modifiedAt        DateTime? @updatedAt @map("modified_at")
+
+  company         PayrollCompany         @relation(fields: [companyId], references: [id])
+  employee        Employee               @relation(fields: [employeeId], references: [id])
+  actionType      DisciplinaryActionType @relation(fields: [actionTypeId], references: [id])
+  grievanceReport GrievanceReport?       @relation(fields: [grievanceReportId], references: [id])
 
   @@unique([actionNumber, companyId])
   @@fulltext([actionNumber, notes])
@@ -193,20 +194,19 @@ model DisciplinaryAction {
 }
 
 model CompanyLevel {
-  id                        Int                        @id @db.UnsignedInt()
-  organizationId            String                     @map("organization_id") @db.VarChar(100)
-  companyId                 Int?                       @map("company_Id") @db.UnsignedInt()
-  levelNumber               Int                        @map("level_number") @db.SmallInt
-  levelName                 String                     @map("level_name") @db.VarChar(55)
-  juniorLevel               Boolean                    @default(true) @map("junior_level")
-  parentId                  Int?                       @map("parent_id")
-  childId                   Int?                       @map("child_id")
-  createdAt                 DateTime                   @default(now()) @map("created_at")
-  modifiedAt                DateTime?                  @updatedAt @map("modified_at")
+  id             Int       @id @db.UnsignedInt()
+  organizationId String    @map("organization_id") @db.VarChar(100)
+  companyId      Int?      @map("company_Id") @db.UnsignedInt()
+  levelNumber    Int       @map("level_number") @db.SmallInt
+  levelName      String    @map("level_name") @db.VarChar(55)
+  juniorLevel    Boolean   @default(true) @map("junior_level")
+  parentId       Int?      @map("parent_id")
+  childId        Int?      @map("child_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  modifiedAt     DateTime? @updatedAt @map("modified_at")
 
   companyLevelLeavePackages CompanyLevelLeavePackage[]
-  gradeLevels                    GradeLevel[]
-
+  gradeLevels               GradeLevel[]
 
   @@map("company_level")
 }
@@ -227,20 +227,20 @@ model GradeLevel {
   createdAt      DateTime         @default(now()) @map("created_at")
   modifiedAt     DateTime?        @updatedAt @map("modified_at")
 
-  companyLevel   CompanyLevel     @relation(fields: [companyLevelId], references: [id])
-  employees      Employee[]
+  companyLevel CompanyLevel @relation(fields: [companyLevelId], references: [id])
+  employees    Employee[]
 
   @@map("grade_level")
 }
 
 model LeaveType {
-  id            Int            @id @default(autoincrement()) @db.UnsignedInt()
-  code          String         @map("code") @db.VarChar(30)
-  name          String         @map("name") @db.VarChar(100)
-  colorCode     String         @map("color_code") @db.VarChar(10)
-  description   String         @map("description") @db.Text()
-  createdAt     DateTime       @default(now()) @map("created_at")
-  modifiedAt    DateTime?      @updatedAt @map("modified_at")
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt()
+  code        String    @map("code") @db.VarChar(30)
+  name        String    @map("name") @db.VarChar(100)
+  colorCode   String    @map("color_code") @db.VarChar(10)
+  description String    @map("description") @db.Text()
+  createdAt   DateTime  @default(now()) @map("created_at")
+  modifiedAt  DateTime? @updatedAt @map("modified_at")
 
   leavePackages LeavePackage[]
 
@@ -251,25 +251,25 @@ model LeaveType {
 }
 
 model LeavePackage {
-  id                        Int                        @id @default(autoincrement()) @db.UnsignedInt()
-  companyId                 Int                        @map("company_id") @db.UnsignedInt() //fk
-  code                      String                     @map("code") @db.VarChar(30)
-  name                      String                     @map("name") @db.VarChar(100)
-  description               String?                    @map("description") @db.Text()
-  leaveTypeId               Int                        @map("leave_type_id") @db.UnsignedInt() //fk
-  maxDays                   Int                        @map("max_days") @db.Int()
-  paid                      Boolean?                   @default(true) @map("paid")
-  redeemable                Boolean?                   @default(false) @map("redeemable")
-  accrued                   Boolean?                   @default(true) @map("accrued")
-  carryOverDaysValue        Int?                       @map("carry_over_days_value") @db.Int()
-  carryOverDaysPercent      Decimal?                   @map("carry_over_days_percent") @db.Decimal(10, 4)
-  leaveType                 LeaveType?                 @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  createdAt                 DateTime                   @default(now()) @map("created_at")
-  modifiedAt                DateTime?                  @updatedAt @map("modified_at")
+  id                   Int        @id @default(autoincrement()) @db.UnsignedInt()
+  companyId            Int        @map("company_id") @db.UnsignedInt() //fk
+  code                 String     @map("code") @db.VarChar(30)
+  name                 String     @map("name") @db.VarChar(100)
+  description          String?    @map("description") @db.Text()
+  leaveTypeId          Int        @map("leave_type_id") @db.UnsignedInt() //fk
+  maxDays              Int        @map("max_days") @db.Int()
+  paid                 Boolean?   @default(true) @map("paid")
+  redeemable           Boolean?   @default(false) @map("redeemable")
+  accrued              Boolean?   @default(true) @map("accrued")
+  carryOverDaysValue   Int?       @map("carry_over_days_value") @db.Int()
+  carryOverDaysPercent Decimal?   @map("carry_over_days_percent") @db.Decimal(10, 4)
+  leaveType            LeaveType? @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  modifiedAt           DateTime?  @updatedAt @map("modified_at")
 
   companyLevelLeavePackages CompanyLevelLeavePackage[]
-  leavePlans                 LeavePlan[]
-  leaveRequests              LeaveRequest[]
+  leavePlans                LeavePlan[]
+  leaveRequests             LeaveRequest[]
 
   @@unique(fields: [code, companyId])
   @@unique(fields: [name, companyId])
@@ -284,30 +284,30 @@ model LeavePackage {
 }
 
 model CompanyLevelLeavePackage {
-  id             Int           @id @default(autoincrement()) @db.UnsignedInt()
-  companyLevelId Int           @map("company_level_id") @db.UnsignedInt() //fk
-  leavePackageId Int           @map("leave_package_id") @db.UnsignedInt() //fk
-  createdAt      DateTime      @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt()
+  companyLevelId Int      @map("company_level_id") @db.UnsignedInt() //fk
+  leavePackageId Int      @map("leave_package_id") @db.UnsignedInt() //fk
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  leavePackage   LeavePackage? @relation(fields: [leavePackageId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  companyLevel   CompanyLevel? @relation(fields: [companyLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  leavePackage LeavePackage? @relation(fields: [leavePackageId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  companyLevel CompanyLevel? @relation(fields: [companyLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("company_level_leave_package")
 }
 
 model LeavePlan {
-  id                 Int          @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId         Int          @map("employee_id") @db.UnsignedInt()
-  leavePackageId     Int          @map("leave_package_id") @db.UnsignedInt()
-  intendedStartDate  DateTime     @map("intended_start_date")
-  intendedReturnDate DateTime     @map("intended_return_date")
-  comment            String       @db.Text()
-  createdAt          DateTime     @default(now()) @map("created_at")
-  modifiedAt         DateTime?    @updatedAt @map("modified_at")
-  numberOfDays       Int?          @map("number_of_days")
+  id                 Int       @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId         Int       @map("employee_id") @db.UnsignedInt()
+  leavePackageId     Int       @map("leave_package_id") @db.UnsignedInt()
+  intendedStartDate  DateTime  @map("intended_start_date")
+  intendedReturnDate DateTime  @map("intended_return_date")
+  comment            String    @db.Text()
+  createdAt          DateTime  @default(now()) @map("created_at")
+  modifiedAt         DateTime? @updatedAt @map("modified_at")
+  numberOfDays       Int?      @map("number_of_days")
 
-  employee           Employee     @relation(fields: [employeeId], references: [id])
-  leavePackage       LeavePackage @relation(fields: [leavePackageId], references: [id])
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  leavePackage LeavePackage @relation(fields: [leavePackageId], references: [id])
 
   @@map("leave_plan")
 }
@@ -320,24 +320,24 @@ enum LEAVE_REQUEST_STATUS {
 }
 
 model LeaveRequest {
-  id                    Int                   @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId            Int                   @map("employee_id") @db.UnsignedInt()
-  leavePackageId        Int                   @map("leave_package_id") @db.UnsignedInt()
-  startDate             DateTime              @map("start_date")
-  returnDate            DateTime              @map("return_date")
-  comment               String                @db.Text()
+  id                    Int                  @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId            Int                  @map("employee_id") @db.UnsignedInt()
+  leavePackageId        Int                  @map("leave_package_id") @db.UnsignedInt()
+  startDate             DateTime             @map("start_date")
+  returnDate            DateTime             @map("return_date")
+  comment               String               @db.Text()
   status                LEAVE_REQUEST_STATUS @default(PENDING)
-  cancelledByEmployeeId Int?                  @map("cancelled_by_employee_id") @db.UnsignedInt()
-  createdAt             DateTime              @default(now()) @map("created_at")
-  modifiedAt            DateTime?             @updatedAt @map("modified_at")
-  responseCompletedAt   DateTime?             @updatedAt @map("response_completed_at")
-  cancelledAt           DateTime?             @updatedAt @map("cancelled_at")
-  numberOfDays          Int?                   @map("number_of_days") 
+  cancelledByEmployeeId Int?                 @map("cancelled_by_employee_id") @db.UnsignedInt()
+  createdAt             DateTime             @default(now()) @map("created_at")
+  modifiedAt            DateTime?            @updatedAt @map("modified_at")
+  responseCompletedAt   DateTime?            @updatedAt @map("response_completed_at")
+  cancelledAt           DateTime?            @updatedAt @map("cancelled_at")
+  numberOfDays          Int?                 @map("number_of_days")
 
-  employee              Employee              @relation(fields: [employeeId], references: [id], name: "employee")
-  leavePackage          LeavePackage          @relation(fields: [leavePackageId], references: [id])
-  cancelledByEmployee   Employee?             @relation(fields: [cancelledByEmployeeId], references: [id], name: "cancelledByEmployee")
-  leaveResponses         LeaveResponse[]
+  employee            Employee        @relation(fields: [employeeId], references: [id], name: "employee")
+  leavePackage        LeavePackage    @relation(fields: [leavePackageId], references: [id])
+  cancelledByEmployee Employee?       @relation(fields: [cancelledByEmployeeId], references: [id], name: "cancelledByEmployee")
+  leaveResponses      LeaveResponse[]
 
   @@map("leave_request")
 }
@@ -349,49 +349,48 @@ enum LEAVE_RESPONSE_TYPE {
 }
 
 model LeaveResponse {
-  id                  Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  leaveRequestId      Int                    @map("leave_request_id") @db.UnsignedInt()
-  approvingEmployeeId Int                    @map("approving_employee_id") @db.UnsignedInt()
-  comment             String                 @db.Text()
+  id                  Int                 @id @default(autoincrement()) @db.UnsignedInt()
+  leaveRequestId      Int                 @map("leave_request_id") @db.UnsignedInt()
+  approvingEmployeeId Int                 @map("approving_employee_id") @db.UnsignedInt()
+  comment             String              @db.Text()
   responseType        LEAVE_RESPONSE_TYPE @map("response_type")
-  createdAt           DateTime               @default(now()) @map("created_at")
+  createdAt           DateTime            @default(now()) @map("created_at")
 
-  employee            Employee               @relation(fields: [approvingEmployeeId], references: [id])
-  leaveRequest        LeaveRequest           @relation(fields: [leaveRequestId], references: [id])
+  employee     Employee     @relation(fields: [approvingEmployeeId], references: [id])
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id])
 
   @@map("leave_response")
 }
 
 model Currency {
-  id                       Int                   @id @default(autoincrement()) @db.UnsignedInt()
-  code                     String                @unique @db.VarChar(5)
-  symbol                   String                @db.VarChar(5)
-  name                     String                @db.VarChar(30)
-  active                   Boolean               @default(true)
-  isDefault                Boolean               @default(false) @map("is_default")
-  createdAt                DateTime              @default(now()) @map("created_at")
-  modifiedAt               DateTime?             @updatedAt @map("modified_at")
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt()
+  code       String    @unique @db.VarChar(5)
+  symbol     String    @db.VarChar(5)
+  name       String    @db.VarChar(30)
+  active     Boolean   @default(true)
+  isDefault  Boolean   @default(false) @map("is_default")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  modifiedAt DateTime? @updatedAt @map("modified_at")
 
-companyCurrencies CompanyCurrency[] @relation(name: "currency")
-baseCompanyCurrencies CompanyCurrency[] @relation(name: "base_currency")
-
+  companyCurrencies     CompanyCurrency[] @relation(name: "currency")
+  baseCompanyCurrencies CompanyCurrency[] @relation(name: "base_currency")
 
   @@map("currency")
 }
 
 model CompanyCurrency {
-  id                   Int                   @id @default(autoincrement()) @db.UnsignedInt()
-  companyId            Int                   @map("company_id") @db.UnsignedInt() //fk
-  baseCurrencyId       Int                   @map("base_currency_id") @db.UnsignedInt()
-  currencyId           Int                   @map("currency_id") @db.UnsignedInt()
-  buyRate              Decimal               @map("buy_rate") @db.Decimal(20, 4)
-  sellRate             Decimal               @map("sell_rate") @db.Decimal(20, 4)
-  createdAt            DateTime              @default(now()) @map("created_at")
-  modifiedAt           DateTime?             @updatedAt @map("modified_at")
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId      Int       @map("company_id") @db.UnsignedInt() //fk
+  baseCurrencyId Int       @map("base_currency_id") @db.UnsignedInt()
+  currencyId     Int       @map("currency_id") @db.UnsignedInt()
+  buyRate        Decimal   @map("buy_rate") @db.Decimal(20, 4)
+  sellRate       Decimal   @map("sell_rate") @db.Decimal(20, 4)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  modifiedAt     DateTime? @updatedAt @map("modified_at")
 
-  baseCurrency     Currency  @relation(fields: [baseCurrencyId], references: [id], name: "base_currency")
-  currency         Currency  @relation(fields: [currencyId], references: [id], name: "currency")
-  company         PayrollCompany @relation(fields: [companyId], references: [id])
+  baseCurrency          Currency               @relation(fields: [baseCurrencyId], references: [id], name: "base_currency")
+  currency              Currency               @relation(fields: [currencyId], references: [id], name: "currency")
+  company               PayrollCompany         @relation(fields: [companyId], references: [id])
   reimbursementRequests ReimbursementRequest[]
 
   @@map("company_currency")
@@ -406,26 +405,26 @@ enum REIMBURESEMENT_REQUEST_STATUS {
 }
 
 model ReimbursementRequest {
-  id                             Int                              @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId                     Int                              @map("employee_id") @db.UnsignedInt()
-  title                          String                           @db.VarChar(50)
-  description                    String                           @db.Text()
-  currencyId                       Int                             @map("currency_id") @db.UnsignedInt()
-  amount                         Decimal                          @db.Decimal(20, 4)
-  status                         REIMBURESEMENT_REQUEST_STATUS   @default(SUBMITTED)
-  expenditureDate                DateTime                         @map("expenditure_date")
-  approverId                     Int?                             @map("approver_id") @db.UnsignedInt()
-  completerId                    Int?                             @map("completer_id") @db.UnsignedInt()
-  createdAt                      DateTime                         @default(now()) @map("created_at")
-  modifiedAt                     DateTime?                        @updatedAt @map("modified_at")
-  statusLastModifiedAt           DateTime?                        @map("status_last_modified_at")
-  approvedAt                     DateTime?                        @map("approved_at")
-  completedAt                    DateTime?                        @map("completed_at")
+  id                   Int                           @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId           Int                           @map("employee_id") @db.UnsignedInt()
+  title                String                        @db.VarChar(50)
+  description          String                        @db.Text()
+  currencyId           Int                           @map("currency_id") @db.UnsignedInt()
+  amount               Decimal                       @db.Decimal(20, 4)
+  status               REIMBURESEMENT_REQUEST_STATUS @default(SUBMITTED)
+  expenditureDate      DateTime                      @map("expenditure_date")
+  approverId           Int?                          @map("approver_id") @db.UnsignedInt()
+  completerId          Int?                          @map("completer_id") @db.UnsignedInt()
+  createdAt            DateTime                      @default(now()) @map("created_at")
+  modifiedAt           DateTime?                     @updatedAt @map("modified_at")
+  statusLastModifiedAt DateTime?                     @map("status_last_modified_at")
+  approvedAt           DateTime?                     @map("approved_at")
+  completedAt          DateTime?                     @map("completed_at")
 
-  employee                       Employee                         @relation(fields: [employeeId], references: [id], name: "employee")
-  approver                       Employee?                        @relation(fields: [approverId], references: [id], name: "approver")
-  completer                      Employee?                        @relation(fields: [completerId], references: [id], name: "completer")
-  currency    CompanyCurrency  @relation(fields: [currencyId], references: [id])
+  employee           Employee                         @relation(fields: [employeeId], references: [id], name: "employee")
+  approver           Employee?                        @relation(fields: [approverId], references: [id], name: "approver")
+  completer          Employee?                        @relation(fields: [completerId], references: [id], name: "completer")
+  currency           CompanyCurrency                  @relation(fields: [currencyId], references: [id])
   requestAttachments ReimbursementRequestAttachment[]
   requestComments    ReimbursementRequestComment[]
 
@@ -433,11 +432,11 @@ model ReimbursementRequest {
 }
 
 model ReimbursementRequestAttachment {
-  id                   Int                  @id @default(autoincrement()) @db.UnsignedInt()
-  requestId            Int                  @map("request_id") @db.UnsignedInt()
-  uploaderId           Int                  @map("uploader_id") @db.UnsignedInt()
-  attachmentUrl        String               @map("attachment_url") @db.Text()
-  createdAt            DateTime             @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement()) @db.UnsignedInt()
+  requestId     Int      @map("request_id") @db.UnsignedInt()
+  uploaderId    Int      @map("uploader_id") @db.UnsignedInt()
+  attachmentUrl String   @map("attachment_url") @db.Text()
+  createdAt     DateTime @default(now()) @map("created_at")
 
   reimbursementRequest ReimbursementRequest @relation(fields: [requestId], references: [id])
   uploader             Employee             @relation(fields: [uploaderId], references: [id])
@@ -452,16 +451,16 @@ enum REIMBURESEMENT_REQUEST_STATE {
 }
 
 model ReimbursementRequestComment {
-  id                   Int                                  @id @default(autoincrement()) @db.UnsignedInt()
-  requestId            Int                                  @map("request_id") @db.UnsignedInt()
-  commenterId          Int                                  @map("commenter_id") @db.UnsignedInt()
-  requestState         REIMBURESEMENT_REQUEST_STATE @map("request_state")
-  comment              String                               @db.Text()
-  createdAt            DateTime                             @default(now()) @map("created_at")
-  modifiedAt           DateTime?                            @updatedAt @map("modified_at")
+  id           Int                          @id @default(autoincrement()) @db.UnsignedInt()
+  requestId    Int                          @map("request_id") @db.UnsignedInt()
+  commenterId  Int                          @map("commenter_id") @db.UnsignedInt()
+  requestState REIMBURESEMENT_REQUEST_STATE @map("request_state")
+  comment      String                       @db.Text()
+  createdAt    DateTime                     @default(now()) @map("created_at")
+  modifiedAt   DateTime?                    @updatedAt @map("modified_at")
 
-  reimbursementRequest ReimbursementRequest                 @relation(fields: [requestId], references: [id])
-  commenter            Employee                             @relation(fields: [commenterId], references: [id])
+  reimbursementRequest ReimbursementRequest @relation(fields: [requestId], references: [id])
+  commenter            Employee             @relation(fields: [commenterId], references: [id])
 
   @@map("reimbursement_request_comment")
 }
@@ -472,15 +471,52 @@ enum HOLIDAY_TYPE {
 }
 
 model Holiday {
-  id          Int          @id @db.UnsignedInt()
-  code        String       @db.VarChar(30)
-  name        String       @db.VarChar(100)
-  description String       @default("") @map("description") @db.VarChar(200)
-  type        HOLIDAY_TYPE @map("type")
-  date        DateTime     @map("date") @db.Date
-  organizationId String        @map("organization_id")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  modifiedAt  DateTime?    @updatedAt @map("modified_at")
+  id             Int          @id @db.UnsignedInt()
+  code           String       @db.VarChar(30)
+  name           String       @db.VarChar(100)
+  description    String       @default("") @map("description") @db.VarChar(200)
+  type           HOLIDAY_TYPE @map("type")
+  date           DateTime     @map("date") @db.Date
+  organizationId String       @map("organization_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  modifiedAt     DateTime?    @updatedAt @map("modified_at")
 
   @@map("holiday")
+}
+
+model JobTitle {
+  id                     Int       @id @db.UnsignedInt()
+  organizationId         String    @map("organization_id") @db.VarChar(100)
+  companyId              Int       @map("company_id") @db.UnsignedInt()
+  employeeBandId         Int       @map("employee_band_id") @db.UnsignedInt()
+  code                   String    @map("code")
+  description            String    @map("description") @db.Text()
+  name                   String    @map("name") @db.VarChar(100)
+  companyLevelId         Int       @map("company_level_id") @db.UnsignedInt()
+  minimumAge             Int?      @map("minimum_age") @db.UnsignedTinyInt()
+  maximumAge             Int?      @map("maximum_age") @db.UnsignedTinyInt()
+  minimumExperienceYears Int?      @map("minimum_experience_years") @db.UnsignedTinyInt()
+  acceptDisability       Boolean   @default(true) @map("accept_disability")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  modifiedAt             DateTime? @updatedAt @map("modified_at")
+
+  companyTreeNodes CompanyTreeNode[]
+
+  @@map("job_title")
+}
+
+model CompanyTreeNode {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId  Int       @map("company_id") @db.UnsignedInt()
+  jobTitleId Int       @map("job_title_id") @db.UnsignedInt()
+  employeeId Int?      @map("employee_id") @db.UnsignedInt()
+  parentId   Int?      @map("parent_id") @db.UnsignedInt()
+  createdAt  DateTime  @default(now()) @map("created_at")
+  modifiedAt DateTime? @updatedAt @map("modified_at")
+
+  employee Employee?      @relation(fields: [employeeId], references: [id])
+  company  PayrollCompany @relation(fields: [companyId], references: [id])
+  jobTitle JobTitle       @relation(fields: [jobTitleId], references: [id])
+
+  @@map("company_tree_node")
 }

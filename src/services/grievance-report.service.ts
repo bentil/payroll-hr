@@ -97,7 +97,7 @@ export async function addGrievanceReport(
         grievanceTypeService.getGrievanceType(grievanceTypeId)
       ]);
     } catch (err) {
-      logger.warn('Getting PayrollCompany[%s] fialed', companyId);
+      logger.warn('Getting PayrollCompany[%s] failed', companyId);
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
         message: 'Dependency check failed',

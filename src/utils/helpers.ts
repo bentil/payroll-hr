@@ -5,6 +5,7 @@ import {
 } from '../domain/dto/grievance-reported-employee.dto';
 import { CreateCompanyLevelLeavePackageDto } from '../domain/dto/leave-package.dto';
 import { ForbiddenError } from '../errors/http-errors';
+import { CreateChildNodeDto, childNode } from '../domain/dto/company-tree-node.dto';
 
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
@@ -81,9 +82,27 @@ export function generateLeavePackageRecordsForACompanyLevel(
     new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
 }
 
+export function generateChildNodes(childNodes: childNode[], companyId: number, parentId: number) {
+  return childNodes.map(node => new CreateChildNodeDto(node, companyId, parentId));
+}
+
 type ManagePermissionScopeQueryOptsType = {
   [key: string]: string | number | boolean | undefined | null | Date | { [key: string]: any }
 }
+
+// calculate number of days between two given dates
+export async function calculateDaysBetweenDates(startDate: Date, endDate: Date): Promise<number> {
+  // To calculate the time difference of two dates 
+  const differenceInTime = endDate.getTime() - startDate.getTime(); 
+    
+  // To calculate the no. of days between two dates 
+  const differenceInDays = differenceInTime / (1000 * 3600 * 24); 
+
+  return differenceInDays;
+}
+
+type ScopedQuery = { scopedQuery: Record<string, any>; };
+
 /**
  * Function to check if user has permission to requests and return states
  * @param user AuthorizedUser
@@ -119,13 +138,32 @@ export async function managePermissionScopeQuery(user: AuthorizedUser,
   return { scopedQuery: { ...queryParam, ...scopeQuery }, query: queryParam, ...checks };
 }
 
-// calculate number of days between two given dates
-export async function calculateDaysBetweenDates(startDate: Date, endDate: Date): Promise<number> {
-  // To calculate the time difference of two dates 
-  const differenceInTime = endDate.getTime() - startDate.getTime(); 
-    
-  // To calculate the no. of days between two dates 
-  const differenceInDays = differenceInTime / (1000 * 3600 * 24); 
+export async function applyCompanyScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>
+): Promise<ScopedQuery> {
+  const { platformUser, companyIds } = user;
+  const { companyId: qCompanyId, ...query } = queryParams;
 
-  return differenceInDays;
+  let authorized = false;
+  const scopeQuery = {
+    companyId: { in: companyIds || [] }
+  } as { [key: string]: any, companyId?: { in: number[] } | number };
+
+  if (platformUser) {
+    scopeQuery.companyId = qCompanyId || undefined;
+    authorized = true;
+  } else if (qCompanyId && companyIds.includes(qCompanyId)) {
+    scopeQuery.companyId = qCompanyId;
+    authorized = true;
+  } else if (!qCompanyId && companyIds.length) {
+    scopeQuery.companyId = { in: companyIds };
+    authorized = true;
+  }
+
+  if (!authorized) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+
+  return { scopedQuery: { ...query, ...scopeQuery } };
 }

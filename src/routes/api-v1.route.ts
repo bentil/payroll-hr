@@ -55,6 +55,10 @@ import {
   CREATE_LEAVE_RESPONSE_SCHEMA,
   ADJUST_DAYS_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
+import {
+  CREATE_COMPANY_TREE_NODE,
+  UPDATE_COMPANY_TREE_NODE,
+} from '../domain/request-schema/company-tree-node.schema';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
 // eslint-disable-next-line max-len
@@ -70,6 +74,7 @@ import * as disciplinaryActionV1Controller from '../controllers/disciplinary-act
 import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
 import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
+import * as treeNodeV1Controller from '../controllers/company-tree-node-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -432,5 +437,31 @@ router.post(
   summaryV1Controller.getSummary
 );
 
+// ### Company Tree Node 
+router.post(
+  '/payroll-company/:id/tree/nodes',
+  authenticateUser(),
+  validateRequestBody(CREATE_COMPANY_TREE_NODE),
+  treeNodeV1Controller.addNewCompanyTreeNode
+);
+
+router.get(
+  '/payroll-company/:id/tree',
+  authenticateUser(),
+  treeNodeV1Controller.getCompanyTree
+);
+
+router.get(
+  '/payroll-company/:companyId/tree/nodes/:nodeId',
+  authenticateUser(),
+  treeNodeV1Controller.getCompanyTreeNode
+);
+
+router.patch(
+  '/payroll-company/:companyId/tree/nodes/:nodeId',
+  authenticateUser(),
+  validateRequestBody(UPDATE_COMPANY_TREE_NODE),
+  treeNodeV1Controller.updateCompanyTreeNode
+);
 
 export default router;
