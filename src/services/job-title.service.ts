@@ -5,7 +5,7 @@ import * as repository from '../repositories/job-title.repository';
 import { NotFoundError, ServerError } from '../errors/http-errors';
 import { errors } from '../utils/constants';
 
-const logger = rootLogger.child({ context: 'HolidayService' });
+const logger = rootLogger.child({ context: 'JobTitleService' });
 export async function createOrUpdateJobTitle(
   data: Omit<JobTitleEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<JobTitle> {

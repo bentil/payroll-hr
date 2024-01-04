@@ -38,7 +38,7 @@ export async function addCompanyTreeNode(
   
   //Validation
   try {
-    if (parentId === null) {
+    if (!parentId) {
       const checkIfRootExist = await repository.find({ companyId });
       if (checkIfRootExist) {
         throw new AlreadyExistsError({
@@ -47,28 +47,40 @@ export async function addCompanyTreeNode(
       }
     }
 
-    if ((parentId !== null) && employeeId) {
+    if (parentId && employeeId) {
       [parent, employee, jobTitle] = await Promise.all([
         repository.findOne({ id: parentId }),
         getEmployee(employeeId),
         getJobTitle(jobTitleId)
       ]);
-      validateCompanyId(jobTitle.companyId, companyId, parent?.companyId, employee.companyId);
-    } else if (parentId !== null) {
+      if (!parent) {
+        throw new NotFoundError({
+          name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+          message: 'CompanyTreeNode does not exist'
+        });
+      }
+      await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId, employee.companyId);
+    } else if (parentId) {
       [parent, jobTitle] = await Promise.all([
         repository.findOne({ id: parentId }),
         getJobTitle(jobTitleId)
       ]);
-      validateCompanyId(jobTitle.companyId, companyId, parent?.companyId);
+      if (!parent) {
+        throw new NotFoundError({
+          name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+          message: 'CompanyTreeNode does not exist'
+        });
+      }
+      await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId);
     } else if (employeeId) {
       [employee, jobTitle] = await Promise.all([
         getEmployee(employeeId),
         getJobTitle(jobTitleId)
       ]);
-      validateCompanyId(jobTitle.companyId, companyId, employee.companyId);
+      await validateCompanyId(jobTitle.companyId, companyId, employee.companyId);
     } else {
       jobTitle = await getJobTitle(jobTitleId);
-      validateCompanyId(jobTitle.companyId, companyId);
+      await validateCompanyId(jobTitle.companyId, companyId);
     }
   } catch (err) {
     logger.warn(
@@ -90,6 +102,7 @@ export async function addCompanyTreeNode(
         jobTitleId,
         employeeId,
         parentId,
+        childNodes
       }, true);
     } else {
       newCompanyTreeNode = await repository.create({
@@ -117,18 +130,25 @@ export async function addCompanyTreeNode(
 
 export async function getCompanyTree(
   companyId: number
-): Promise<CompanyTreeNodeDto[]> {
+): Promise<CompanyTreeNodeDto> {
   logger.debug('Getting details for CompanyTreeNode for company[%s]', companyId);
 
-  let result: CompanyTreeNodeDto[];
+  let result: CompanyTreeNodeDto | null;
   try {
-    result = await repository.find({ companyId }, true);
+    result = await repository.find({ companyId, parentId: null }, true);
     logger.info('Found CompanyTree for company[%s] that matched query', companyId);
   } catch (err) {
     logger.warn('Finding CompanyTree for company[%s] failed', companyId, { error: err as Error });
     throw new ServerError({
       message: (err as Error).message,
       cause: err
+    });
+  }
+
+  if (!result) {
+    throw new NotFoundError({
+      name: errors.COMPANY_TREE_NOT_FOUND,
+      message: 'CompanyTree does not exist'
     });
   }
 
@@ -210,13 +230,13 @@ async function validateCompanyId(
   parentCompanyId?: number, 
   employeeCompanyId?: number,
 ) {
-  if (jobTitleCompanyId !== companyId) {
+  if (jobTitleCompanyId && (jobTitleCompanyId !== companyId)) {
     throw new ForbiddenError({ message: 'Not allowed to perform action with this JobTitle.' }); 
   }
-  if (parentCompanyId !== companyId) {
+  if (parentCompanyId && (parentCompanyId !== companyId)) {
     throw new ForbiddenError({ message: 'Not allowed to perform action with this ParentCompany.' });
   }
-  if (employeeCompanyId !== companyId) {
+  if (employeeCompanyId && (employeeCompanyId !== companyId)) {
     throw new ForbiddenError({ message: 'Not allowed to perform action.' }); 
   }
 }

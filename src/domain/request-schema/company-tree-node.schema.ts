@@ -18,7 +18,7 @@ export const CREATE_COMPANY_TREE_NODE = Joi.object({
   jobTitleId: Joi.number()
     .required()
     .messages({ 'number.base': 'JobTitleId must be a number' }),
-  emmployeeId: Joi.number()
+  employeeId: Joi.number()
     .optional()
     .messages({ 'number.base': 'EmployeeId must be a number' }),
   childNodes: Joi.array().items(CHILD_NODE).optional()

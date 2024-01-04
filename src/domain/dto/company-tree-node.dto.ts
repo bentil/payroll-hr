@@ -16,14 +16,12 @@ export class childNode {
 export class CreateChildNodeDto {
   jobTitleId!: number;
   employeeId?: number;
-  parentId!: number;
   companyId!: number;
 
-  constructor(childNode: childNode, companyId: number, parentId: number) {
+  constructor(childNode: childNode, companyId: number) {
     this.jobTitleId = childNode.jobTitleId;
     this.employeeId = childNode.employeeId;
     this.companyId = companyId;
-    this.parentId = parentId;
   }
 }
 
@@ -48,4 +46,5 @@ export class QueryCompanyTeeNodeDto {
 export interface CompanyTreeNodeDto extends CompanyTreeNode {
   jobTitle?: JobTitle;
   employee?: Employee
+  parent?: CompanyTreeNode;
 }

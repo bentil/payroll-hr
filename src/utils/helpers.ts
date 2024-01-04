@@ -82,8 +82,8 @@ export function generateLeavePackageRecordsForACompanyLevel(
     new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
 }
 
-export function generateChildNodes(childNodes: childNode[], companyId: number, parentId: number) {
-  return childNodes.map(node => new CreateChildNodeDto(node, companyId, parentId));
+export function generateChildNodes(childNodes: childNode[], companyId: number) {
+  return childNodes.map(node => new CreateChildNodeDto(node, companyId));
 }
 
 type ManagePermissionScopeQueryOptsType = {
@@ -166,4 +166,19 @@ export async function applyCompanyScopeToQuery(
   }
 
   return { scopedQuery: { ...query, ...scopeQuery } };
+}
+
+export function recurse(level: number): any {
+  if (level === 0) {
+    return {
+      include: {
+        parent: true, employee: true, jobTitle: true, companyTreeNodes: true
+      }
+    };
+  }
+  return {
+    include: {
+      parent: true, employee: true, jobTitle: true, companyTreeNodes: recurse(level - 1)
+    }
+  };
 }

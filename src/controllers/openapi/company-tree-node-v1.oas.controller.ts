@@ -53,7 +53,7 @@ export class CompanyTreeNodeV1Controller {
   @Get('/{id}/tree')
   public async getCompanyTree(
     @Path() id: number
-  ): Promise<ApiSuccessResponse<CompanyTreeNodeDto[]>> {
+  ): Promise<ApiSuccessResponse<CompanyTreeNodeDto>> {
     this.logger.debug('Received request to get CompanyTree for company[%s] matching query', id);
     const companyTree = await service.getCompanyTree(id);
     this.logger.info('Returning CompanyTree for company[%s]', id);
