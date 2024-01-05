@@ -212,7 +212,7 @@ export async function updateCompanyTreeNode(
 
   logger.debug('Persisting update(s) to CompanyTreeNode[%s]', nodeId);
   const updatedCompanyTreeNode = await repository.update({
-    where: { id: nodeId, companyId }, updateData
+    where: { id: nodeId, companyId }, updateData, includeRelations: true
   });
   logger.info('Update(s) to CompanyTreeNode[%s] persisted successfully!', nodeId);
 

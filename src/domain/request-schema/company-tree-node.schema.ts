@@ -27,7 +27,7 @@ export const CREATE_COMPANY_TREE_NODE = Joi.object({
 export const UPDATE_COMPANY_TREE_NODE = Joi.object({
   parentId: Joi.number().optional(),
   emmployeeId: Joi.number().optional(),
-});
+}).or('parentId', 'employeeId');
 
 export const QUERY_COMPANY_TREE_NODE = Joi.object({
   page: Joi.number()
