@@ -48,3 +48,13 @@ export interface CompanyTreeNodeDto extends CompanyTreeNode {
   employee?: Employee
   parent?: CompanyTreeNode;
 }
+
+export class includeRelations {
+  include?: {
+    employee?: boolean;
+    company?: boolean;
+    jobTitle?: boolean;
+    parent?: boolean;
+    children?: boolean | any ;
+  };
+}

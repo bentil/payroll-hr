@@ -2,7 +2,8 @@ import { Prisma } from '@prisma/client';
 import {
   CompanyTreeNodeDto, 
   UpdateCompanyTreeNodeDto, 
-  childNode 
+  childNode, 
+  includeRelations
 } from '../domain/dto/company-tree-node.dto';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, FailedDependencyError } from '../errors/http-errors';
@@ -32,7 +33,7 @@ export async function create(
       data,
       include: includeRelations
         ? { 
-          parent: true, employee: true, jobTitle: true, companyTreeNodes: {
+          parent: true, employee: true, jobTitle: true, children: {
             include: { jobTitle: true, employee: true } 
           } 
         }
@@ -70,7 +71,7 @@ export async function createNodeWithChild(
     jobTitle: { connect: { id: jobTitleId } },
     company: { connect: { id: companyId } },
     parent: parentId ? { connect: { id: parentId } } : undefined,
-    companyTreeNodes: { createMany: {
+    children: { createMany: {
       data: nodes
     } }
   };
@@ -80,7 +81,7 @@ export async function createNodeWithChild(
       data,
       include: includeRelations
         ? { 
-          parent: true, employee: true, jobTitle: true, companyTreeNodes: {
+          parent: true, employee: true, jobTitle: true, children: {
             include: { jobTitle: true, employee: true } 
           } 
         }
@@ -107,7 +108,7 @@ export async function findOne(
     where: whereUniqueInput,
     include: includeRelations
       ? { 
-        parent: true, employee: true, jobTitle: true, companyTreeNodes: {
+        parent: true, employee: true, jobTitle: true, children: {
           include: { jobTitle: true, employee: true } 
         } 
       }
@@ -115,20 +116,18 @@ export async function findOne(
   });
 }
 
-export async function find(
+export async function findFirst(
   where?: Prisma.CompanyTreeNodeWhereInput,
-  includeRelations?: boolean,
-): Promise<CompanyTreeNodeDto | null> {
-  const data = await prisma.companyTreeNode.findFirst({
-    where,
-    include: includeRelations 
-      ? { 
-        parent: true, employee: true, jobTitle: true, companyTreeNodes: helpers.recurse(61)
-      }
-      : undefined
-  });
+  include?: Prisma.CompanyTreeNodeInclude,
+) {
+  return await prisma.companyTreeNode.findFirst({ where, include });
+}
 
-  return data;
+export async function findTree(
+  where?: Prisma.CompanyTreeNodeWhereInput,
+  include?: Prisma.CompanyTreeNodeInclude,
+): Promise<CompanyTreeNodeDto | null> {
+  return await findFirst(where, include);
 }
 
 export async function update(params: {
@@ -161,4 +160,19 @@ export async function update(params: {
     }
     throw err;
   }
+}
+
+export function recurse(level: number): includeRelations {
+  if (level === 0) {
+    return {
+      include: {
+        parent: true, employee: true, jobTitle: true, children: true
+      }
+    };
+  }
+  return {
+    include: {
+      parent: true, employee: true, jobTitle: true, children: recurse(level - 1)
+    }
+  };
 }

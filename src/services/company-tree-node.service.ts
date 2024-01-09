@@ -39,7 +39,7 @@ export async function addCompanyTreeNode(
   //Validation
   try {
     if (!parentId) {
-      const checkIfRootExist = await repository.find({ companyId });
+      const checkIfRootExist = await repository.findFirst({ companyId });
       if (checkIfRootExist) {
         throw new AlreadyExistsError({
           message: 'Root node already exist'
@@ -56,7 +56,7 @@ export async function addCompanyTreeNode(
       if (!parent) {
         throw new NotFoundError({
           name: errors.COMPANY_TREE_NODE_NOT_FOUND,
-          message: 'CompanyTreeNode does not exist'
+          message: 'Company tree node does not exist'
         });
       }
       await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId, employee.companyId);
@@ -68,7 +68,7 @@ export async function addCompanyTreeNode(
       if (!parent) {
         throw new NotFoundError({
           name: errors.COMPANY_TREE_NODE_NOT_FOUND,
-          message: 'CompanyTreeNode does not exist'
+          message: 'Company tree node does not exist'
         });
       }
       await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId);
@@ -135,7 +135,15 @@ export async function getCompanyTree(
 
   let result: CompanyTreeNodeDto | null;
   try {
-    result = await repository.find({ companyId, parentId: null }, true);
+    result = await repository.findTree(
+      { companyId, parentId: null }, 
+      { 
+        parent: true, 
+        employee: true, 
+        jobTitle: true, 
+        children: repository.recurse(61)
+      }
+    );
     logger.info('Found CompanyTree for company[%s] that matched query', companyId);
   } catch (err) {
     logger.warn('Finding CompanyTree for company[%s] failed', companyId, { error: err as Error });
@@ -148,7 +156,7 @@ export async function getCompanyTree(
   if (!result) {
     throw new NotFoundError({
       name: errors.COMPANY_TREE_NOT_FOUND,
-      message: 'CompanyTree does not exist'
+      message: 'Company tree does not exist'
     });
   }
 
@@ -171,7 +179,7 @@ export async function getCompanyTreeNode(
   if (!companyTreeNode) {
     throw new NotFoundError({
       name: errors.COMPANY_TREE_NODE_NOT_FOUND,
-      message: 'CompanyTreeNode does not exist'
+      message: 'Company tree node does not exist'
     });
   }
 

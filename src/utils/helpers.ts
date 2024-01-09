@@ -167,18 +167,3 @@ export async function applyCompanyScopeToQuery(
 
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
-
-export function recurse(level: number): any {
-  if (level === 0) {
-    return {
-      include: {
-        parent: true, employee: true, jobTitle: true, companyTreeNodes: true
-      }
-    };
-  }
-  return {
-    include: {
-      parent: true, employee: true, jobTitle: true, companyTreeNodes: recurse(level - 1)
-    }
-  };
-}

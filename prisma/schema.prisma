@@ -517,8 +517,8 @@ model CompanyTreeNode {
   employee         Employee?         @relation(fields: [employeeId], references: [id])
   company          PayrollCompany    @relation(fields: [companyId], references: [id])
   jobTitle         JobTitle          @relation(fields: [jobTitleId], references: [id])
-  parent           CompanyTreeNode?  @relation(fields: [parentId], references: [id], name: "child")
-  companyTreeNodes CompanyTreeNode[] @relation(name: "child")
+  parent           CompanyTreeNode?  @relation(fields: [parentId], references: [id], name: "parent_child")
+  children         CompanyTreeNode[] @relation(name: "parent_child")
 
   @@map("company_tree_node")
 }
