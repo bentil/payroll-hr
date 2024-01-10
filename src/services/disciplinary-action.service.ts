@@ -60,7 +60,6 @@ export async function addDisciplinaryAction(
   logger.info('Dependency checks for all provided ids passed');
  
   logger.debug('Adding new Disciplinary action to the database...');
-
   let newDisciplinaryAction: DisciplinaryAction;
   try {
     newDisciplinaryAction = await repository.create({
@@ -71,7 +70,13 @@ export async function addDisciplinaryAction(
       actionNumber,
       actionDate: creatData.actionDate,
       notes: creatData.notes
-    }, true);
+    },
+    { 
+      actionType: true, 
+      grievanceReport: { include: { grievanceType: true } }, 
+      employee: true 
+    }
+    );
     logger.info('DisciplinaryAction[%s] added successfully!', newDisciplinaryAction.id);
   } catch (err) {
     logger.error('Adding disciplinaryAction failed', { error: err });

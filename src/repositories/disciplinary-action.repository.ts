@@ -8,7 +8,7 @@ export async function create(
   { 
     companyId, employeeId, actionTypeId, grievanceReportId, ...dtoData 
   }: CreateDisciplinaryActionDto,
-  includeRelations?: boolean,
+  include?: Prisma.DisciplinaryActionInclude,
 ): Promise<DisciplinaryAction> {
   const data: Prisma.DisciplinaryActionCreateInput = {
     ...dtoData,
@@ -19,12 +19,7 @@ export async function create(
   };
 
   try {
-    return await prisma.disciplinaryAction.create({ 
-      data,
-      include: includeRelations
-        ? { actionType: true, grievanceReport: { include: { grievanceType: true } } }
-        : undefined
-    });
+    return await prisma.disciplinaryAction.create({ data, include });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
