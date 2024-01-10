@@ -73,15 +73,26 @@ function authenticateRequest(req: Request) {
   if (!req.user) {
     throw new UnauthorizedError({});
   }
-  const { platformUser, organizationId } = req.user;
+  const { platformUser, organizationId, companyIds } = req.user;
   if (!platformUser) {
     const queryOrganizationId = req.query?.organizationId;
     const bodyOrganizationId = req.body?.organizationId;
+    const queryCompanyId = req.query?.companyId;
+    const bodyCompanyId = req.body?.companyId;
+
     // Organization checks
     if (queryOrganizationId && queryOrganizationId !== organizationId) {
       throw new ForbiddenError({ message: 'User not allowed to perform action.' });
     }
     if (bodyOrganizationId && bodyOrganizationId !== organizationId) {
+      throw new ForbiddenError({ message: 'User not allowed to perform action.' });
+    }
+
+    // Company checks
+    if (queryCompanyId && !companyIds.includes(Number(queryCompanyId))) {
+      throw new ForbiddenError({ message: 'User not allowed to perform action.' });
+    }
+    if (bodyCompanyId && !companyIds.includes(Number(bodyCompanyId))) {
       throw new ForbiddenError({ message: 'User not allowed to perform action.' });
     }
   }

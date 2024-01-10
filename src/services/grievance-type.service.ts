@@ -173,7 +173,7 @@ export async function updateGrievanceType(
     logger.warn('GrievanceType[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.GRIEVANCE_TYPE_NOT_FOUND,
-      message: 'Grievance type to update does not exisit'
+      message: 'Grievance type to update does not exist'
     });
   }
 
