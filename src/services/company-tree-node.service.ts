@@ -16,7 +16,7 @@ import * as repository from '../repositories/company-tree-node.repository';
 import { getEmployee } from './employee.service';
 import { rootLogger } from '../utils/logger';
 import { KafkaService } from '../components/kafka.component';
-import { CompanyTreeNode } from '@prisma/client';
+import { CompanyTreeNode, Employee } from '@prisma/client';
 // import { ListWithPagination } from '../repositories/types';
 // import * as helpers from '../utils/helpers';
 import { errors } from '../utils/constants';
@@ -230,6 +230,35 @@ export async function updateCompanyTreeNode(
   logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedCompanyTreeNode;
+}
+
+export async function getParent(employeeId: number): Promise<Employee> {
+  logger.debug('Getting parent of employee[%s]', employeeId);
+  let companyTreeNode: CompanyTreeNodeDto | null;
+
+  try {
+    companyTreeNode = await repository.findFirst(
+      { employeeId }, 
+      { parent: { include: { employee: true } } }
+    );
+  } catch (err) {
+    logger.warn(
+      'Getting parent of employee[%s] failed', employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!companyTreeNode || !companyTreeNode.parent?.employeeId) {
+    throw new NotFoundError({
+      name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+      message: 'Company tree node does not exist for this employee'
+    });
+  }
+  const parentEmployeeId = companyTreeNode.parent.employeeId;
+  const employee = await getEmployee(parentEmployeeId);
+
+  logger.info('Parent for employee[%s] retrieved!', employeeId);
+  return employee;
 }
 
 async function validateCompanyId(
