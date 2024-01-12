@@ -46,7 +46,11 @@ export class QueryCompanyTeeNodeDto {
 export interface CompanyTreeNodeDto extends CompanyTreeNode {
   jobTitle?: JobTitle;
   employee?: Employee
-  parent?: CompanyTreeNode;
+  parent?: Parent;
+}
+
+interface Parent extends CompanyTreeNode {
+  employee?: Employee
 }
 
 export class includeRelations {

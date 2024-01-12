@@ -248,14 +248,12 @@ export async function getParent(employeeId: number): Promise<Employee> {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  if (!companyTreeNode || !companyTreeNode.parent?.employeeId) {
+  if (!companyTreeNode || !companyTreeNode.parent?.employee) {
     throw new NotFoundError({
-      name: errors.COMPANY_TREE_NODE_NOT_FOUND,
-      message: 'Company tree node does not exist for this employee'
+      message: 'Parent does not exist for this employee'
     });
   }
-  const parentEmployeeId = companyTreeNode.parent.employeeId;
-  const employee = await getEmployee(parentEmployeeId);
+  const employee = companyTreeNode.parent.employee; 
 
   logger.info('Parent for employee[%s] retrieved!', employeeId);
   return employee;
