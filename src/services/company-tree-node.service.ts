@@ -232,7 +232,7 @@ export async function updateCompanyTreeNode(
   return updatedCompanyTreeNode;
 }
 
-export async function getParent(employeeId: number): Promise<Employee> {
+export async function getParent(employeeId: number): Promise<Employee | undefined> {
   logger.debug('Getting parent of employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
@@ -248,15 +248,50 @@ export async function getParent(employeeId: number): Promise<Employee> {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  if (!companyTreeNode || !companyTreeNode.parent?.employee) {
+  if (!companyTreeNode) {
     throw new NotFoundError({
-      message: 'Parent does not exist for this employee'
+      message: 'Employee does not belong to any organization'
     });
   }
-  const employee = companyTreeNode.parent.employee; 
+  const employee = companyTreeNode.parent?.employee; 
 
   logger.info('Parent for employee[%s] retrieved!', employeeId);
   return employee;
+}
+
+export async function getSupervisees(employeeId: number) {
+  logger.debug('Getting supervisees of employee[%s]', employeeId);
+  let companyTreeNode: CompanyTreeNodeDto | null;
+
+  try {
+    companyTreeNode = await repository.findFirst(
+      { employeeId }, 
+      { children: { include: { employee: true } } }
+    );
+  } catch (err) {
+    logger.warn(
+      'Getting supervisees of employee[%s] failed', employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!companyTreeNode || !companyTreeNode.children || companyTreeNode.children.length === 0) {
+    throw new NotFoundError({
+      message: 'No position for employee or employee has no supervisees'
+    });
+  }
+  const children = companyTreeNode.children; 
+
+  const supervisees = children.map((child) => {
+    if (child.employee === undefined) {
+      return ;
+    } else {
+      return child.employee;
+    }
+  });
+
+  logger.info('Supervisees for employee[%s] retrieved!', employeeId);
+  return supervisees;
 }
 
 async function validateCompanyId(

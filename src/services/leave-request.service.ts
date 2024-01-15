@@ -33,6 +33,7 @@ import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
 import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
+import { getParent, getSupervisees } from './company-tree-node.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -123,6 +124,27 @@ export async function getLeaveRequests(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { employeeId: requestingEmployeeId } = authorizedUser;
+  let queryableIds: (number | undefined)[] = [];
+  let containsQuery: Record<string,  number | undefined>[] | undefined;
+
+  if (queryEmployeeId) {
+    const supervisees = await getSupervisees(queryEmployeeId);
+    if (supervisees === undefined) {
+      queryableIds = [ queryEmployeeId ];
+    } else {
+      const superviseesId = supervisees.map((supervisee) => {
+        return supervisee?.id;
+      });
+      superviseesId.push(queryEmployeeId);
+      queryableIds = superviseesId;
+    }
+    containsQuery = [];
+    queryableIds.map(item => containsQuery?.push({ employeeId: item }));
+  } else {
+    queryableIds.push(requestingEmployeeId);
+    containsQuery = [];
+    queryableIds.map(item => containsQuery?.push({ employeeId: item }));
+  }
   
   let result: ListWithPagination<LeaveRequestDto>;
   try {
@@ -130,7 +152,8 @@ export async function getLeaveRequests(
     result = await leaveRequestRepository.find({
       skip,
       take,
-      where: { employeeId: queryEmployeeId === undefined? requestingEmployeeId : queryEmployeeId, 
+      where: { 
+        OR: containsQuery, 
         leavePackageId, status, startDate: {
           gte: startDateGte && new Date(startDateGte),
           lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
@@ -178,12 +201,22 @@ export async function getLeaveRequest(
     });
   }
 
-  if (!employeeId || employeeId !== leaveRequest.employeeId) {
-    throw new ForbiddenError({
-      message: 'You are not allowed to perform this action'
-    });
+  const parent = await getParent(leaveRequest.employeeId);
+  if (parent){
+    if (!employeeId || employeeId !== parent.id) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }  
+  } else {
+    if (!employeeId || employeeId !== leaveRequest.employeeId) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }  
   }
 
+  
   logger.info('LeaveRequest[%s] details retrieved!', id);
   return leaveRequest;
 }

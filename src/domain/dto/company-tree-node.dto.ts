@@ -47,9 +47,14 @@ export interface CompanyTreeNodeDto extends CompanyTreeNode {
   jobTitle?: JobTitle;
   employee?: Employee
   parent?: Parent;
+  children?: Supervisees[]
 }
 
 interface Parent extends CompanyTreeNode {
+  employee?: Employee
+}
+
+interface Supervisees extends CompanyTreeNode {
   employee?: Employee
 }
 
