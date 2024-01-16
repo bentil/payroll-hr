@@ -49,7 +49,7 @@ export async function addDisciplinaryAction(
     ]);
   } catch (err) {
     logger.warn(
-      'Getting Company[%s] or employee[%s] or grievanceReport[%s] or actionType[%s] failed', 
+      'Getting Company[%s] or Employee[%s] or GrievanceReport[%s] or ActionType[%s] failed', 
       companyId, employeeId, grievanceReportId, actionTypeId);
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -59,7 +59,7 @@ export async function addDisciplinaryAction(
   }
   logger.info('Dependency checks for all provided ids passed');
  
-  logger.debug('Adding new Disciplinary action to the database...');
+  logger.debug('Adding new DisciplinaryAction to the database...');
   let newDisciplinaryAction: DisciplinaryAction;
   try {
     newDisciplinaryAction = await repository.create({
@@ -79,7 +79,7 @@ export async function addDisciplinaryAction(
     );
     logger.info('DisciplinaryAction[%s] added successfully!', newDisciplinaryAction.id);
   } catch (err) {
-    logger.error('Adding disciplinaryAction failed', { error: err });
+    logger.error('Adding DisciplinaryAction failed', { error: err });
     throw new ServerError({
       message: (err as Error).message,
       cause: err
@@ -154,7 +154,7 @@ export async function getDisciplinaryAction(id: number): Promise<DisciplinaryAct
   if (!disciplinaryAction) {
     throw new NotFoundError({
       name: errors.DISCIPLINARY_ACTION_NOT_FOUND,
-      message: 'DisciplinaryAction does not exist'
+      message: 'Disciplinary action does not exist'
     });
   }
 
@@ -233,7 +233,7 @@ export async function updateDisciplinaryAction(
     }
   } catch (err) {
     logger.warn(
-      'Getting grievanceReport[%s] or actionType[%s] failed', 
+      'Getting GrievanceReport[%s] or actionType[%s] failed', 
       grievanceReportId, actionTypeId);
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({

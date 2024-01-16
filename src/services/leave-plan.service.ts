@@ -43,7 +43,7 @@ export async function addLeavePlan(
   try {
     validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
-    logger.warn('Validating employee[%s] and/or leaveTypeId[%s] fialed', 
+    logger.warn('Validating Employee[%s] and/or LeaveTypeId[%s] fialed', 
       employeeId, leaveTypeId
     );
     if (err instanceof HttpError) throw err;
@@ -52,7 +52,7 @@ export async function addLeavePlan(
       cause: err
     });
   }
-  logger.info('LeavePackage for employee[%s] and leaveTypeId[%s] exists', employeeId, leaveTypeId);
+  logger.info('LeavePackage for Employee[%s] and LeaveTypeId[%s] exists', employeeId, leaveTypeId);
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
@@ -72,14 +72,14 @@ export async function addLeavePlan(
     numberOfDays
   };
  
-  logger.debug('Adding new Leave plan to the database...');
+  logger.debug('Adding new LeavePlan to the database...');
 
   let newLeavePlan: LeavePlan;
   try {
     newLeavePlan = await leavePlanRepository.create(creatData, true);
     logger.info('LeavePlan[%s] added successfully!', newLeavePlan.id);
   } catch (err) {
-    logger.error('Adding leavePlan failed', { error: err });
+    logger.error('Adding LeavePlan failed', { error: err });
     throw new ServerError({
       message: (err as Error).message,
       cause: err
@@ -153,7 +153,7 @@ export async function getLeavePlan(id: number): Promise<LeavePlanDto> {
   if (!leavePlan) {
     throw new NotFoundError({
       name: errors.LEAVE_PLAN_NOT_FOUND,
-      message: 'LeavePlan does not exist'
+      message: 'Leave plan does not exist'
     });
   }
 

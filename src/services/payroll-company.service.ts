@@ -84,17 +84,17 @@ export async function validatePayrollCompany(
     logger.warn('PayrollCompany[%s] does not exist', id);
     if (options?.organizationId) {
       throw new NotFoundError({
-        message: 'Payroll Company does not exist for your organization'
+        message: 'Payroll company does not exist for your organization'
       });
     }
-    throw new NotFoundError({ message: 'Payroll Company does not exist' });
+    throw new NotFoundError({ message: 'Payroll company does not exist' });
   }
 
   if (options?.throwOnNotActive) {
     if (payrollCompany.status !== 'ACTIVE') {
       throw new InvalidStateError({
         name: errors.PAYROLL_COMPANY_NOT_ACTIVE,
-        message: 'Payroll Company is not active'
+        message: 'Payroll company is not active'
       });
     }
   }

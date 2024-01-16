@@ -54,7 +54,7 @@ export async function addLeaveRequest(
   try {
     validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
-    logger.warn('Validating employee[%s] and/or leaveType[%s] failed', 
+    logger.warn('Validating Employee[%s] and/or LeaveType[%s] failed', 
       employeeId, leaveTypeId
     );
     if (err instanceof HttpError) throw err;
@@ -63,7 +63,7 @@ export async function addLeaveRequest(
       cause: err
     });
   }
-  logger.info('employee[%s] and leaveType[%s] exists', employeeId, leaveTypeId);
+  logger.info('Employee[%s] and LeaveType[%s] exists', employeeId, leaveTypeId);
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
@@ -82,7 +82,7 @@ export async function addLeaveRequest(
     numberOfDays
   };
  
-  logger.debug('Adding new Leave request to the database...');
+  logger.debug('Adding new LeaveRequest to the database...');
 
   let newLeaveRequest: LeaveRequest;
   try {
@@ -450,7 +450,7 @@ export async function cancelLeaveRequest(
   const now = new Date();
   if (leaveStartDate.getTime() <= now.getTime()) {
     logger.warn(
-      'LeaveRequest[%s] cannot be cancelled because start date[%s] is past',
+      'LeaveRequest[%s] cannot be cancelled because StartDate[%s] is past',
       id, leaveStartDate
     );
     throw new RequirementNotMetError({

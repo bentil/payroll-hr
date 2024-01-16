@@ -28,14 +28,14 @@ const logger = rootLogger.child({ context: 'LeaveTypeService' });
 export const createLeaveType = async (
   createLeaveTypeDto: CreateLeaveTypeDto,
 ): Promise<LeaveTypeDto> => {
-  logger.debug('Persisting new Leave Type...');
+  logger.debug('Persisting new LeaveType...');
   let leaveType: LeaveTypeDto;
   try {
     leaveType = await repository.create(createLeaveTypeDto);
-    logger.info('Leave Type[%s] persisted successfully!', leaveType.id);
+    logger.info('LeaveType[%s] persisted successfully!', leaveType.id);
   } catch (err) {
     if (err instanceof HttpError) throw err;
-    logger.error('Persisting Leave Type failed', { error: err });
+    logger.error('Persisting LeaveType failed', { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leaveType;
@@ -48,7 +48,7 @@ export async function updateLeaveType(
   const leaveType = await repository.findOne({ id });
   if (!leaveType) {
     logger.warn('LeaveType[%s] to update does not exist', id);
-    throw new NotFoundError({ message: 'Leave Type to update does not exist' });
+    throw new NotFoundError({ message: 'Leave type to update does not exist' });
   }
   const updatedLeaveType = await repository.update({
     where: { id },
@@ -89,7 +89,7 @@ export async function getLeaveTypes(
     );
   } catch (err) {
     logger.warn(
-      'Querying leaveTypes with query failed',
+      'Querying LeaveTypes with query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -140,7 +140,7 @@ export async function getApplicableLeaveTypes(
       leaveType = { data: [] };    }
   } catch (err) {
     logger.warn(
-      'Querying leaveTypes with query failed',
+      'Querying LeaveTypes with query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -156,15 +156,15 @@ export async function getLeaveTypeById(id: number): Promise<LeaveType> {
   try {
     leaveType = await repository.findOne({ id });
   } catch (err) {
-    logger.warn('Getting Leave Type[%s] failed', id, { error: (err as Error).stack });
+    logger.warn('Getting LeaveType[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
   if (!leaveType) {
-    logger.warn('Leave Type[%s] does not exist', id);
-    throw new NotFoundError({ message: 'Leave Type does not exist' });
+    logger.warn('LeaveType[%s] does not exist', id);
+    throw new NotFoundError({ message: 'Leave type does not exist' });
   }
-  logger.info('Leave Type[%s] details retrieved!', id);
+  logger.info('LeaveType[%s] details retrieved!', id);
   return leaveType;
 }
 
@@ -182,7 +182,7 @@ export async function searchLeaveTypes(
   const orderByInput = helpers.getOrderByInput(orderBy);
 
   let leaveType: ListWithPagination<LeaveType>;
-  logger.debug('Finding Leave Type(s) that match search query', { query });
+  logger.debug('Finding LeaveType(s) that match search query', { query });
   try {
     leaveType = await repository.search({
       skip,
@@ -195,7 +195,7 @@ export async function searchLeaveTypes(
       leaveType.data.length, { query });
   } catch (err) {
     logger.warn(
-      'Querying leaveTypes with search query failed',
+      'Querying LeaveTypes with search query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -213,7 +213,7 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
     if (!leaveType) {
       logger.warn('LeaveType[%s] does not exist', id);
       throw new NotFoundError({
-        message: 'LeaveType you are attempting to delete does not exist'
+        message: 'Leave type you are attempting to delete does not exist'
       });
     }
     deletedLeaveType = await repository.deleteOne({ id });
@@ -260,7 +260,7 @@ export async function validate(
   }
 
   if (!leavePackage) {
-    logger.warn('LeavePackage does not exist for Employee[%s] or leaveType[%s]',
+    logger.warn('LeavePackage does not exist for Employee[%s] or LeaveType[%s]',
       employee, leaveTypeId);
     throw new NotFoundError({ 
       message: 'No applicable leave package found' 

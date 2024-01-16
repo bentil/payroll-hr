@@ -5,10 +5,10 @@ export class CreateCompanyTreeNodeDto {
   parentId?: number;
   jobTitleId!: number;
   employeeId?: number;
-  childNodes?: childNode[];
+  childNodes?: ChildNode[];
 }
 
-export class childNode {
+export class ChildNode {
   jobTitleId!: number;
   employeeId?: number;
 }
@@ -18,7 +18,7 @@ export class CreateChildNodeDto {
   employeeId?: number;
   companyId!: number;
 
-  constructor(childNode: childNode, companyId: number) {
+  constructor(childNode: ChildNode, companyId: number) {
     this.jobTitleId = childNode.jobTitleId;
     this.employeeId = childNode.employeeId;
     this.companyId = companyId;
@@ -46,16 +46,8 @@ export class QueryCompanyTeeNodeDto {
 export interface CompanyTreeNodeDto extends CompanyTreeNode {
   jobTitle?: JobTitle;
   employee?: Employee
-  parent?: Parent;
-  children?: Supervisees[]
-}
-
-interface Parent extends CompanyTreeNode {
-  employee?: Employee
-}
-
-interface Supervisees extends CompanyTreeNode {
-  employee?: Employee
+  parent?: CompanyTreeNodeDto;
+  children?: CompanyTreeNodeDto[]
 }
 
 export class includeRelations {

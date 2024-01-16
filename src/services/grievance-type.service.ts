@@ -43,14 +43,14 @@ export async function addGrievanceType(creatData: CreateGrievanceTypeDto): Promi
   }
   logger.info('PayrollCompany[%s] exists', companyId);
  
-  logger.debug('Adding new Grievance type to the database...');
+  logger.debug('Adding new GrievanceType to the database...');
 
   let newGrievanceType: GrievanceType;
   try {
     newGrievanceType = await grievanceTypeRepository.create(creatData);
     logger.info('GrievanceType[%s] added successfully!', newGrievanceType.id);
   } catch (err) {
-    logger.error('Adding grievanceType failed', { error: err });
+    logger.error('Adding GrievanceType failed', { error: err });
     throw new ServerError({
       message: (err as Error).message,
       cause: err

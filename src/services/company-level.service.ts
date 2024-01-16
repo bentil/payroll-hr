@@ -45,7 +45,7 @@ export async function getCompanyLevelById(
 
   if (!companyLevel) {
     logger.warn('CompanyLevel[%s] does not exist', id);
-    throw new NotFoundError({ message: 'CompanyLevel does not exist' });
+    throw new NotFoundError({ message: 'Company level does not exist' });
   }
 
   logger.info('CompanyLevel[%s] details retrieved!', id);
@@ -89,7 +89,7 @@ export async function validateCompanyLevel(
 
   if (!companyLevel) {
     logger.warn('CompanyLevel[%s] does not exist', id);
-    throw new NotFoundError({ message: 'CompanyLevel(s) does not exist' });
+    throw new NotFoundError({ message: 'Company level(s) does not exist' });
   }
 
   logger.info('CompanyLevel[%s] details retrieved!', id);
@@ -112,7 +112,7 @@ export async function validateCompanyLevels(
     );
     throw new NotFoundError({
       name: errors.COMPANY_LEVEL_NOT_FOUND,
-      message: 'At least one Employee ID passed does not exist'
+      message: 'At least one Employee Id passed does not exist'
     });
   }
 }

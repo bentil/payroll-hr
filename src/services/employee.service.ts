@@ -96,12 +96,12 @@ export async function validateEmployees(
 
   if (foundEmployees.data.length !== employeesList.size) {
     logger.warn(
-      'Received %d employees id(s), but found %d',
+      'Received %d Employees id(s), but found %d',
       employeesList.size, foundEmployees.data.length
     );
     throw new NotFoundError({
       name: errors.EMPLOYEE_NOT_FOUND,
-      message: 'At least one Employee ID passed does not exist'
+      message: 'At least one employee Id passed does not exist'
     });
   }
 }

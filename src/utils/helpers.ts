@@ -5,7 +5,7 @@ import {
 } from '../domain/dto/grievance-reported-employee.dto';
 import { CreateCompanyLevelLeavePackageDto } from '../domain/dto/leave-package.dto';
 import { ForbiddenError } from '../errors/http-errors';
-import { CreateChildNodeDto, childNode } from '../domain/dto/company-tree-node.dto';
+import { CreateChildNodeDto, ChildNode } from '../domain/dto/company-tree-node.dto';
 
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
@@ -82,7 +82,7 @@ export function generateLeavePackageRecordsForACompanyLevel(
     new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
 }
 
-export function generateChildNodes(childNodes: childNode[], companyId: number) {
+export function generateChildNodes(childNodes: ChildNode[], companyId: number) {
   return childNodes.map(node => new CreateChildNodeDto(node, companyId));
 }
 

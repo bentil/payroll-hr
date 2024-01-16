@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import {
   CompanyTreeNodeDto, 
   UpdateCompanyTreeNodeDto, 
-  childNode, 
+  ChildNode, 
   includeRelations
 } from '../domain/dto/company-tree-node.dto';
 import { prisma } from '../components/db.component';
@@ -15,7 +15,7 @@ export interface CreateCompanyTreeNodeObject {
   parentId?: number;
   jobTitleId: number;
   employeeId?: number;
-  childNodes?: childNode[];
+  childNodes?: ChildNode[];
 }
 export async function create(
   { jobTitleId, employeeId, companyId, parentId, ...dtoData }: CreateCompanyTreeNodeObject,

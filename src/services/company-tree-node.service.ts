@@ -112,7 +112,7 @@ export async function addCompanyTreeNode(
     }
   } catch (err) {
     logger.warn(
-      'Confirming employee and/or jobTitle and/or parent company maps to company[%s] failed',
+      'Confirming Employee and/or JobTitle and/or parent Company maps to Company[%s] failed',
       companyId);
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -120,7 +120,7 @@ export async function addCompanyTreeNode(
       cause: err
     });
   }
-  logger.info('employee, jobTitle and parent companyIds maps to company[%s] failed', companyId);
+  logger.info('Employee, JobTitle and parent Company Ids maps to company[%s]', companyId);
 
   logger.debug('Adding new CompanyTreeNode to the database...');
   try {
@@ -159,7 +159,7 @@ export async function addCompanyTreeNode(
 export async function getCompanyTree(
   companyId: number
 ): Promise<CompanyTreeNodeDto> {
-  logger.debug('Getting details for CompanyTreeNode for company[%s]', companyId);
+  logger.debug('Getting details for CompanyTreeNode for Company[%s]', companyId);
 
   let result: CompanyTreeNodeDto | null;
   try {
@@ -172,7 +172,7 @@ export async function getCompanyTree(
         children: repository.recurse(61)
       }
     );
-    logger.info('Found CompanyTree for company[%s] that matched query', companyId);
+    logger.info('Found CompanyTree for Company[%s] that matched query', companyId);
   } catch (err) {
     logger.warn('Finding CompanyTree for company[%s] failed', companyId, { error: err as Error });
     throw new ServerError({
@@ -261,7 +261,7 @@ export async function updateCompanyTreeNode(
 }
 
 export async function getParent(employeeId: number): Promise<Employee | undefined> {
-  logger.debug('Getting parent of employee[%s]', employeeId);
+  logger.debug('Getting parent of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
   try {
@@ -271,7 +271,7 @@ export async function getParent(employeeId: number): Promise<Employee | undefine
     );
   } catch (err) {
     logger.warn(
-      'Getting parent of employee[%s] failed', employeeId, { error: (err as Error).stack }
+      'Getting parent of Employee[%s] failed', employeeId, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
@@ -283,12 +283,12 @@ export async function getParent(employeeId: number): Promise<Employee | undefine
   }
   const employee = companyTreeNode.parent?.employee; 
 
-  logger.info('Parent for employee[%s] retrieved!', employeeId);
+  logger.info('Parent for Employee[%s] retrieved!', employeeId);
   return employee;
 }
 
 export async function getSupervisees(employeeId: number) {
-  logger.debug('Getting supervisees of employee[%s]', employeeId);
+  logger.debug('Getting supervisees of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
   try {
@@ -298,14 +298,14 @@ export async function getSupervisees(employeeId: number) {
     );
   } catch (err) {
     logger.warn(
-      'Getting supervisees of employee[%s] failed', employeeId, { error: (err as Error).stack }
+      'Getting supervisees of Employee[%s] failed', employeeId, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
   if (!companyTreeNode || !companyTreeNode.children || companyTreeNode.children.length === 0) {
     throw new NotFoundError({
-      message: 'No position for employee or employee has no supervisees'
+      message: 'No position for Employee or Employee has no supervisees'
     });
   }
   const children = companyTreeNode.children; 
@@ -318,7 +318,7 @@ export async function getSupervisees(employeeId: number) {
     }
   });
 
-  logger.info('Supervisees for employee[%s] retrieved!', employeeId);
+  logger.info('Supervisees for Employee[%s] retrieved!', employeeId);
   return supervisees;
 }
 

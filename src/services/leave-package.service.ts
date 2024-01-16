@@ -28,7 +28,7 @@ export const createLeavePackage = async (
   const { companyId, leaveTypeId, companyLevelIds } = createLeavePackageDto;
   const { organizationId } = authorizedUser;
 
-  logger.debug('Validating Payroll Company[%s] and Leave Type[%s]', companyId, leaveTypeId);
+  logger.debug('Validating PayrollCompany[%s] and LeaveType[%s]', companyId, leaveTypeId);
   try {
     await Promise.all([
       payrollCompanyService.validatePayrollCompany(
@@ -39,13 +39,13 @@ export const createLeavePackage = async (
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.error(
-      'Validating company info and/or leave type for Leave Package creation failed',
+      'Validating Company info and/or LeaveType for LeavePackage creation failed',
       { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   logger.info('Successfully validated Payroll Company and Leave Type');
 
-  logger.debug('Persisting new Leave Package...');
+  logger.debug('Persisting new LeavePackage...');
   let leavePackage: LeavePackageDto | null /*validateCompanyLevels: void*/;
 
   if (companyLevelIds) {
@@ -64,15 +64,15 @@ export const createLeavePackage = async (
       );
 
       if (!leavePackage) {
-        logger.error('Persisting LeavePackage with companyLevelIds for company[%s]', companyId);
+        logger.error('Persisting LeavePackage with CompanyLevelIds for Company[%s]', companyId);
         throw new ServerError({
-          message: 'Persistin LeavePackage with companyLevelIds for company failed'+ companyId
+          message: 'Persisting leave package with company level id for company failed'+ companyId
         });
       }
-      logger.info('LeavePackage[%s] with companyLevelIds persisted successfully!', leavePackage.id);
+      logger.info('LeavePackage[%s] with CompanyLevelIds persisted successfully!', leavePackage.id);
     } catch (err) {
       if (err instanceof HttpError) throw err;
-      logger.error('Persisting Leave Package with companyLevelIds failed', { error: err });
+      logger.error('Persisting LeavePackage with CompanyLevelIds failed', { error: err });
       throw new ServerError({ message: (err as Error).message, cause: err });
     }
     return leavePackage;
@@ -82,10 +82,10 @@ export const createLeavePackage = async (
       leavePackage = await repository.create(createLeavePackageDto, {
         leaveType: true
       });
-      logger.info('Leave Package[%s] persisted successfully!', leavePackage.id);
+      logger.info('LeavePackage[%s] persisted successfully!', leavePackage.id);
     } catch (err) {
       if (err instanceof HttpError) throw err;
-      logger.error('Persisting Leave Package failed', { error: err });
+      logger.error('Persisting LeavePackage failed', { error: err });
       throw new ServerError({ message: (err as Error).message, cause: err });
     }
     return leavePackage;
@@ -99,7 +99,7 @@ export const updateLeavePackage = async (id: number,
   const leavePackage = await repository.findOne({ id });
   if (!leavePackage) {
     logger.warn('LeavePackage[%s] to update does not exist', id);
-    throw new NotFoundError({ message: 'Leave Package to update does not exist' });
+    throw new NotFoundError({ message: 'Leave package to update does not exist' });
   }
   const updatedLeavePackage = await repository.update({
     where: { id },
@@ -144,7 +144,7 @@ export const getLeavePackages = async (
     );
   } catch (err) {
     logger.warn(
-      'Querying leavePackages with query failed',
+      'Querying LeavePackages with query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -157,7 +157,7 @@ export const getLeavePackageById = async (
   includeCompanyLevelsQueryDto: IncludeCompanyLevelsQueryDto,
 ): Promise<LeavePackageDto> => {
   const { includeCompanyLevels } = includeCompanyLevelsQueryDto;
-  logger.debug('Getting details for Leave Package[%s]', id);
+  logger.debug('Getting details for LeavePackage[%s]', id);
 
   let include: Prisma.LeavePackageInclude;
   if (includeCompanyLevels === true) {
@@ -181,22 +181,22 @@ export const getLeavePackageById = async (
     leavePackage = await repository.findOne({ id },
       include);
   } catch (err) {
-    logger.warn('Getting Leave Package[%s] failed', id, { error: (err as Error).stack });
+    logger.warn('Getting LeavePackage[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
   if (!leavePackage) {
-    logger.warn('Leave Package[%s] does not exist', id);
-    throw new NotFoundError({ message: 'Leave Package does not exist' });
+    logger.warn('LeavePackage[%s] does not exist', id);
+    throw new NotFoundError({ message: 'Leave package does not exist' });
   }
-  logger.info('Leave Package[%s] details retrieved!', id);
+  logger.info('LeavePackage[%s] details retrieved!', id);
   return leavePackage;
 };
 
 export async function getApplicableLeavePackage(
   employeeId: number, leaveTypeId: number
 ): Promise<LeavePackageDto> {
-  logger.debug('Getting applicable leave package for employee[%s] for leaveType[%s]',
+  logger.debug('Getting applicable LeavePackage for Employee[%s] for LeaveType[%s]',
     employeeId, leaveTypeId);
 
   let leavePackage: LeavePackageDto | null;
@@ -213,15 +213,15 @@ export async function getApplicableLeavePackage(
       leavePackage = null;
     }
   } catch (err) {
-    logger.warn('Getting applicable Leave Packagefor employee[%s] for leaveType[%s]', 
+    logger.warn('Getting applicable LeavePackage for Employee[%s] for LeaveType[%s]', 
       employeeId, leaveTypeId, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
   if (!leavePackage) {
-    logger.warn('Getting applicable Leave Packagefor employee[%s] for leaveType[%s]', 
+    logger.warn('Getting applicable LeavePackage for Employee[%s] for LeaveType[%s]', 
       employeeId, leaveTypeId,);
-    throw new NotFoundError({ message: 'Leave Package does not exist' });
+    throw new NotFoundError({ message: 'Leave package does not exist' });
   }
 
   return leavePackage;
@@ -241,7 +241,7 @@ export const searchLeavePackages = async (
   const orderByInput = helpers.getOrderByInput(orderBy);
 
   let leavePackage: ListWithPagination<LeavePackageDto>;
-  logger.debug('Finding Leave Package(s) that match search query', { query });
+  logger.debug('Finding LeavePackage(s) that match search query', { query });
   try {
     leavePackage = await repository.search({
       skip,
@@ -257,7 +257,7 @@ export const searchLeavePackages = async (
     );
   } catch (err) {
     logger.warn(
-      'Querying leavePackages with search query failed',
+      'Querying LeavePackages with search query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -277,7 +277,7 @@ export const deleteLeavePackage = async (
     if (!leavePackage) {
       logger.warn('LeavePackage[%s] does not exist', id);
       throw new NotFoundError({
-        message: 'LeavePackage you are attempting to delete does not exist'
+        message: 'Leave package you are attempting to delete does not exist'
       });
     }
     await repository.deleteOne({ id });
@@ -320,12 +320,12 @@ export async function validateLeavePackageIds(
 
   if (foundLeavePackageIds.data.length !== distinctIds.size) {
     logger.warn(
-      'Received %d leavePackage id(s), but found %d',
+      'Received %d LeavePackage id(s), but found %d',
       distinctIds.size, foundLeavePackageIds.data.length
     );
     throw new NotFoundError({
       name: errors.LEAVE_PACKAGE_NOT_FOUND,
-      message: 'At least one leave package ID passed does not exist for company'
+      message: 'At least one leave package id passed does not exist for company'
     });
   }
 }

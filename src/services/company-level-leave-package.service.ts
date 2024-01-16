@@ -30,7 +30,7 @@ export async function createCompanyLevelLeavePackage(
   const { companyIds } = authorizedUser;
 
   logger.debug(
-    'Validating companyLevelId[%s] and leavePackageIds[%s]',
+    'Validating CompanyLevelId[%s] and LeavePackageIds[%s]',
     companyLevelId, leavePackageIds
   );
   try {
@@ -40,20 +40,20 @@ export async function createCompanyLevelLeavePackage(
         leavePackageService.validateLeavePackageIds(leavePackageIds, { companyIds })
       ]);
     logger.info(
-      'Validating companyLevelId[%s] and leavePackageIds[%s] was successful',
+      'Validating CompanyLevelId[%s] and LeavePackageIds[%s] was successful',
       companyLevelId, leavePackageIds
     );
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.error(
-      'Validating companyLevelId[%s] and leavePackageIds[%s] ' +
+      'Validating CompanyLevelId[%s] and LeavePackageIds[%s] ' +
       'for CompanyLevelLeavePackage creation failed',
       companyLevelId, leavePackageIds, { error: err }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  logger.debug('Persisting new CompanyLevelLeavePackage for companyLevelId[%s]', companyLevelId);
+  logger.debug('Persisting new CompanyLevelLeavePackage for CompanyLevelId[%s]', companyLevelId);
   let companyLevelLeavePackages: CompanyLevelLeavePackageDto[];
   const companyLevelLeavePackageInputArray = helpers.generateLeavePackageRecordsForACompanyLevel(
     leavePackageIds, companyLevelId);
@@ -64,11 +64,11 @@ export async function createCompanyLevelLeavePackage(
         leavePackage: true,
         companyLevel: true
       });
-    logger.info('CompanyLevelLeavePackages with leavePackageIds[%s] persisted successfully!',
+    logger.info('CompanyLevelLeavePackages with LeavePackageIds[%s] persisted successfully!',
       leavePackageIds);
   } catch (err) {
     if (err instanceof HttpError) throw err;
-    logger.error('Persisting CompanyLevelLeavePackage with leavePackageIds[%s] failed',
+    logger.error('Persisting CompanyLevelLeavePackage with LeavePackageIds[%s] failed',
       { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
@@ -142,7 +142,7 @@ export const getCompanyLevelLeavePackageById = async (
   }
   if (!companyLevelLeavePackage) {
     logger.warn('CompanyLevelLeavePackage[%s] does not exist', id);
-    throw new NotFoundError({ message: 'CompanyLevelLeavePackage does not exist' });
+    throw new NotFoundError({ message: 'Company level leave package does not exist' });
   }
   logger.info('CompanyLevelLeavePackage[%s] details retrieved!', id);
   return companyLevelLeavePackage;
@@ -163,7 +163,7 @@ export const deleteCompanyLevelLeavePackage = async (
     if (!companyLevelLeavePackage) {
       logger.warn('CompanyLevelLeavePackage[%s] does not exist', id);
       throw new NotFoundError({ 
-        message: 'CompanyLevelLeavePackage you are attempting to delete does not exist' 
+        message: 'Company level leave package you are attempting to delete does not exist' 
       });
     }
 
