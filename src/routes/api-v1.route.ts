@@ -464,4 +464,10 @@ router.patch(
   treeNodeV1Controller.updateCompanyTreeNode
 );
 
+router.delete(
+  '/payroll-company/:companyId/tree/nodes/:nodeId/employee',
+  authenticateUser(),
+  treeNodeV1Controller.unlinkEmployee
+);
+
 export default router;

@@ -87,7 +87,12 @@ export async function addCompanyTreeNode(
           message: 'Company tree node does not exist'
         });
       }
-      await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId, employee.companyId);
+      await validateCompanyId({
+        jobTitleCompanyId: jobTitle.companyId, 
+        companyId, 
+        parentCompanyId: parent?.companyId, 
+        employeeCompanyId: employee.companyId
+      });
     } else if (parentId) {
       [parent, jobTitle] = await Promise.all([
         repository.findOne({ id: parentId }),
@@ -99,16 +104,27 @@ export async function addCompanyTreeNode(
           message: 'Company tree node does not exist'
         });
       }
-      await validateCompanyId(jobTitle.companyId, companyId, parent?.companyId);
+      await validateCompanyId({
+        jobTitleCompanyId: jobTitle.companyId, 
+        companyId, 
+        parentCompanyId: parent?.companyId
+      });
     } else if (employeeId) {
       [employee, jobTitle] = await Promise.all([
         getEmployee(employeeId),
         getJobTitle(jobTitleId)
       ]);
-      await validateCompanyId(jobTitle.companyId, companyId, employee.companyId);
+      await validateCompanyId({
+        jobTitleCompanyId: jobTitle.companyId, 
+        companyId, 
+        employeeCompanyId: employee.companyId
+      });
     } else {
       jobTitle = await getJobTitle(jobTitleId);
-      await validateCompanyId(jobTitle.companyId, companyId);
+      await validateCompanyId({
+        jobTitleCompanyId: jobTitle.companyId, 
+        companyId
+      });
     }
   } catch (err) {
     logger.warn(
@@ -237,13 +253,23 @@ export async function updateCompanyTreeNode(
       repository.findOne({ id: parentId }),
       getEmployee(employeeId),
     ]);
-    validateCompanyId(companyTreeNode.companyId, parent!.companyId, employee.companyId);
-  } else if (parentId !== null) {
+    await validateCompanyId({
+      companyId: companyTreeNode.companyId, 
+      parentCompanyId: parent!.companyId, 
+      employeeCompanyId: employee.companyId
+    });
+  } else if (parentId) {
     parent = await repository.findOne({ id: parentId });
-    validateCompanyId(companyTreeNode.companyId, parent!.companyId);
+    await validateCompanyId({
+      companyId: companyTreeNode.companyId, 
+      parentCompanyId: parent!.companyId
+    });
   } else if (employeeId) {
     employee = await getEmployee(employeeId);
-    validateCompanyId(companyTreeNode.companyId, employee.companyId);
+    await validateCompanyId({
+      companyId: companyTreeNode.companyId, 
+      employeeCompanyId: employee.companyId
+    });
   }
 
   logger.debug('Persisting update(s) to CompanyTreeNode[%s]', nodeId);
@@ -322,12 +348,44 @@ export async function getSupervisees(employeeId: number) {
   return supervisees;
 }
 
+export async function unlinkEmployee(
+  nodeId: number,
+  companyId: number,
+): Promise<CompanyTreeNodeDto> {
+  const companyTreeNode = await repository.findOne({ id: nodeId, companyId });
+  if (!companyTreeNode) {
+    logger.warn('CompanyTreeNode[%s] to update does not exist', nodeId);
+    throw new NotFoundError({
+      name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+      message: 'Company tree node to update does not exist'
+    });
+  }
+  
+  logger.debug('Removing Employee CompanyTreeNode[%s]', nodeId);
+  const updatedCompanyTreeNode = await repository.unlinkEmployee({
+    where: { id: nodeId, companyId }, 
+    data: { employee: { disconnect: true } }, 
+    includeRelations: true
+  });
+  logger.info('Employee removed from CompanyTreeNode[%s]', nodeId);
+
+  // Emit event.CompanyTreeNode.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, updatedCompanyTreeNode);
+  logger.info(`${events.modified} event emitted successfully!`);
+
+  return updatedCompanyTreeNode;
+}
+
 async function validateCompanyId(
-  jobTitleCompanyId: number, 
-  companyId: number, 
-  parentCompanyId?: number, 
-  employeeCompanyId?: number,
+  options: {
+    jobTitleCompanyId?: number, 
+    companyId?: number, 
+    parentCompanyId?: number, 
+    employeeCompanyId?: number,
+  }
 ) {
+  const { jobTitleCompanyId, companyId, parentCompanyId, employeeCompanyId } = options;
   if (jobTitleCompanyId && (jobTitleCompanyId !== companyId)) {
     throw new ForbiddenError({ message: 'Not allowed to perform action with this JobTitle.' }); 
   }
