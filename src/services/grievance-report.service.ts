@@ -191,7 +191,7 @@ export async function getGrievanceReport(id: number): Promise<GrievanceReportDto
   if (!grievanceReport) {
     throw new NotFoundError({
       name: errors.GRIEVANCE_REPORT_NOT_FOUND,
-      message: 'GrievanceReport does not exist'
+      message: 'Grievance report does not exist'
     });
   }
 

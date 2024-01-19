@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import {
   CompanyTreeNodeDto, 
   UpdateCompanyTreeNodeDto, 
-  childNode, 
+  ChildNode, 
   includeRelations
 } from '../domain/dto/company-tree-node.dto';
 import { prisma } from '../components/db.component';
@@ -15,7 +15,7 @@ export interface CreateCompanyTreeNodeObject {
   parentId?: number;
   jobTitleId: number;
   employeeId?: number;
-  childNodes?: childNode[];
+  childNodes?: ChildNode[];
 }
 export async function create(
   { jobTitleId, employeeId, companyId, parentId, ...dtoData }: CreateCompanyTreeNodeObject,
@@ -138,8 +138,8 @@ export async function update(params: {
   const { where, updateData, includeRelations } = params;
   const { employeeId, parentId } = updateData;
   const data: Prisma.CompanyTreeNodeUpdateInput = {
-    employee: employeeId? { connect: { id: employeeId } }: undefined,
-    parent: { connect: { id: parentId } },
+    employee: employeeId ? { connect: { id: employeeId } }: undefined,
+    parent: parentId? { connect: { id: parentId } }: undefined,
   };
   try {
     return await prisma.companyTreeNode.update({
@@ -147,6 +147,38 @@ export async function update(params: {
       data,
       include: includeRelations
         ? { employee: true, jobTitle: true } 
+        : undefined
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        throw new AlreadyExistsError({
+          message: 'Company tree node already exists',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
+}
+
+export async function unlinkEmployee(params: {
+  data: Prisma.CompanyTreeNodeUpdateInput,
+  where: Prisma.CompanyTreeNodeWhereUniqueInput,
+  includeRelations?: boolean
+}) {
+  const { where, data, includeRelations } = params;
+  try {
+    return await prisma.companyTreeNode.update({
+      where,
+      data,
+      include: includeRelations
+        ? { 
+          employee: true, 
+          jobTitle: true, 
+          parent: true, 
+          children: { include: { jobTitle: true, employee: true } } 
+        } 
         : undefined
     });
   } catch (err) {

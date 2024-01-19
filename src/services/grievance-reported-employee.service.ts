@@ -33,7 +33,7 @@ export async function addReportedEmployeesToReport(
   try {
     newReportedEmployees = 
       await reportedEmployeesRepo.addGrievanceReportedEmployee(reportedEmployeesList, true);
-    logger.info('Reported employee with grievance Report Id[%s] added successfully!', id);
+    logger.info('Reported employee with GrievanceReportId[%s] added successfully!', id);
   } catch (err) {
     logger.error('Adding reported employees failed', { error: err });
     throw new ServerError({
@@ -68,11 +68,12 @@ export async function deleteReportedEmployee(
       { reportId_reportedEmployeeId: { reportId, reportedEmployeeId } }
     );
     logger.info(
-      'ReportedEmployee[%s] for Report[%s] successfully deleted', reportedEmployeeId, reportId
+      'ReportedEmployee[%s] for GrievanceReport[%s] successfully deleted', 
+      reportedEmployeeId, reportId
     );
   } catch (err) {
     logger.error(
-      'Deleting ReportedEmployee[%] for Report[%s] failed', reportedEmployeeId, reportId
+      'Deleting ReportedEmployee[%] for GrievanceReport[%s] failed', reportedEmployeeId, reportId
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }

@@ -6,7 +6,7 @@ const CHILD_NODE = Joi.object({
   jobTitleId: Joi.number()
     .required()
     .messages({ 'number.base': 'JobTitleId must be a number' }),
-  emmployeeId: Joi.number()
+  employeeId: Joi.number()
     .optional()
     .messages({ 'number.base': 'EmployeeId must be a number' }),
 });
@@ -26,7 +26,7 @@ export const CREATE_COMPANY_TREE_NODE = Joi.object({
 
 export const UPDATE_COMPANY_TREE_NODE = Joi.object({
   parentId: Joi.number().optional(),
-  emmployeeId: Joi.number().optional(),
+  employeeId: Joi.number().optional(),
 }).or('parentId', 'employeeId');
 
 export const QUERY_COMPANY_TREE_NODE = Joi.object({

@@ -44,14 +44,14 @@ export async function addDisciplinaryActionType(
   }
   logger.info('PayrollCompany[%s] exists', companyId);
  
-  logger.debug('Adding new Disciplinary action type to the database...');
+  logger.debug('Adding new DisciplinaryAction type to the database...');
 
   let newDisciplinaryActionType: DisciplinaryActionType;
   try {
     newDisciplinaryActionType = await repository.create(creatData);
     logger.info('DisciplinaryActionType[%s] added successfully!', newDisciplinaryActionType.id);
   } catch (err) {
-    logger.error('Adding disciplinaryActionType failed', { error: err });
+    logger.error('Adding DisciplinaryActionType failed', { error: err });
     throw new ServerError({
       message: (err as Error).message,
       cause: err
@@ -118,7 +118,7 @@ export async function getDisciplinaryActionType(id: number): Promise<Disciplinar
   if (!disciplinaryActionType) {
     throw new NotFoundError({
       name: errors.DISCIPLINARY_ACTION_TYPE_NOT_FOUND,
-      message: 'DisciplinaryActionType does not exist'
+      message: 'Disciplinary action type does not exist'
     });
   }
 

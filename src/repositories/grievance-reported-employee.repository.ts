@@ -30,7 +30,7 @@ export async function addGrievanceReportedEmployee(
       if (err instanceof Prisma.PrismaClientKnownRequestError) {
         if (err.code === 'P2002') {
           throw new AlreadyExistsError({
-            message: 'Reported employee already exists',
+            message: 'Grievance reported employee already exists',
             cause: err
           });
         }

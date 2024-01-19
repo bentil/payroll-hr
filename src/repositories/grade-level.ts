@@ -29,7 +29,7 @@ export async function create(data: Prisma.GradeLevelCreateInput): Promise<GradeL
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Model already exists',
+          message: 'Grade level already exists',
           cause: err
         });
       }
@@ -117,7 +117,7 @@ export async function update(params: {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
-          message: 'Model already exists',
+          message: 'Grade level already exists',
           cause: err
         });
       }
@@ -147,7 +147,7 @@ export async function deleteOne(
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Record is currently in use by another model',
+          message: 'Grade level is currently in use by another model',
           cause: err
         });
       }

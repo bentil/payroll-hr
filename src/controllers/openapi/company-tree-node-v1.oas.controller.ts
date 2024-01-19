@@ -1,6 +1,7 @@
 import { CompanyTreeNode } from '@prisma/client';
 import {
   Body,
+  Delete,
   Get,
   Patch,
   Path,
@@ -108,5 +109,22 @@ export class CompanyTreeNodeV1Controller {
     const updateCompanyTreeNode = await service.updateCompanyTreeNode(nodeId, companyId, updateDto);
     this.logger.info('CompanyTreeNode[%s] updated successfully!', nodeId);
     return { data: updateCompanyTreeNode };
+  }
+
+  /**
+   * Unliks an employee from an existing companyTreeNode
+   * @param nodeId companyTreeNode ID
+   * @param companyId companyId
+   * @returns Updated companyTreeNode
+   */
+  @Delete('/{companyId}/tree/nodes/{nodeId}/employee')
+  public async unlinkEmployee(
+    @Path('companyId') companyId: number,
+    @Path('nodeId') nodeId: number,
+  ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
+    this.logger.debug('Received request to unlink Employee from CompanyTreeNode[%s]', nodeId);
+    const unlinkEmployee = await service.unlinkEmployee(nodeId, companyId);
+    this.logger.info('Employee unlinked from CompanyTreeNode[%s] updated successfully!', nodeId);
+    return { data: unlinkEmployee };
   }
 }

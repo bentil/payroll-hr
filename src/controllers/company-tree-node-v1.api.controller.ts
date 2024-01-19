@@ -43,3 +43,13 @@ export async function updateCompanyTreeNode(req: Request, res: Response, next: N
     next(err);
   }
 }
+
+export async function unlinkEmployee(req: Request, res: Response, next: NextFunction) {
+  const { companyId, nodeId } = req.params;
+  try {
+    const response = await controller.unlinkEmployee(+companyId, +nodeId);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}

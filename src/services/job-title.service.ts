@@ -47,7 +47,7 @@ export async function getJobTitle(id: number): Promise<JobTitle> {
   if (!jobTitle) {
     throw new NotFoundError({
       name: errors.JOB_TITLE_NOT_FOUND,
-      message: 'JobTitle does not exist'
+      message: 'Job title does not exist'
     });
   }
 
