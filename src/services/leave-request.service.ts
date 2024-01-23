@@ -34,6 +34,7 @@ import { validate } from './leave-type.service';
 import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
 import { getParent, getSupervisees } from './company-tree-node.service';
+import { findFirst as findCompanyTreeNode } from '../repositories/company-tree-node.repository';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceType' });
@@ -49,9 +50,10 @@ export async function addLeaveRequest(
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
   let validateData;
-
+  let nodeExist;
   // VALIDATION
   try {
+    nodeExist = await findCompanyTreeNode({ employeeId });
     validateData = await validate(leaveTypeId, employeeId);
   } catch (err) {
     logger.warn('Validating Employee[%s] and/or LeaveType[%s] failed', 
@@ -64,6 +66,12 @@ export async function addLeaveRequest(
     });
   }
   logger.info('Employee[%s] and LeaveType[%s] exists', employeeId, leaveTypeId);
+
+  if (!nodeExist) {
+    throw new RequirementNotMetError({
+      message: 'Kindly contact HR to complete your setup'
+    });
+  }
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
@@ -215,7 +223,6 @@ export async function getLeaveRequest(
       });
     }  
   }
-
   
   logger.info('LeaveRequest[%s] details retrieved!', id);
   return leaveRequest;
@@ -397,6 +404,17 @@ export async function addLeaveResponse(
     });
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
+
+  const parent = await getParent(leaveRequest.employeeId);
+  if (parent){
+    if (!employeeId || employeeId !== parent.id) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }  
+  } //else {
+  //   /// check if employee is an hr and if not throw an error
+  // }
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({

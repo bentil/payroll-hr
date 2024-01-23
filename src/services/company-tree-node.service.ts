@@ -214,7 +214,14 @@ export async function getCompanyTreeNode(
   let companyTreeNode: CompanyTreeNode | null;
 
   try {
-    companyTreeNode = await repository.findOne({ id: nodeId, companyId }, true);
+    companyTreeNode = await repository.findOne(
+      { id: nodeId, companyId }, 
+      { 
+        parent: true, employee: true, jobTitle: true, children: {
+          include: { jobTitle: true, employee: true } 
+        } 
+      }
+    );
   } catch (err) {
     logger.warn('Getting CompanyTreeNode[%s] failed', nodeId, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -246,6 +253,15 @@ export async function updateCompanyTreeNode(
     });
   }
   let parent, employee;
+
+  if (employeeId) {
+    const node = await repository.findFirst({ employeeId, companyId });
+    if (node) {
+      throw new AlreadyExistsError({
+        message: 'Employee already linked to an existing node'
+      });
+    }
+  }
   
   //Validation
   if (parentId && employeeId) {
@@ -271,10 +287,14 @@ export async function updateCompanyTreeNode(
       employeeCompanyId: employee.companyId
     });
   }
+  const data = {
+    employee: employeeId ? { connect: { id: employeeId } }: undefined,
+    parent: parentId? { connect: { id: parentId } }: undefined,
+  };
 
   logger.debug('Persisting update(s) to CompanyTreeNode[%s]', nodeId);
   const updatedCompanyTreeNode = await repository.update({
-    where: { id: nodeId, companyId }, updateData, includeRelations: true
+    where: { id: nodeId, companyId }, data, include: { employee: true, jobTitle: true } 
   });
   logger.info('Update(s) to CompanyTreeNode[%s] persisted successfully!', nodeId);
 
@@ -362,10 +382,15 @@ export async function unlinkEmployee(
   }
   
   logger.debug('Removing Employee CompanyTreeNode[%s]', nodeId);
-  const updatedCompanyTreeNode = await repository.unlinkEmployee({
+  const updatedCompanyTreeNode = await repository.update({
     where: { id: nodeId, companyId }, 
     data: { employee: { disconnect: true } }, 
-    includeRelations: true
+    include: { 
+      employee: true, 
+      jobTitle: true, 
+      parent: true, 
+      children: { include: { jobTitle: true, employee: true } } 
+    }
   });
   logger.info('Employee removed from CompanyTreeNode[%s]', nodeId);
 
