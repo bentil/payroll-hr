@@ -1,6 +1,7 @@
 import { 
   CompanyTreeNodeDto, 
   CreateCompanyTreeNodeDto, 
+  DeleteCompanyTreeNodeQueryDto, 
   UpdateCompanyTreeNodeDto
 } from '../domain/dto/company-tree-node.dto';
 import { 
@@ -9,6 +10,7 @@ import {
   ForbiddenError, 
   HttpError, 
   NotFoundError, 
+  RequirementNotMetError, 
   ServerError 
 } from '../errors/http-errors';
 import { getJobTitle } from './job-title.service';
@@ -400,6 +402,60 @@ export async function unlinkEmployee(
   logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedCompanyTreeNode;
+}
+
+export async function deleteNode(
+  nodeId: number,
+  companyId: number,
+  queryData: DeleteCompanyTreeNodeQueryDto
+) {
+  const { successorParentId } = queryData;
+  const childrenIds: number[] = [];
+  const companyTreeNode = await repository.findOne(
+    { id: nodeId, companyId },
+    { children: { include: { employee: true } } }
+  );
+  if (!companyTreeNode) {
+    logger.warn('CompanyTreeNode[%s] to delete does not exist', nodeId);
+    throw new NotFoundError({
+      name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+      message: 'Company tree node to delete does not exist'
+    });
+  }
+
+  if (!companyTreeNode.children || companyTreeNode.children.length === 0) {
+    await repository.deleteNode({ id: nodeId });
+  } else {
+    if (!successorParentId) {
+      throw new RequirementNotMetError({
+        message: 'A successor is required'
+      });
+    }
+
+    const successorNode = await repository.findOne(
+      { id: successorParentId, companyId },
+    );
+    if (!successorNode) {
+      logger.warn('Successor to companyTreeNode[%s] does not exist', nodeId);
+      throw new NotFoundError({
+        name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+        message: 'Company tree node successor does not exist'
+      });
+    }
+
+    const data = {
+      parentId: successorParentId,
+    };
+    const children = companyTreeNode.children; 
+    children.forEach((child) => {
+      if (child) {
+        childrenIds.push(child.id);
+      }
+    });
+
+    await repository.deleteNodeWithChildren({ id: nodeId }, data, childrenIds);
+  }
+
 }
 
 async function validateCompanyId(

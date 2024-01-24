@@ -57,6 +57,7 @@ import {
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_COMPANY_TREE_NODE,
+  DELETE_COMPANY_NODE,
   UPDATE_COMPANY_TREE_NODE,
 } from '../domain/request-schema/company-tree-node.schema';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
@@ -468,6 +469,13 @@ router.delete(
   '/payroll-company/:companyId/tree/nodes/:nodeId/employee',
   authenticateUser(),
   treeNodeV1Controller.unlinkEmployee
+);
+
+router.delete(
+  '/payroll-company/:companyId/tree/nodes/:nodeId',
+  authenticateUser(),
+  validateRequestQuery(DELETE_COMPANY_NODE),
+  treeNodeV1Controller.deleteCompanyTreeNode
 );
 
 export default router;
