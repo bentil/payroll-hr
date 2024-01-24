@@ -1,12 +1,11 @@
 import { Prisma } from '@prisma/client';
 import {
   CompanyTreeNodeDto, 
-  UpdateCompanyTreeNodeDto, 
   ChildNode, 
   includeRelations
 } from '../domain/dto/company-tree-node.dto';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, FailedDependencyError } from '../errors/http-errors';
+import { AlreadyExistsError, FailedDependencyError, RecordInUse } from '../errors/http-errors';
 // import { ListWithPagination, getListWithPagination } from './types';
 import * as helpers from '../utils/helpers';
 
@@ -102,17 +101,11 @@ export async function createNodeWithChild(
 
 export async function findOne(
   whereUniqueInput: Prisma.CompanyTreeNodeWhereUniqueInput,
-  includeRelations?: boolean
+  include?: Prisma.CompanyTreeNodeInclude
 ): Promise<CompanyTreeNodeDto | null> {
   return await prisma.companyTreeNode.findUnique({
     where: whereUniqueInput,
-    include: includeRelations
-      ? { 
-        parent: true, employee: true, jobTitle: true, children: {
-          include: { jobTitle: true, employee: true } 
-        } 
-      }
-      : undefined
+    include
   });
 }
 
@@ -131,55 +124,17 @@ export async function findTree(
 }
 
 export async function update(params: {
-  updateData: UpdateCompanyTreeNodeDto,
+  data: Prisma.CompanyTreeNodeUpdateInput
   where: Prisma.CompanyTreeNodeWhereUniqueInput,
-  includeRelations?: boolean
+  include?: Prisma.CompanyTreeNodeInclude
 }) {
-  const { where, updateData, includeRelations } = params;
-  const { employeeId, parentId } = updateData;
-  const data: Prisma.CompanyTreeNodeUpdateInput = {
-    employee: employeeId ? { connect: { id: employeeId } }: undefined,
-    parent: parentId? { connect: { id: parentId } }: undefined,
-  };
+  const { where, data, include } = params;
+  
   try {
     return await prisma.companyTreeNode.update({
       where,
       data,
-      include: includeRelations
-        ? { employee: true, jobTitle: true } 
-        : undefined
-    });
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        throw new AlreadyExistsError({
-          message: 'Company tree node already exists',
-          cause: err
-        });
-      }
-    }
-    throw err;
-  }
-}
-
-export async function unlinkEmployee(params: {
-  data: Prisma.CompanyTreeNodeUpdateInput,
-  where: Prisma.CompanyTreeNodeWhereUniqueInput,
-  includeRelations?: boolean
-}) {
-  const { where, data, includeRelations } = params;
-  try {
-    return await prisma.companyTreeNode.update({
-      where,
-      data,
-      include: includeRelations
-        ? { 
-          employee: true, 
-          jobTitle: true, 
-          parent: true, 
-          children: { include: { jobTitle: true, employee: true } } 
-        } 
-        : undefined
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -207,4 +162,48 @@ export function recurse(level: number): includeRelations {
       parent: true, employee: true, jobTitle: true, children: recurse(level - 1)
     }
   };
+}
+
+export async function deleteNode(
+  where: Prisma.CompanyTreeNodeWhereUniqueInput,
+) {
+  try {
+    return await prisma.companyTreeNode.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Node is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
+}
+
+export async function deleteNodeWithChildren(
+  where: Prisma.CompanyTreeNodeWhereUniqueInput,
+  data: Prisma.CompanyTreeNodeUncheckedUpdateManyInput,
+  childrenIds: number[],
+) {
+  try {
+    return await prisma.$transaction(async (txn) => {
+      await txn.companyTreeNode.updateMany({
+        where: { id: { in: childrenIds } }, 
+        data 
+      });
+      await txn.companyTreeNode.delete({ where });
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Node is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }

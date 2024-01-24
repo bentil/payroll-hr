@@ -43,6 +43,10 @@ export class QueryCompanyTeeNodeDto {
   orderBy: CompanyTreeNodeOrderBy = CompanyTreeNodeOrderBy.CREATED_AT_DESC;
 }
 
+export class DeleteCompanyTreeNodeQueryDto {
+  successorParentId?: number;
+}
+
 export interface CompanyTreeNodeDto extends CompanyTreeNode {
   jobTitle?: JobTitle;
   employee?: Employee

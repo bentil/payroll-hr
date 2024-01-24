@@ -6,6 +6,7 @@ import {
   Patch,
   Path,
   Post,
+  Queries,
   Response,
   Route,
   Security,
@@ -19,6 +20,7 @@ import { errors } from '../../utils/constants';
 import { 
   CompanyTreeNodeDto,
   CreateCompanyTreeNodeDto, 
+  DeleteCompanyTreeNodeQueryDto, 
   UpdateCompanyTreeNodeDto 
 } from '../../domain/dto/company-tree-node.dto';
 
@@ -126,5 +128,30 @@ export class CompanyTreeNodeV1Controller {
     const unlinkEmployee = await service.unlinkEmployee(nodeId, companyId);
     this.logger.info('Employee unlinked from CompanyTreeNode[%s] updated successfully!', nodeId);
     return { data: unlinkEmployee };
+  }
+
+  
+  /**
+   * Remove an existing companyTreeNode
+   * @param nodeId companyTreeNode ID
+   * @param companyId companyId
+   * @param query request query parameter successorParentId
+   * @returns nothing
+   */
+  @Delete('/{companyId}/tree/nodes/{nodeId}')
+  @SuccessResponse(204)
+  @Response<ApiErrorResponse>(404, 'Not Found', {
+    error: errors.GRIEVANCE_TYPE_NOT_FOUND,
+    message: 'CompanyTreeNode does not exist',
+    details: [],
+  })
+  public async deleteCompanyTreeNode(
+    @Path('companyId') companyId: number,
+    @Path('nodeId') nodeId: number,
+    @Queries() query: DeleteCompanyTreeNodeQueryDto
+  ): Promise<void> {
+    this.logger.debug('Received request to delete CompanyTreeNode[%s]', nodeId);
+    await service.deleteNode(nodeId, companyId, query);
+    this.logger.debug('CompanyTreeNode[%s] deleted successfully', nodeId);
   }
 }

@@ -52,3 +52,7 @@ export const QUERY_COMPANY_TREE_NODE = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(CompanyTreeNodeOrderBy)}`
     })
 });
+
+export const DELETE_COMPANY_NODE = Joi.object({
+  successorParentId: Joi.number().optional(),
+});
