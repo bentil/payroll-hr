@@ -76,11 +76,20 @@ import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.control
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
 import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
 import * as treeNodeV1Controller from '../controllers/company-tree-node-v1.api.controller';
+import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
   authenticateUser 
 } from '../middleware/auth.middleware';
+import { 
+  COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA,
+  CREATE_REIMBURSEMENT_REQUEST_SCHEMA, 
+  CREATE_REIMBURSEMENT_RESPONSE_SCHEMA, 
+  QUERY_REIMBURSEMENT_REQUEST_SCHEMA, 
+  REIMBURSEMENT_REQUEST_UPDATES_SCHEMA, 
+  UPDATE_REIMBURSEMENT_REQUEST_SCHEMA 
+} from '../domain/request-schema/reimbursement-request.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -476,6 +485,54 @@ router.delete(
   authenticateUser(),
   validateRequestQuery(DELETE_COMPANY_NODE),
   treeNodeV1Controller.deleteCompanyTreeNode
+);
+
+// ### REIMBURSEMENT REQUEST ROUTES
+router.post(
+  '/reimbursement-requests',
+  authenticateUser(),
+  validateRequestBody(CREATE_REIMBURSEMENT_REQUEST_SCHEMA),
+  reimbReqV1Controller.addNewReimbursementRequest
+);
+
+router.patch(
+  '/reimbursement-requests/:id',
+  authenticateUser(),
+  validateRequestBody(UPDATE_REIMBURSEMENT_REQUEST_SCHEMA),
+  reimbReqV1Controller.updateReimbursementRequest
+);
+router.get(
+  '/reimbursement-requests',
+  authenticateUser(),
+  validateRequestQuery(QUERY_REIMBURSEMENT_REQUEST_SCHEMA),
+  reimbReqV1Controller.getReimbursementRequests
+);
+
+router.get(
+  '/reimbursement-requests/:id',
+  authenticateUser(),
+  reimbReqV1Controller.getReimbursementRequest
+);
+
+router.post(
+  '/reimbursement-requests/:id/response',
+  authenticateUser(),
+  validateRequestBody(CREATE_REIMBURSEMENT_RESPONSE_SCHEMA),
+  reimbReqV1Controller.addResponse
+);
+
+router.post(
+  '/reimbursement-requests/:id/updates',
+  authenticateUser(),
+  validateRequestBody(REIMBURSEMENT_REQUEST_UPDATES_SCHEMA),
+  reimbReqV1Controller.postUpdate
+);
+
+router.post(
+  '/reimbursement-requests/:id/completion',
+  authenticatePlatformUser(),
+  validateRequestBody(COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA),
+  reimbReqV1Controller.completeRequest
 );
 
 export default router;

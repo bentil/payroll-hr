@@ -6,6 +6,8 @@ import CompanyLevelConsumer from './company-level.consumer';
 import GradeLevelConsumer from './grade-level.consumer';
 import HolidayConsumer from './holiday.consumer';
 import JobTitleConsumer from './job-title.consumer';
+import CompanyCurrencyConsumer from './company-currency.consumer';
+import CurrencyConsumer from './currency.consumer';
 
 type ConsumerHandler = (data: any) => void | Promise<void>;
 const topicHandlers: Record<string, ConsumerHandler> = {
@@ -21,6 +23,10 @@ const topicHandlers: Record<string, ConsumerHandler> = {
   'event.Holiday.modified': HolidayConsumer.handleModified,
   'event.JobTitle.created': JobTitleConsumer.handleCreated,
   'event.JobTitle.modified': JobTitleConsumer.handleModified,
+  'event.CompanyCurrencyConfig.created': CompanyCurrencyConsumer.handleCreated,
+  'event.CompanyCurrencyConfig.modified': CompanyCurrencyConsumer.handleModified,
+  'event.Currency.created': CurrencyConsumer.handleCreated,
+  'event.Currency.modified': CurrencyConsumer.handleModified,
 } as const;
 
 export default class MainConsumer {
