@@ -76,7 +76,7 @@ export class QueryReimbursementRequestDto {
   'expenditureDate.gte'?: string;
   'expenditureDate.lte'?: string;
   approverId?: number;
-  signerId?: number;
+  completerId?: number;
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   'approvedAt.gte'?: string;

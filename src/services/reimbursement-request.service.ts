@@ -107,6 +107,7 @@ export async function getReimbursementRequests(
     'expenditureDate.gte': expenditureDateGte,
     'expenditureDate.lte': expenditureDateLte,
     approverId,
+    completerId,
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
     'approvedAt.gte': approvedAtGte,
@@ -125,6 +126,7 @@ export async function getReimbursementRequests(
       take,
       where: { 
         employeeId,
+        completerId,
         approverId, 
         status, 
         createdAt: {
@@ -298,6 +300,11 @@ export async function addResponse(
     });
     logger.info('Response added to ReimbursementRequest[%s] successfully!', id);
 
+    // Emit event.ReimbursementRequest.modified event
+    logger.debug(`Emitting ${events.modified}`);
+    kafkaService.send(events.modified, updatedReimbursementRequest);
+    logger.info(`${events.modified} event emitted successfully!`);
+
     return updatedReimbursementRequest;
   } else {
     logger.warn(
@@ -357,6 +364,11 @@ export async function postUpdate(
   });
   logger.info('Response added to ReimbursementRequest[%s] successfully!', id);
 
+  // Emit event.ReimbursementRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, updatedReimbursementRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
+
   return updatedReimbursementRequest!;
 }
 
@@ -398,6 +410,11 @@ export async function completeRequest(
     }
   });
   logger.info('ReimbursementRequest[%s] completed successfully!', id);
+
+  // Emit event.ReimbursementRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, updatedReimbursementRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedReimbursementRequest;
 }

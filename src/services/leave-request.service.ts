@@ -428,6 +428,11 @@ export async function addLeaveResponse(
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
 
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, updatedLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
+
   return updatedLeaveRequest;
 }
 
@@ -493,6 +498,11 @@ export async function cancelLeaveRequest(
     logger.error('Cancelling LeaveRequest[%] failed', id, { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, cancelledLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return cancelledLeaveRequest;
 }
@@ -616,6 +626,11 @@ export async function adjustDays(
     }
   });
   logger.info('Number of days adjusted for LeaveRequest[%s] successfully!', id);
+
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, adjustedLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return adjustedLeaveRequest;
 }
