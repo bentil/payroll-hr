@@ -4,6 +4,7 @@ import {
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
   QueryReimbursementRequestDto, 
+  REIMBURSEMENT_RESPONSE_ACTION, 
   ReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
@@ -249,6 +250,7 @@ export async function addResponse(
   authorizedUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
   const { employeeId, category } = authorizedUser;
+  const { action } = responseData;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -288,7 +290,9 @@ export async function addResponse(
     logger.debug('Adding response to ReimbursementRequest[%s]', id);
     const updatedReimbursementRequest = await repository.respond({
       id,
-      data: { ...responseData, approvingEmployeeId },
+      data: { ...responseData, approvingEmployeeId, 
+        approvedAt: action === REIMBURSEMENT_RESPONSE_ACTION.APPROVE ? new Date() : undefined
+      },
       include: { 
         employee: true, 
         completer: true, 
@@ -340,11 +344,11 @@ export async function postUpdate(
     });
   } else if (reimbursementRequest.status !== REIMBURESEMENT_REQUEST_STATUS.QUERIED){
     logger.warn(
-      'ReimbursementRequest[%s] cannot be responded to due to current status[%s]',
+      'ReimbursementRequest[%s] cannot be updated due to current status[%s]',
       id, reimbursementRequest.status
     );
     throw new InvalidStateError({
-      message: 'Response not allowed for this reimbursement request'
+      message: 'Update not allowed for this reimbursement request'
     });
   }
   logger.info('ReimbursementRequest[%s] exists and update can be posted on', id);
@@ -395,6 +399,16 @@ export async function completeRequest(
     });
   }
   logger.info('ReimbursementRequest[%s] exists and can be completed', id);
+
+  if (reimbursementRequest.status !== REIMBURESEMENT_REQUEST_STATUS.APPROVED){
+    logger.warn(
+      'ReimbursementRequest[%s] cannot be completed to due to current status[%s]',
+      id, reimbursementRequest.status
+    );
+    throw new InvalidStateError({
+      message: 'Can not complete this reimbursement request'
+    });
+  }
 
   logger.debug('Completing ReimbursementRequest[%s]', id);
   const updatedReimbursementRequest = await repository.completeRequest({

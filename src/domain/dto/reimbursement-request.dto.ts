@@ -13,7 +13,6 @@ export class CreateReimbursementRequestDto{
   description!: string;
   currencyId!: number;
   amount!: Decimal;
-  status!: REIMBURESEMENT_REQUEST_STATUS;
   expenditureDate!: Date;
   attachmentUrls?: string[];
 }

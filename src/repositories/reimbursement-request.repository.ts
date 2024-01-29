@@ -142,7 +142,7 @@ export async function update(params: {
 
 export async function respond(params: {
   id: number;
-  data: ReimbursementResponseInputDto & { approvingEmployeeId: number };
+  data: ReimbursementResponseInputDto & { approvingEmployeeId: number, approvedAt?: Date };
   include: Prisma.ReimbursementRequestInclude,
 }): Promise<ReimbursementRequestDto> {
   // how is approverId supposed to be assigned
@@ -173,8 +173,8 @@ export async function respond(params: {
         data: {
           status: requestStatus,
           statusLastModifiedAt: new Date(),
+          approvedAt: data.approvedAt,
           approverId: data.approvingEmployeeId,
-          approvedAt: REIMBURESEMENT_REQUEST_STATUS.APPROVED ? new Date() : undefined,
         },
         include
       });
