@@ -4,7 +4,7 @@ import { rootLogger } from '../utils/logger';
 
 const _logger = rootLogger.child({ context: 'CompanyLevelConsumer' });
 
-export default class EmployeeConsumer {
+export default class CompanyLevelConsumer {
   public static async handleCreated(data: CompanyLevelEvent): Promise<void> {
     const logger = _logger.child({ method: 'handleCreated' });
     logger.debug('Received event to handle companyLevel created', { data });

@@ -12,7 +12,7 @@ import {
   UpdateLeaveRequestDto,
 } from '../domain/dto/leave-request.dto';
 import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import { 
@@ -378,7 +378,7 @@ export async function addLeaveResponse(
   responseData: LeaveResponseInputDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId, category } = authorizedUser;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -412,9 +412,13 @@ export async function addLeaveResponse(
         message: 'You are not allowed to perform this action'
       });
     }  
-  } //else {
-  //   /// check if employee is an hr and if not throw an error
-  // }
+  } else {
+    if(category !== USER_CATEGORY.HR) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }
+  }
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
@@ -423,6 +427,11 @@ export async function addLeaveResponse(
     includeRelations: true
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
+
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, updatedLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedLeaveRequest;
 }
@@ -489,6 +498,11 @@ export async function cancelLeaveRequest(
     logger.error('Cancelling LeaveRequest[%] failed', id, { error: err });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, cancelledLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return cancelledLeaveRequest;
 }
@@ -570,11 +584,17 @@ export async function adjustDays(
   authorizedUser: AuthorizedUser,
   payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId, category } = authorizedUser;
   
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
-  // will have a check for employee being an hr
+  // check for employee being an hr
+  if(category !== USER_CATEGORY.HR) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
+  }
+  
   if (!leaveRequest) {
     logger.debug('LeaveRequest[%s] to adjust does not exist', id);
     throw new NotFoundError({
@@ -606,6 +626,11 @@ export async function adjustDays(
     }
   });
   logger.info('Number of days adjusted for LeaveRequest[%s] successfully!', id);
+
+  // Emit event.LeaveRequest.modified event
+  logger.debug(`Emitting ${events.modified}`);
+  kafkaService.send(events.modified, adjustedLeaveRequest);
+  logger.info(`${events.modified} event emitted successfully!`);
 
   return adjustedLeaveRequest;
 }

@@ -363,7 +363,7 @@ model LeaveResponse {
 }
 
 model Currency {
-  id         Int       @id @default(autoincrement()) @db.UnsignedInt()
+  id         Int       @id @db.UnsignedInt()
   code       String    @unique @db.VarChar(5)
   symbol     String    @db.VarChar(5)
   name       String    @db.VarChar(30)
@@ -379,7 +379,7 @@ model Currency {
 }
 
 model CompanyCurrency {
-  id             Int       @id @default(autoincrement()) @db.UnsignedInt()
+  id             Int       @id @db.UnsignedInt()
   companyId      Int       @map("company_id") @db.UnsignedInt() //fk
   baseCurrencyId Int       @map("base_currency_id") @db.UnsignedInt()
   currencyId     Int       @map("currency_id") @db.UnsignedInt()

@@ -1,26 +1,55 @@
-import { REIMBURESEMENT_REQUEST_STATUS } from '@prisma/client';
+import { 
+  CompanyCurrency, 
+  Employee, 
+  REIMBURESEMENT_REQUEST_STATUS, 
+  ReimbursementRequest 
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import config from '../../config';
 
 export class CreateReimbursementRequestDto{
   employeeId!: number;
   title!: string;
   description!: string;
-  currency!: number;
+  currencyId!: number;
   amount!: Decimal;
-  status!: REIMBURESEMENT_REQUEST_STATUS;
-  expenditure_date!: Date;
+  expenditureDate!: Date;
   attachmentUrls?: string[];
 }
-// approver_id
-// completer_id
-// status_last_modified_at
-// approved_at
-// completed_at
+
+export class CreateReimbursementAttachment {
+  uploaderId: number;
+  attachmentUrl: string;
+
+  constructor(attachmentUrl: string, employeeId: number) {
+    this.uploaderId = employeeId;
+    this.attachmentUrl = attachmentUrl;
+  }
+}
+
+export class CreateReimbursementAttachmentWithReqId {
+  uploaderId: number;
+  attachmentUrl: string;
+  requestId: number;
+
+  constructor(attachmentUrl: string, employeeId: number, requestId: number) {
+    this.uploaderId = employeeId;
+    this.attachmentUrl = attachmentUrl;
+    this.requestId = requestId;
+  }
+}
+
+export interface ReimbursementRequestDto  extends ReimbursementRequest {
+  employee?: Employee;
+  approver?: Employee | null;
+  completer?: Employee | null;
+  currency?: CompanyCurrency;  
+}
 
 export class UpdateReimbursementRequestDto{
   title?: string;
   description?: string;
-  currency?: number;
+  currencyId?: number;
   amount?: Decimal;
   expenditureDate?: Date;
 }
@@ -39,18 +68,44 @@ export enum ReimbursementRequestOrderBy {
   MODIFIED_AT_ASC = 'modifiedAt:asc',
   MODIFIED_AT_DESC = 'modifiedAt:desc',
 }
-// , , createdAt date range (createdAt.gte, createdAt.lte), approvedAt date range
-// (approvedAt.gte, approvedAt.lte), completedAt date range (completedAt.gte, completedAt.lte)
-// export class QueryReimbursementRequestDto {
-//   employeeId?: number;
-//   status?: REIMBURESEMENT_REQUEST_OPTIONS;
-//   'expenditureDate.gte'?: string;
-//   'expenditureDate.lte'?: string;
-//   approverId?: number;
-//   signerId?: 
-//   'createdAt.gte'?: string;
-//   'createdAt.lte'?: string;
-//   page: number = 1;
-//   limit: number = config.pagination.limit;
-//   orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_ASC;
-// }
+
+export class QueryReimbursementRequestDto {
+  employeeId?: number;
+  status?: REIMBURESEMENT_REQUEST_STATUS;
+  'expenditureDate.gte'?: string;
+  'expenditureDate.lte'?: string;
+  approverId?: number;
+  completerId?: number;
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  'approvedAt.gte'?: string;
+  'approvedAt.lte'?: string;
+  'completedAt.gte'?: string;
+  'completedAt.lte'?: string;
+  page: number = 1;
+  limit: number = config.pagination.limit;
+  orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_ASC;
+}
+
+export const REIMBURSEMENT_RESPONSE_ACTION = {
+  APPROVE: 'APPROVE',
+  REJECT: 'REJECT',
+  QUERY: 'QUERY'
+};
+
+export type REIMBURSEMENT_RESPONSE_ACTION = 'APPROVE' | 'REJECT' | 'QUERY';
+
+export class ReimbursementResponseInputDto {
+  action!: REIMBURSEMENT_RESPONSE_ACTION;
+  comment?: string;
+  attachmentUrls?: string[];
+}
+
+export class ReimbursementRequestUpdatesDto {
+  comment?: string;
+  attachmentUrls?: string[];
+}
+
+export class CompleteReimbursementRequestDto {
+  comment?: string;
+}
