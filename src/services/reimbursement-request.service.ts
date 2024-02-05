@@ -42,6 +42,7 @@ export async function addReimbursementRequest(
   payload: CreateReimbursementRequestDto,
 ): Promise<ReimbursementRequest> {
   const { employeeId, currencyId, attachmentUrls } = payload;
+  const parent = await getParent(employeeId);
   // VALIDATION
   try {
     await Promise.all([
@@ -76,7 +77,7 @@ export async function addReimbursementRequest(
     }
   } else {
     try {
-      newReimbursementRequest = await repository.create(payload);
+      newReimbursementRequest = await repository.create(payload, parent?.id);
       logger.info('ReimbursementRequest[%s] added successfully!', newReimbursementRequest.id);
     } catch (err) {
       logger.error('Adding ReimbursementRequest failed', { error: err });
@@ -148,7 +149,11 @@ export async function getReimbursementRequests(
         }
       },
       orderBy: orderByInput,
-      include: { employee: true, completer: true, approver: true, currency: true }
+      include: { 
+        employee: true, 
+        completer: true, 
+        approver: true, 
+        currency: { include: { currency: true } } }
     });
     logger.info(
       'Found %d ReimbursementRequest(s) that matched query', result.data.length, { query }
@@ -179,7 +184,7 @@ export async function getReimbursementRequest(
         employee: true, 
         completer: true, 
         approver: true, 
-        currency: true, 
+        currency: { include: { currency: true } }, 
         requestAttachments: { include: { uploader: true } },
         requestComments: { include: { commenter: true } }
       }
@@ -285,6 +290,7 @@ export async function addResponse(
           message: 'You are not allowed to perform this action'
         });
       }
+      approvingEmployeeId = employeeId;
     }
   
     logger.debug('Adding response to ReimbursementRequest[%s]', id);
@@ -297,7 +303,7 @@ export async function addResponse(
         employee: true, 
         completer: true, 
         approver: true, 
-        currency: true, 
+        currency: { include: { currency: true } }, 
         requestAttachments: { include: { uploader: true } },
         requestComments: { include: { commenter: true } }
       }
@@ -361,7 +367,7 @@ export async function postUpdate(
       employee: true, 
       completer: true, 
       approver: true, 
-      currency: true, 
+      currency: { include: { currency: true } }, 
       requestAttachments: { include: { uploader: true } },
       requestComments: { include: { commenter: true } }
     }
@@ -418,7 +424,7 @@ export async function completeRequest(
       employee: true, 
       completer: true, 
       approver: true, 
-      currency: true, 
+      currency: { include: { currency: true } }, 
       requestAttachments: { include: { uploader: true } },
       requestComments: { include: { commenter: true } }
     }

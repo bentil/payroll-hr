@@ -39,7 +39,7 @@ export const CREATE_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
     .default(REIMBURESEMENT_REQUEST_STATUS.SUBMITTED),
   expenditureDate: joi.date()
     .required()
-    .less(Date.now())
+    .less('now')
     .format(['YYYY-MM-DD']),
   attachmentUrls: Joi.array().items(Joi.string().uri()).optional()
 });
@@ -57,7 +57,7 @@ export const UPDATE_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
     .optional(),
   expenditureDate: joi.date()
     .optional()
-    .less(Date.now() + 24 * 60 * 60 * 1000)
+    .less('now')
     .format(['YYYY-MM-DD']),
 }).or('title', 'description', 'currencyId', 'amount', 'expenditureDate');
 

@@ -19,10 +19,12 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  { employeeId, currencyId, ...dtoData }: CreateReimbursementRequestDto
+  { employeeId, currencyId, ...dtoData }: CreateReimbursementRequestDto,
+  approvingEmployeeId?: number
 ): Promise<ReimbursementRequest> {
   const data: Prisma.ReimbursementRequestCreateInput = {
     ...dtoData,
+    approver: approvingEmployeeId? { connect: { id: approvingEmployeeId } } : undefined,
     employee: { connect: { id: employeeId } },
     currency: { connect: { id: currencyId } },
   };

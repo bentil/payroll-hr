@@ -51,7 +51,6 @@ export async function addCompanyTreeNode(
   if (childNodes) {
     childNodes.forEach(async (item) => {
       if (item.employeeId) {
-        console.log('hello');
         const node = await repository.findFirst({ employeeId: item.employeeId, companyId });
         if (node) {
           nodeExist = true;
