@@ -16,10 +16,10 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     .messages({
       'number.base': 'Employee Id must be a number'
     }),
-  leavePackageId: Joi.number()
+  leaveTypeId: Joi.number()
     .required()
     .messages({
-      'number.base': 'Leave package id must be a number'
+      'number.base': 'Leave type id must be a number'
     }),
   startDate: joi.date()
     .required()
@@ -36,7 +36,7 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
 });
 
 export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
-  leavePackageId: Joi.number()
+  leaveTypeId: Joi.number()
     .optional(),
   startDate: joi.date()
     .optional()
@@ -50,11 +50,11 @@ export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     .optional()
     .allow('')
     .trim(),
-}).or('leavePackageId', 'startDate', 'returnDate', 'comment');
+}).or('leaveTypeId', 'startDate', 'returnDate', 'comment');
 
 export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
-  leavePackageId: Joi.number(),
+  leaveTypeId: Joi.number(),
   'startDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()

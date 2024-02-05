@@ -47,11 +47,11 @@ export const UPDATE_LEAVE_PLAN_SCHEMA = Joi.object({
     .optional()
     .allow('')
     .trim(),
-}).or('leavePackageId', 'comment', 'intendedStartDate', 'intendedReturnDate');
+}).or('leaveTypeId', 'comment', 'intendedStartDate', 'intendedReturnDate');
 
 export const QUERY_LEAVE_PLAN_SCHEMA = Joi.object({
   employeeId: Joi.number(),
-  leavePackageId: Joi.number(),
+  leaveTypeId: Joi.number(),
   'intendedStartDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'intendedStartDate.lte': joi.date().optional()
