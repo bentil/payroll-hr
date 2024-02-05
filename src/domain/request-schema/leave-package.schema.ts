@@ -64,7 +64,7 @@ export const UPDATE_LEAVE_PACKAGE_SCHEMA = Joi.object({
 
 
 export const QUERY_LEAVE_PACKAGE_SCHEMA = Joi.object({
-  companyId: Joi.string()
+  companyId: Joi.number()
     .optional(),
   code: Joi.string()
     .optional(),
