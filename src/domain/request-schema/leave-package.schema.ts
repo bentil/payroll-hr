@@ -68,14 +68,17 @@ export const QUERY_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .optional(),
   code: Joi.string()
     .optional(),
-  leaveTypeId: Joi.string()
+  leaveTypeId: Joi.number()
     .optional(),
-  paid: Joi.string()
-    .optional(),
-  redeemablecode: Joi.string()
-    .optional(),
-  accrued: Joi.string()
-    .optional(),
+  paid: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  redeemable: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  accrued: Joi.boolean()
+    .optional()
+    .valid(true, false),
   page: Joi.number().optional()
     .min(1)
     .default(1)
