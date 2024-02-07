@@ -191,9 +191,11 @@ export async function updateLeavePlan(
     });
   }
 
+  let leavePackageId: number | undefined;
   if (leaveTypeId) {
     try {
-      validate(leaveTypeId);
+      const leavePackage = await validate(leaveTypeId);
+      leavePackageId = leavePackage.leavePackageId;
     } catch (err) {
       logger.warn('Getting LeaveTypeId[%s] fialed', leaveTypeId);
       if (err instanceof HttpError) throw err;
@@ -230,7 +232,13 @@ export async function updateLeavePlan(
   
   logger.debug('Persisting update(s) to LeavePlan[%s]', id);
   const updatedLeavePlan = await leavePlanRepository.update({
-    where: { id }, data: { numberOfDays, ...updateData }, includeRelations: true
+    where: { id },
+    data: { 
+      numberOfDays, 
+      leavePackage: leavePackageId? { connect: { id: leavePackageId } } : undefined,
+      ...updateData 
+    }, 
+    includeRelations: true
   });
   logger.info('Update(s) to LeavePlan[%s] persisted successfully!', id);
 

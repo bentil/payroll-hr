@@ -7,6 +7,7 @@ import {
   REIMBURSEMENT_RESPONSE_ACTION, 
   ReimbursementRequestOrderBy 
 } from '../dto/reimbursement-request.dto';
+import { REQUEST_QUERY_MODE } from '../dto/leave-request.dto';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -34,9 +35,6 @@ export const CREATE_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
     }),
   amount: Joi.number()
     .required(),
-  status: Joi.string()
-    .optional()
-    .default(REIMBURESEMENT_REQUEST_STATUS.SUBMITTED),
   expenditureDate: joi.date()
     .required()
     .less('now')
@@ -74,6 +72,8 @@ export const QUERY_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
     ),
   approverId: Joi.number().optional(),
   signerId: Joi.number().optional(),
+  queryMode: Joi.string()
+    .valid(REQUEST_QUERY_MODE.ALL, REQUEST_QUERY_MODE.SELF, REQUEST_QUERY_MODE.SUPERVISEES),
   'expenditureDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'expenditureDate.lte': joi.date().optional()

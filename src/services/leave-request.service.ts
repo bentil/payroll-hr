@@ -33,7 +33,7 @@ import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
 import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
-import { getParent, getSupervisees } from './company-tree-node.service';
+import { getParent } from './company-tree-node.service';
 import { findFirst as findCompanyTreeNode } from '../repositories/company-tree-node.repository';
 
 const kafkaService = KafkaService.getInstance();
@@ -49,12 +49,14 @@ export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
-  let validateData;
-  let nodeExist;
+  let validateData, nodeExist, leaveSummary;
   // VALIDATION
   try {
-    nodeExist = await findCompanyTreeNode({ employeeId });
-    validateData = await validate(leaveTypeId, employeeId);
+    [nodeExist, validateData, leaveSummary] = await Promise.all([
+      findCompanyTreeNode({ employeeId }),
+      validate(leaveTypeId, employeeId),
+      getEmployeeLeaveTypeSummary(employeeId, leaveTypeId)
+    ]);
   } catch (err) {
     logger.warn('Validating Employee[%s] and/or LeaveType[%s] failed', 
       employeeId, leaveTypeId
@@ -81,6 +83,16 @@ export async function addLeaveRequest(
     includeHolidays: considerPublicHolidayAsWorkday,
     includeWeekends: considerWeekendAsWorkday 
   });
+  console.log(leaveSummary);
+
+  if (numberOfDays > leaveSummary.numberOfDaysLeft) {
+    logger.warn('Number of days requested is more than number of days left for this leave');
+    throw new RequirementNotMetError({
+      name: errors.LEAVE_QUOTA_EXCEEDED,
+      message: `You have ${leaveSummary.numberOfDaysLeft} day(s) left for this leave type`
+    });
+
+  }
   const createData: leaveRequestRepository.CreateLeaveRequestObject = {
     employeeId: payload.employeeId,
     leavePackageId,
@@ -121,9 +133,10 @@ export async function getLeaveRequests(
     page,
     limit: take,
     orderBy,
-    employeeId: queryEmployeeId,
+    employeeId: qEmployeeId,
     leavePackageId,
     status,
+    queryMode,
     'startDate.gte': startDateGte,
     'startDate.lte': startDateLte,
     'returnDate.gte': returnDateGte,
@@ -131,29 +144,10 @@ export async function getLeaveRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { employeeId: requestingEmployeeId } = authorizedUser;
-  let queryableIds: (number | undefined)[] = [];
-  let containsQuery: Record<string,  number | undefined>[] | undefined;
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { employeeId: qEmployeeId, queryMode }
+  );
 
-  if (queryEmployeeId) {
-    const supervisees = await getSupervisees(queryEmployeeId);
-    if (supervisees === undefined) {
-      queryableIds = [ queryEmployeeId ];
-    } else {
-      const superviseesId = supervisees.map((supervisee) => {
-        return supervisee?.id;
-      });
-      superviseesId.push(queryEmployeeId);
-      queryableIds = superviseesId;
-    }
-    containsQuery = [];
-    queryableIds.map(item => containsQuery?.push({ employeeId: item }));
-  } else {
-    queryableIds.push(requestingEmployeeId);
-    containsQuery = [];
-    queryableIds.map(item => containsQuery?.push({ employeeId: item }));
-  }
-  
   let result: ListWithPagination<LeaveRequestDto>;
   try {
     logger.debug('Finding LeaveRequest(s) that matched query', { query });
@@ -161,11 +155,14 @@ export async function getLeaveRequests(
       skip,
       take,
       where: { 
-        OR: containsQuery, 
-        leavePackageId, status, startDate: {
+        ...scopedQuery,
+        leavePackageId, 
+        status, 
+        startDate: {
           gte: startDateGte && new Date(startDateGte),
           lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
-        }, returnDate: {
+        }, 
+        returnDate: {
           gte: returnDateGte && new Date(returnDateGte),
           lt: returnDateLte && dateutil.getDate(new Date(returnDateLte), { days: 1 }),
         }
@@ -405,20 +402,7 @@ export async function addLeaveResponse(
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
-  const parent = await getParent(leaveRequest.employeeId);
-  if (parent){
-    if (!employeeId || employeeId !== parent.id) {
-      throw new ForbiddenError({
-        message: 'You are not allowed to perform this action'
-      });
-    }  
-  } else {
-    if(category !== USER_CATEGORY.HR) {
-      throw new ForbiddenError({
-        message: 'You are not allowed to perform this action'
-      });
-    }
-  }
+  await helpers.validateResponder(employeeId, leaveRequest.employeeId, category);
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({

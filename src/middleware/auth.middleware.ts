@@ -3,6 +3,7 @@ import { isAuthorizedUser } from '../domain/user.domain';
 import { ForbiddenError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { rootLogger } from '../utils/logger';
+// import { getSupervisees } from '../services/company-tree-node.service';
 
 const logger = rootLogger.child({ context: 'AuthMiddleware' });
 export function authenticateClient(req: Request, _res: Response, next: NextFunction) {
@@ -53,6 +54,51 @@ export function authenticateUser(
     next();
   };
 }
+
+// export function authenticateUserAsync(
+//   options?: { optional?: boolean, isEmployee?: boolean }
+// ): RequestHandler {
+//   //add a checker for employeeId in authUser and throw forbidden error if not employees
+//   const optional = options?.optional !== undefined ? options.optional : false;
+//   return async (req: Request, _res: Response, next: NextFunction) => {
+//     const data = req.headers['user-metadata'];
+//     if (!data) {
+//       if (!optional) {
+//         logger.warn('User auth header is missing or blank');
+//         throw new UnauthorizedError({});
+//       }
+//       return next(); // Skip verification if data not present and auth optional
+//     }
+
+//     let userData: any;
+//     try {
+//       userData = JSON.parse(data as string);
+//     } catch (err) {
+//       logger.warn('Failed to parse user auth header value', { error: err });
+//       throw new UnauthorizedError({});
+//     }
+
+//     if (!isAuthorizedUser(userData)) {
+//       logger.warn('User auth header value parsed but not a valid AuthorizedUser object');
+//       throw new UnauthorizedError({});
+//     }
+//     req.user = userData;
+
+//     if (options?.isEmployee) {
+//       if (!req.user.employeeId) {
+//         throw new ForbiddenError({});
+//       }
+//       console.log('before');
+//       const supervisees = await getSupervisees(req.user.employeeId);
+//       req.user.superviseeIds = supervisees.map(e => e.id);
+//       console.log(req.user);
+//       next();
+//     }
+
+//     authenticateRequest(req);
+//     next();
+//   };
+// }
 
 export function authenticatePlatformUser(): RequestHandler[] {
   return [

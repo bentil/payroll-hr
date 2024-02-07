@@ -10,12 +10,11 @@ import {
   ReimbursementResponseInputDto, 
   UpdateReimbursementRequestDto
 } from '../domain/dto/reimbursement-request.dto';
-import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
+import { AuthorizedUser } from '../domain/user.domain';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as repository from '../repositories/reimbursement-request.repository';
 import { 
   FailedDependencyError, 
-  ForbiddenError, 
   HttpError, 
   InvalidStateError, 
   NotFoundError, 
@@ -41,17 +40,19 @@ const events = {
 export async function addReimbursementRequest(
   payload: CreateReimbursementRequestDto,
 ): Promise<ReimbursementRequest> {
-  const { employeeId, currencyId, attachmentUrls } = payload;
-  const parent = await getParent(employeeId);
+  const { employeeId, currencyId } = payload;
+  // add to promise
+  let parent, employee, currency;
   // VALIDATION
   try {
-    await Promise.all([
+    [parent, employee, currency] = await Promise.all([
+      getParent(employeeId),
       employeeService.getEmployee(employeeId),
       currencyService.getCompanyCurrency(currencyId)
     ]);
   } catch (err) {
-    logger.warn('Validating Employee[%s] and/or Currency[%s] failed', 
-      employeeId, currencyId
+    logger.warn('Validating Employee[%s] and/or Currency[%s] and/or Parent[%s] failed', 
+      employeeId, currencyId, parent?.id,
     );
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -59,33 +60,22 @@ export async function addReimbursementRequest(
       cause: err
     });
   }
-  logger.info('Employee[%s] and Currency[%s] exists', employeeId, currencyId);
+  logger.info(
+    'Employee[%s], Currency[%s] and Parent[%s] exists', employee.id, currency.id, parent?.id
+  );
  
   logger.debug('Adding new ReimbursementRequest to the database...');
 
   let newReimbursementRequest: ReimbursementRequest;
-  if (attachmentUrls) {
-    try {
-      newReimbursementRequest = await repository.CreateReimbursementReqWithAttachment(payload);
-      logger.info('ReimbursementRequest[%s] added successfully!', newReimbursementRequest.id);
-    } catch (err) {
-      logger.error('Adding ReimbursementRequest failed', { error: err });
-      throw new ServerError({
-        message: (err as Error).message,
-        cause: err
-      });
-    }
-  } else {
-    try {
-      newReimbursementRequest = await repository.create(payload, parent?.id);
-      logger.info('ReimbursementRequest[%s] added successfully!', newReimbursementRequest.id);
-    } catch (err) {
-      logger.error('Adding ReimbursementRequest failed', { error: err });
-      throw new ServerError({
-        message: (err as Error).message,
-        cause: err
-      });
-    }
+  try {
+    newReimbursementRequest = await repository.create(payload);
+    logger.info('ReimbursementRequest[%s] added successfully!', newReimbursementRequest.id);
+  } catch (err) {
+    logger.error('Adding ReimbursementRequest failed', { error: err });
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
   }
   
 
@@ -98,18 +88,20 @@ export async function addReimbursementRequest(
 }
 
 export async function getReimbursementRequests(
-  query: QueryReimbursementRequestDto
+  query: QueryReimbursementRequestDto,
+  authorizedUser: AuthorizedUser,
 ): Promise<ListWithPagination<ReimbursementRequestDto>> {
   const {
     page,
     limit: take,
     orderBy,
-    employeeId,
+    employeeId: qEmployeeId,
     status,
     'expenditureDate.gte': expenditureDateGte,
     'expenditureDate.lte': expenditureDateLte,
     approverId,
     completerId,
+    queryMode,
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
     'approvedAt.gte': approvedAtGte,
@@ -119,6 +111,9 @@ export async function getReimbursementRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { employeeId: qEmployeeId, queryMode }
+  );
     
   let result: ListWithPagination<ReimbursementRequestDto>;
   try {
@@ -127,7 +122,7 @@ export async function getReimbursementRequests(
       skip,
       take,
       where: { 
-        employeeId,
+        ...scopedQuery,
         completerId,
         approverId, 
         status, 
@@ -277,21 +272,8 @@ export async function addResponse(
   ) {
     logger.info('ReimbursementRequest[%s] exists and can be responded to', id);
 
-    const parent = await getParent(reimbursementRequest.employeeId);
-    if (parent){
-      if (!employeeId || employeeId !== parent.id) {
-        throw new ForbiddenError({
-          message: 'You are not allowed to perform this action'
-        });
-      }  
-    } else {
-      if(category !== USER_CATEGORY.HR) {
-        throw new ForbiddenError({
-          message: 'You are not allowed to perform this action'
-        });
-      }
-      approvingEmployeeId = employeeId;
-    }
+    await helpers.validateResponder(employeeId, reimbursementRequest.employeeId, category);
+
   
     logger.debug('Adding response to ReimbursementRequest[%s]', id);
     const updatedReimbursementRequest = await repository.respond({

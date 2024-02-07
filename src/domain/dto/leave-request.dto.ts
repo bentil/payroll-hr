@@ -31,10 +31,16 @@ export enum LeaveRequestOrderBy {
   MODIFIED_AT_ASC = 'modifiedAt:asc',
   MODIFIED_AT_DESC = 'modifiedAt:desc',
 }
-
+export type REQUEST_QUERY_MODE ='SELF' | 'SUPERVISEES' | 'ALL';
+export const REQUEST_QUERY_MODE = {
+  SELF: 'SELF',
+  SUPERVISEES: 'SUPERVISEES',
+  ALL: 'ALL'
+};
 export class QueryLeaveRequestDto {
   employeeId?: number;
   leavePackageId?: number;
+  queryMode?: REQUEST_QUERY_MODE;
   status?: LEAVE_REQUEST_STATUS;
   'startDate.gte'?: string;
   'startDate.lte'?: string;

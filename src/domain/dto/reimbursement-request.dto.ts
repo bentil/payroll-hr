@@ -2,10 +2,13 @@ import {
   CompanyCurrency, 
   Employee, 
   REIMBURESEMENT_REQUEST_STATUS, 
-  ReimbursementRequest 
+  ReimbursementRequest, 
+  ReimbursementRequestAttachment, 
+  ReimbursementRequestComment
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import config from '../../config';
+import { REQUEST_QUERY_MODE } from './leave-request.dto';
 
 export class CreateReimbursementRequestDto{
   employeeId!: number;
@@ -43,7 +46,9 @@ export interface ReimbursementRequestDto  extends ReimbursementRequest {
   employee?: Employee;
   approver?: Employee | null;
   completer?: Employee | null;
-  currency?: CompanyCurrency;  
+  currency?: CompanyCurrency; 
+  requestAttachments?: ReimbursementRequestAttachment[]
+  requestComments?:    ReimbursementRequestComment[]
 }
 
 export class UpdateReimbursementRequestDto{
@@ -76,6 +81,7 @@ export class QueryReimbursementRequestDto {
   'expenditureDate.lte'?: string;
   approverId?: number;
   completerId?: number;
+  queryMode?: REQUEST_QUERY_MODE;
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   'approvedAt.gte'?: string;

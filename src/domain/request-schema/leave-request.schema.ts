@@ -2,7 +2,8 @@ import config from '../../config';
 import { 
   ADJUSTMENT_OPTIONS, 
   LEAVE_RESPONSE_ACTION, 
-  LeaveRequestOrderBy 
+  LeaveRequestOrderBy, 
+  REQUEST_QUERY_MODE
 } from '../dto/leave-request.dto'; 
 import Joi from 'joi';
 import joiDate from '@joi/date';
@@ -55,6 +56,8 @@ export const UPDATE_LEAVE_REQUEST_SCHEMA = Joi.object({
 export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   leaveTypeId: Joi.number(),
+  queryMode: Joi.string()
+    .valid(REQUEST_QUERY_MODE.ALL, REQUEST_QUERY_MODE.SELF, REQUEST_QUERY_MODE.SUPERVISEES),
   'startDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()

@@ -18,7 +18,7 @@ export async function addNewReimbursementRequest(req: Request, res: Response, ne
 export async function getReimbursementRequests(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.getReimbursementRequests(
-      req.query as unknown as QueryReimbursementRequestDto
+      req.query as unknown as QueryReimbursementRequestDto, req
     );
     res.json(response);
   } catch (err) {

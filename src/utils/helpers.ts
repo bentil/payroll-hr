@@ -1,15 +1,17 @@
-import { AuthorizedUser } from '../domain/user.domain';
-import { 
-  AddGrievanceReportedEmployeeRecord, 
+import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
+import {
+  AddGrievanceReportedEmployeeRecord,
   CreateGrievanceReportedEmployeeRecord
 } from '../domain/dto/grievance-reported-employee.dto';
 import { CreateCompanyLevelLeavePackageDto } from '../domain/dto/leave-package.dto';
 import { ForbiddenError } from '../errors/http-errors';
 import { CreateChildNodeDto, ChildNode } from '../domain/dto/company-tree-node.dto';
-import { 
-  CreateReimbursementAttachment, 
-  CreateReimbursementAttachmentWithReqId 
+import {
+  CreateReimbursementAttachment,
+  CreateReimbursementAttachmentWithReqId
 } from '../domain/dto/reimbursement-request.dto';
+import { REQUEST_QUERY_MODE } from '../domain/dto/leave-request.dto';
+import { getParent, getSupervisees } from '../services/company-tree-node.service';
 
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
@@ -113,10 +115,10 @@ type ManagePermissionScopeQueryOptsType = {
 // calculate number of days between two given dates
 export async function calculateDaysBetweenDates(startDate: Date, endDate: Date): Promise<number> {
   // To calculate the time difference of two dates 
-  const differenceInTime = endDate.getTime() - startDate.getTime(); 
-    
+  const differenceInTime = endDate.getTime() - startDate.getTime();
+
   // To calculate the no. of days between two dates 
-  const differenceInDays = differenceInTime / (1000 * 3600 * 24); 
+  const differenceInDays = differenceInTime / (1000 * 3600 * 24);
 
   return differenceInDays;
 }
@@ -186,4 +188,75 @@ export async function applyCompanyScopeToQuery(
   }
 
   return { scopedQuery: { ...query, ...scopeQuery } };
+}
+
+/*pass authUser, superviseesEmployeeIds, queryMode?,
+if qemployeeId in superviseesEmployeeId or emplId === qempId
+*/
+
+export async function applySupervisionScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>
+): Promise<ScopedQuery> {
+  const { employeeId, category, companyIds } = user;
+  const { employeeId: qEmployeeId, queryMode, ...query } = queryParams;
+
+  let authorized = false;
+  const supervisees = await getSupervisees(user.employeeId!);
+  const superviseeIds = supervisees.map(e => e.id);
+  const scopeQuery = {
+    employeeId,
+    employee: { companyId: { in: companyIds } },
+  } as { [key: string]: any, employeeId?: { in: number[] } | number };
+
+  if (category === USER_CATEGORY.HR) {
+    scopeQuery.employeeId = qEmployeeId || undefined;
+    authorized = true;
+  } else if (qEmployeeId) {
+    if (employeeId === qEmployeeId || superviseeIds?.includes(qEmployeeId)) {
+      scopeQuery.employeeId = qEmployeeId;
+      authorized = true;
+    }
+  } else {
+    authorized = true;
+    switch (queryMode) {
+    case REQUEST_QUERY_MODE.SUPERVISEES:
+      scopeQuery.employeeId = { in: superviseeIds };
+      break;
+    case REQUEST_QUERY_MODE.ALL:
+      scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+      break;
+    case REQUEST_QUERY_MODE.SELF:
+    default:
+      scopeQuery.employeeId = employeeId;
+      break;
+    }
+  }
+
+  if (!authorized) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+
+  return { scopedQuery: { ...query, ...scopeQuery } };
+}
+
+export async function validateResponder(
+  employeeId: number, 
+  requestEmpId: number, 
+  category: string
+) {
+  const parent = await getParent(requestEmpId);
+  if (parent){
+    if (employeeId !== parent.id) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }  
+  } else {
+    if(category !== USER_CATEGORY.HR) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }
+  }
 }

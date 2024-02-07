@@ -334,7 +334,7 @@ export async function getParent(employeeId: number): Promise<Employee | undefine
   return employee;
 }
 
-export async function getSupervisees(employeeId: number) {
+export async function getSupervisees(employeeId: number): Promise<Employee[]> {
   logger.debug('Getting supervisees of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
@@ -350,18 +350,17 @@ export async function getSupervisees(employeeId: number) {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  if (!companyTreeNode || !companyTreeNode.children || companyTreeNode.children.length === 0) {
+  if (!companyTreeNode) {
     throw new NotFoundError({
-      message: 'No position for Employee or Employee has no supervisees'
+      message: 'No position for Employee'
     });
   }
-  const children = companyTreeNode.children; 
 
-  const supervisees = children.map((child) => {
-    if (child.employee === undefined) {
-      return ;
-    } else {
-      return child.employee;
+  //filter
+  const supervisees: Employee[] = [];
+  companyTreeNode.children?.forEach(node => {
+    if (node.employee) {
+      supervisees.push(node.employee);
     }
   });
 
