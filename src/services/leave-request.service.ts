@@ -33,7 +33,7 @@ import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
 import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
-import { getParent } from './company-tree-node.service';
+import { getParentEmployee } from './company-tree-node.service';
 import { findFirst as findCompanyTreeNode } from '../repositories/company-tree-node.repository';
 
 const kafkaService = KafkaService.getInstance();
@@ -124,8 +124,6 @@ export async function addLeaveRequest(
   return newLeaveRequest;
 }
 
-
-//Access to deal with on employees supervisor
 export async function getLeaveRequests(
   query: QueryLeaveRequestDto, authorizedUser: AuthorizedUser,
 ): Promise<ListWithPagination<LeaveRequestDto>> {
@@ -206,7 +204,7 @@ export async function getLeaveRequest(
     });
   }
 
-  const parent = await getParent(leaveRequest.employeeId);
+  const parent = await getParentEmployee(leaveRequest.employeeId);
   if (parent){
     if (!employeeId || employeeId !== parent.id) {
       throw new ForbiddenError({
@@ -375,7 +373,7 @@ export async function addLeaveResponse(
   responseData: LeaveResponseInputDto,
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId, category } = authorizedUser;
+  const { employeeId } = authorizedUser;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -402,7 +400,7 @@ export async function addLeaveResponse(
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
-  await helpers.validateResponder(employeeId, leaveRequest.employeeId, category);
+  await helpers.validateResponder(authorizedUser, leaveRequest.employeeId);
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({

@@ -336,7 +336,7 @@ export async function updateCompanyTreeNode(
   return updatedCompanyTreeNode;
 }
 
-export async function getParent(employeeId: number): Promise<Employee | undefined> {
+export async function getParentEmployee(employeeId: number): Promise<Employee | undefined> {
   logger.debug('Getting parent of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 

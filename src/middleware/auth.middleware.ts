@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { isAuthorizedUser } from '../domain/user.domain';
+import { USER_CATEGORY, isAuthorizedUser } from '../domain/user.domain';
 import { ForbiddenError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { rootLogger } from '../utils/logger';
@@ -44,7 +44,10 @@ export function authenticateUser(
     req.user = userData;
 
     if (options?.isEmployee) {
-      if (!('empolyeeId' in req.user)) {
+      if (
+        !req.user.employeeId || 
+        ![USER_CATEGORY.EMPLOYEE, USER_CATEGORY.HR].includes(req.user.category) 
+      ) {
         throw new ForbiddenError({});
       }
       next();

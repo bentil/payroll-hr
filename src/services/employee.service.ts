@@ -106,7 +106,8 @@ export async function validateEmployees(
   }
 }
 export async function validateEmployee(
-  id: number, authorizedUser: AuthorizedUser,
+  id: number, 
+  authorizedUser: AuthorizedUser,
   options?: {
     throwOnNotActive?: boolean,
     companyId?: number, companyIds?: number[]

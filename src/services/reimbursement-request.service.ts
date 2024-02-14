@@ -27,7 +27,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import * as employeeService from '../services/employee.service';
 import * as currencyService from '../services/company-currency.service';
-import { getParent } from './company-tree-node.service';
+import { getParentEmployee } from './company-tree-node.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'ReimbursementRequest' });
@@ -46,7 +46,7 @@ export async function addReimbursementRequest(
   // VALIDATION
   try {
     [parent, employee, currency] = await Promise.all([
-      getParent(employeeId),
+      getParentEmployee(employeeId),
       employeeService.getEmployee(employeeId),
       currencyService.getCompanyCurrency(currencyId)
     ]);
@@ -249,7 +249,7 @@ export async function addResponse(
   responseData: ReimbursementResponseInputDto,
   authorizedUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
-  const { employeeId, category } = authorizedUser;
+  const { employeeId } = authorizedUser;
   const { action } = responseData;
   let approvingEmployeeId: number;
   if (employeeId) {
@@ -272,7 +272,7 @@ export async function addResponse(
   ) {
     logger.info('ReimbursementRequest[%s] exists and can be responded to', id);
 
-    await helpers.validateResponder(employeeId, reimbursementRequest.employeeId, category);
+    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
 
   
     logger.debug('Adding response to ReimbursementRequest[%s]', id);

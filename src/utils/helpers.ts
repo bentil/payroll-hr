@@ -11,7 +11,8 @@ import {
   CreateReimbursementAttachmentWithReqId
 } from '../domain/dto/reimbursement-request.dto';
 import { REQUEST_QUERY_MODE } from '../domain/dto/leave-request.dto';
-import { getParent, getSupervisees } from '../services/company-tree-node.service';
+import { getParentEmployee, getSupervisees } from '../services/company-tree-node.service';
+import { getEmployee } from '../services/employee.service';
 
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
@@ -241,22 +242,30 @@ export async function applySupervisionScopeToQuery(
 }
 
 export async function validateResponder(
-  employeeId: number, 
-  requestEmpId: number, 
-  category: string
+  authUser: AuthorizedUser,
+  requestorEmployeeId: number, 
 ) {
-  const parent = await getParent(requestEmpId);
-  if (parent){
-    if (employeeId !== parent.id) {
-      throw new ForbiddenError({
-        message: 'You are not allowed to perform this action'
-      });
-    }  
-  } else {
-    if(category !== USER_CATEGORY.HR) {
+  const { employeeId, category, companyIds } = authUser;
+  const parentEmployee = await getParentEmployee(requestorEmployeeId);
+  const requestorEmployee = await getEmployee(requestorEmployeeId);
+  if (
+    category !== USER_CATEGORY.HR 
+    && (!parentEmployee || employeeId !== parentEmployee.id)
+  ) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
+  }
+  //check if hr employee is of same company as requestor employee
+  if ([USER_CATEGORY.HR, USER_CATEGORY.EMPLOYEE].includes(category) && (companyIds.length === 1)) {
+    if(!companyIds.includes(requestorEmployee.companyId)) {
       throw new ForbiddenError({
         message: 'You are not allowed to perform this action'
       });
     }
+  } else {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   }
 }
