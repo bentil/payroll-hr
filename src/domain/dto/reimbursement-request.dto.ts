@@ -2,10 +2,13 @@ import {
   CompanyCurrency, 
   Employee, 
   REIMBURESEMENT_REQUEST_STATUS, 
-  ReimbursementRequest 
+  ReimbursementRequest, 
+  ReimbursementRequestAttachment, 
+  ReimbursementRequestComment
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import config from '../../config';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateReimbursementRequestDto{
   employeeId!: number;
@@ -43,7 +46,9 @@ export interface ReimbursementRequestDto  extends ReimbursementRequest {
   employee?: Employee;
   approver?: Employee | null;
   completer?: Employee | null;
-  currency?: CompanyCurrency;  
+  currency?: CompanyCurrency; 
+  requestAttachments?: ReimbursementRequestAttachment[]
+  requestComments?:    ReimbursementRequestComment[]
 }
 
 export class UpdateReimbursementRequestDto{
@@ -76,6 +81,7 @@ export class QueryReimbursementRequestDto {
   'expenditureDate.lte'?: string;
   approverId?: number;
   completerId?: number;
+  queryMode?: RequestQueryMode;
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   'approvedAt.gte'?: string;
@@ -87,16 +93,14 @@ export class QueryReimbursementRequestDto {
   orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_ASC;
 }
 
-export const REIMBURSEMENT_RESPONSE_ACTION = {
-  APPROVE: 'APPROVE',
-  REJECT: 'REJECT',
-  QUERY: 'QUERY'
-};
-
-export type REIMBURSEMENT_RESPONSE_ACTION = 'APPROVE' | 'REJECT' | 'QUERY';
+export enum ReimbursementResponseAction {
+  APPROVE,
+  REJECT,
+  QUERY
+}
 
 export class ReimbursementResponseInputDto {
-  action!: REIMBURSEMENT_RESPONSE_ACTION;
+  action!: ReimbursementResponseAction;
   comment?: string;
   attachmentUrls?: string[];
 }

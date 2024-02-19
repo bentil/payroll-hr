@@ -7,65 +7,32 @@ import {
 import { 
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
-  REIMBURSEMENT_RESPONSE_ACTION, 
+  ReimbursementResponseAction, 
   ReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto
 } from '../domain/dto/reimbursement-request.dto';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, FailedDependencyError, InputError } from '../errors/http-errors';
+import { AlreadyExistsError, InputError } from '../errors/http-errors';
 import * as helpers from '../utils/helpers';
 import { ListWithPagination, getListWithPagination } from './types';
 
-
 export async function create(
-  { employeeId, currencyId, ...dtoData }: CreateReimbursementRequestDto,
-  approvingEmployeeId?: number
-): Promise<ReimbursementRequest> {
-  const data: Prisma.ReimbursementRequestCreateInput = {
-    ...dtoData,
-    approver: approvingEmployeeId? { connect: { id: approvingEmployeeId } } : undefined,
-    employee: { connect: { id: employeeId } },
-    currency: { connect: { id: currencyId } },
-  };
-  try {
-    return await prisma.reimbursementRequest.create({ data });
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        throw new AlreadyExistsError({
-          message: 'Reimbursement request already exists',
-          cause: err
-        });
-      }
-    }
-    throw err;
-  }
-}
-
-export async function CreateReimbursementReqWithAttachment(
   { employeeId, currencyId, attachmentUrls, ...dtoData }: CreateReimbursementRequestDto
 ): Promise<ReimbursementRequest> {
-  if (!attachmentUrls) {
-    throw new FailedDependencyError({
-      message: 'Dependency check(s) failed',
-    });
-  }
-  const attachments = helpers.generateReimbursementAttachments(attachmentUrls, employeeId);
-    
-  const data: Prisma.ReimbursementRequestCreateInput = {
-    ...dtoData,
-    employee: { connect: { id: employeeId } },
-    currency: { connect: { id: currencyId } },
-    requestAttachments: {
-      createMany: {
-        data: attachments
-      }
-    }
-  };
-
   try {
-    return await prisma.reimbursementRequest.create({ data });    
+    return await prisma.reimbursementRequest.create({ 
+      data: {
+        ...dtoData,
+        employee: { connect: { id: employeeId } },
+        currency: { connect: { id: currencyId } },
+        requestAttachments: attachmentUrls && {
+          createMany: {
+            data: helpers.generateReimbursementAttachments(attachmentUrls, employeeId)
+          }
+        } 
+      }
+    });    
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
@@ -152,15 +119,15 @@ export async function respond(params: {
   
   let requestStatus: REIMBURESEMENT_REQUEST_STATUS, requestState: REIMBURESEMENT_REQUEST_STATE;
   switch (data.action) {
-  case REIMBURSEMENT_RESPONSE_ACTION.APPROVE:
+  case ReimbursementResponseAction.APPROVE:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.APPROVED;
     requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
     break;
-  case REIMBURSEMENT_RESPONSE_ACTION.REJECT:
+  case ReimbursementResponseAction.REJECT:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.REJECTED;
     requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
     break;
-  case REIMBURSEMENT_RESPONSE_ACTION.QUERY:
+  case ReimbursementResponseAction.QUERY:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.QUERIED;
     requestState = REIMBURESEMENT_REQUEST_STATE.QUERY;
     break;

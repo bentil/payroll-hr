@@ -42,9 +42,7 @@ export const QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA = Joi.object({
       'number.min': 'limit must be more than or equal to 1'
     }),
   orderBy: Joi.string().optional()
-    .valid(
-      ...Object.values(LeaveTypeOrderBy)
-    )
+    .valid(...Object.values(LeaveTypeOrderBy))
     .default(ApplicableLeaveTypeOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(ApplicableLeaveTypeOrderBy)}`
@@ -67,9 +65,7 @@ export const QUERY_LEAVE_TYPE_SCHEMA = Joi.object({
       'number.min': 'limit must be more than or equal to 1'
     }),
   orderBy: Joi.string().optional()
-    .valid(
-      ...Object.values(LeaveTypeOrderBy)
-    )
+    .valid(...Object.values(LeaveTypeOrderBy))
     .default(LeaveTypeOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(LeaveTypeOrderBy)}`
@@ -91,9 +87,7 @@ export const SEARCH_LEAVE_TYPE_SCHEMA = Joi.object({
       'number.min': 'limit must be more than or equal to 1'
     }),
   orderBy: Joi.string().optional()
-    .valid(
-      ...Object.values(LeaveTypeOrderBy)
-    )
+    .valid(...Object.values(LeaveTypeOrderBy))
     .default(LeaveTypeOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(LeaveTypeOrderBy)}`

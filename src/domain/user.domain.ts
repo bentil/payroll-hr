@@ -17,6 +17,7 @@ export interface AuthorizedUser {
   employeeId?: number;
   platformUser: boolean;
   sessionId?: string;
+  superviseeIds?: number[];
 }
 
 export function isAuthorizedUser(obj: any): obj is AuthorizedUser {

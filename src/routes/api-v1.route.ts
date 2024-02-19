@@ -422,7 +422,7 @@ router.delete(
 
 router.post(
   '/leave-requests/:id/response',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(CREATE_LEAVE_RESPONSE_SCHEMA),
   leaveReqV1Controller.addLeaveResponse
 );
@@ -516,7 +516,7 @@ router.get(
 
 router.post(
   '/reimbursement-requests/:id/response',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(CREATE_REIMBURSEMENT_RESPONSE_SCHEMA),
   reimbReqV1Controller.addResponse
 );

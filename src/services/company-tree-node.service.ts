@@ -49,14 +49,32 @@ export async function addCompanyTreeNode(
 
   let nodeExist = false;
   if (childNodes) {
-    childNodes.forEach(async (item) => {
-      if (item.employeeId) {
-        const node = await repository.findFirst({ employeeId: item.employeeId, companyId });
+    let childEmployee, childJobTitle;
+    for (const child of childNodes) {
+      if (child.employeeId) {
+        [childEmployee, childJobTitle] = await Promise.all([
+          getEmployee(child.employeeId),
+          getJobTitle(child.jobTitleId)
+        ]);
+        await validateCompanyId({
+          jobTitleCompanyId: childJobTitle.companyId, 
+          companyId, 
+          employeeCompanyId: childEmployee.companyId
+        });
+        const node = await repository.findFirst({ employeeId: childEmployee.id, companyId });
         if (node) {
           nodeExist = true;
         }
+      } else {
+        [childJobTitle] = await Promise.all([
+          getJobTitle(child.jobTitleId)
+        ]);
+        await validateCompanyId({
+          jobTitleCompanyId: childJobTitle.companyId, 
+          companyId, 
+        });
       }
-    });
+    }
 
     if (nodeExist) {
       throw new AlreadyExistsError({
@@ -255,6 +273,7 @@ export async function updateCompanyTreeNode(
   }
   let parent, employee;
 
+  //Validation
   if (employeeId) {
     const node = await repository.findFirst({ employeeId, companyId });
     if (node) {
@@ -262,30 +281,40 @@ export async function updateCompanyTreeNode(
         message: 'Employee already linked to an existing node'
       });
     }
-  }
-  
-  //Validation
-  if (parentId && employeeId) {
-    [parent, employee] = await Promise.all([
-      repository.findOne({ id: parentId }),
-      getEmployee(employeeId),
-    ]);
-    await validateCompanyId({
-      companyId: companyTreeNode.companyId, 
-      parentCompanyId: parent!.companyId, 
-      employeeCompanyId: employee.companyId
-    });
-  } else if (parentId) {
+    if (parentId) {
+      [parent, employee] = await Promise.all([
+        repository.findOne({ id: parentId }),
+        getEmployee(employeeId),
+      ]);
+      if (!parent) {
+        throw new NotFoundError({
+          name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+          message: 'Company tree node does not exist'
+        });
+      }
+      await validateCompanyId({
+        companyId: companyTreeNode.companyId, 
+        parentCompanyId: parent!.companyId, 
+        employeeCompanyId: employee.companyId
+      });
+    }else {
+      employee = await getEmployee(employeeId);
+      await validateCompanyId({
+        companyId: companyTreeNode.companyId, 
+        employeeCompanyId: employee.companyId
+      });
+    }
+  } else {
     parent = await repository.findOne({ id: parentId });
+    if (!parent) {
+      throw new NotFoundError({
+        name: errors.COMPANY_TREE_NODE_NOT_FOUND,
+        message: 'Company tree node does not exist'
+      });
+    }
     await validateCompanyId({
       companyId: companyTreeNode.companyId, 
       parentCompanyId: parent!.companyId
-    });
-  } else if (employeeId) {
-    employee = await getEmployee(employeeId);
-    await validateCompanyId({
-      companyId: companyTreeNode.companyId, 
-      employeeCompanyId: employee.companyId
     });
   }
   const data = {
@@ -307,7 +336,7 @@ export async function updateCompanyTreeNode(
   return updatedCompanyTreeNode;
 }
 
-export async function getParent(employeeId: number): Promise<Employee | undefined> {
+export async function getParentEmployee(employeeId: number): Promise<Employee | undefined> {
   logger.debug('Getting parent of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
@@ -334,7 +363,7 @@ export async function getParent(employeeId: number): Promise<Employee | undefine
   return employee;
 }
 
-export async function getSupervisees(employeeId: number) {
+export async function getSupervisees(employeeId: number): Promise<Employee[]> {
   logger.debug('Getting supervisees of Employee[%s]', employeeId);
   let companyTreeNode: CompanyTreeNodeDto | null;
 
@@ -350,18 +379,17 @@ export async function getSupervisees(employeeId: number) {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  if (!companyTreeNode || !companyTreeNode.children || companyTreeNode.children.length === 0) {
+  if (!companyTreeNode) {
     throw new NotFoundError({
-      message: 'No position for Employee or Employee has no supervisees'
+      message: 'No position for Employee'
     });
   }
-  const children = companyTreeNode.children; 
 
-  const supervisees = children.map((child) => {
-    if (child.employee === undefined) {
-      return ;
-    } else {
-      return child.employee;
+  //filter
+  const supervisees: Employee[] = [];
+  companyTreeNode.children?.forEach(node => {
+    if (node.employee) {
+      supervisees.push(node.employee);
     }
   });
 
@@ -473,6 +501,6 @@ async function validateCompanyId(
     throw new ForbiddenError({ message: 'Not allowed to perform action with this ParentCompany.' });
   }
   if (employeeCompanyId && (employeeCompanyId !== companyId)) {
-    throw new ForbiddenError({ message: 'Not allowed to perform action.' }); 
+    throw new ForbiddenError({ message: 'Employee does not belong to this company' }); 
   }
 }

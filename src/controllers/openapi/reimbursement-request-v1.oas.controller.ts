@@ -55,10 +55,11 @@ export class ReimbursementRequestV1Controller {
    */
   @Get()
   public async getReimbursementRequests(
-    @Queries() query: QueryReimbursementRequestDto
+    @Queries() query: QueryReimbursementRequestDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<ReimbursementRequest[]>> {
     this.logger.debug('Received request to get ReimbursementRequest(s) matching query', { query });
-    const { data, pagination } = await reimbursementReqService.getReimbursementRequests(query);
+    const { data, pagination } = 
+      await reimbursementReqService.getReimbursementRequests(query, req.user!);
     this.logger.info('Returning %d ReimbursementRequest(s) that matched the query', data.length);
     return { data, pagination };
   }
