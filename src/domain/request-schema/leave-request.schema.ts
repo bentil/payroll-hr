@@ -57,7 +57,7 @@ export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   leaveTypeId: Joi.number(),
   queryMode: Joi.string()
-    .valid(RequestQueryMode.ALL, RequestQueryMode.SELF, RequestQueryMode.SUPERVISEES),
+    .valid(...Object.values(RequestQueryMode)),
   'startDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()
@@ -92,10 +92,7 @@ export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
 export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
   action: Joi.string()
     .required()
-    .valid(
-      LeaveResponseAction.APPROVE,
-      LeaveResponseAction.DECLINE
-    ),
+    .valid(...Object.values(LeaveResponseAction)),
   comment: Joi.string()
     .optional()
     .allow('')
@@ -106,7 +103,7 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
 export const ADJUST_DAYS_SCHEMA = Joi.object({
   adjustment: Joi.string()
     .required()
-    .valid(AdjustmentOptions.DECREASE, AdjustmentOptions.INCREASE),
+    .valid(...Object.values(AdjustmentOptions)),
   count: Joi.number()
     .positive()
     .required(),

@@ -63,17 +63,11 @@ export const QUERY_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   status: Joi.string()
     .optional()
-    .valid(
-      REIMBURESEMENT_REQUEST_STATUS.APPROVED,
-      REIMBURESEMENT_REQUEST_STATUS.COMPLETED,
-      REIMBURESEMENT_REQUEST_STATUS.QUERIED,
-      REIMBURESEMENT_REQUEST_STATUS.REJECTED,
-      REIMBURESEMENT_REQUEST_STATUS.SUBMITTED
-    ),
+    .valid(...Object.values(REIMBURESEMENT_REQUEST_STATUS)),
   approverId: Joi.number().optional(),
   signerId: Joi.number().optional(),
   queryMode: Joi.string()
-    .valid(RequestQueryMode.ALL, RequestQueryMode.SELF, RequestQueryMode.SUPERVISEES),
+    .valid(...Object.values(RequestQueryMode)),
   'expenditureDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'expenditureDate.lte': joi.date().optional()
@@ -116,11 +110,7 @@ export const QUERY_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
 export const CREATE_REIMBURSEMENT_RESPONSE_SCHEMA = Joi.object({
   action: Joi.string()
     .required()
-    .valid(
-      ReimbursementResponseAction.APPROVE,
-      ReimbursementResponseAction.QUERY,
-      ReimbursementResponseAction.REJECT
-    ),
+    .valid(...Object.values(ReimbursementResponseAction)),
   comment: Joi.string()
     .optional()
     .allow('')
