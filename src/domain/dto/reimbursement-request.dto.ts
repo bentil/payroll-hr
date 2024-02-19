@@ -94,9 +94,9 @@ export class QueryReimbursementRequestDto {
 }
 
 export enum ReimbursementResponseAction {
-  APPROVE,
-  REJECT,
-  QUERY
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  QUERY = 'QUERY'
 }
 
 export class ReimbursementResponseInputDto {
