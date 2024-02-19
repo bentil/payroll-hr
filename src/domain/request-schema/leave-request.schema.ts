@@ -1,9 +1,9 @@
 import config from '../../config';
 import { 
-  ADJUSTMENT_OPTIONS, 
-  LEAVE_RESPONSE_ACTION, 
+  AdjustmentOptions, 
+  LeaveResponseAction, 
   LeaveRequestOrderBy, 
-  REQUEST_QUERY_MODE
+  RequestQueryMode
 } from '../dto/leave-request.dto'; 
 import Joi from 'joi';
 import joiDate from '@joi/date';
@@ -57,7 +57,7 @@ export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   leaveTypeId: Joi.number(),
   queryMode: Joi.string()
-    .valid(REQUEST_QUERY_MODE.ALL, REQUEST_QUERY_MODE.SELF, REQUEST_QUERY_MODE.SUPERVISEES),
+    .valid(RequestQueryMode.ALL, RequestQueryMode.SELF, RequestQueryMode.SUPERVISEES),
   'startDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()
@@ -93,8 +93,8 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
   action: Joi.string()
     .required()
     .valid(
-      LEAVE_RESPONSE_ACTION.APPROVE,
-      LEAVE_RESPONSE_ACTION.DECLINE
+      LeaveResponseAction.APPROVE,
+      LeaveResponseAction.DECLINE
     ),
   comment: Joi.string()
     .optional()
@@ -106,7 +106,7 @@ export const CREATE_LEAVE_RESPONSE_SCHEMA = Joi.object({
 export const ADJUST_DAYS_SCHEMA = Joi.object({
   adjustment: Joi.string()
     .required()
-    .valid(ADJUSTMENT_OPTIONS.DECREASE, ADJUSTMENT_OPTIONS.INCREASE),
+    .valid(AdjustmentOptions.DECREASE, AdjustmentOptions.INCREASE),
   count: Joi.number()
     .positive()
     .required(),

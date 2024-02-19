@@ -6,9 +6,9 @@ import {
 } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import {
-  ADJUSTMENT_OPTIONS,
+  AdjustmentOptions,
   AdjustDaysDto,
-  LEAVE_RESPONSE_ACTION,
+  LeaveResponseAction,
   LeaveRequestDto,
   LeaveResponseInputDto
 } from '../domain/dto/leave-request.dto';
@@ -173,11 +173,11 @@ export async function respond(params: {
   
   let requestStatus: LEAVE_REQUEST_STATUS, responseType: LEAVE_RESPONSE_TYPE;
   switch (data.action) {
-  case LEAVE_RESPONSE_ACTION.APPROVE:
+  case LeaveResponseAction.APPROVE:
     requestStatus = LEAVE_REQUEST_STATUS.APPROVED;
     responseType = LEAVE_RESPONSE_TYPE.APPROVED;
     break;
-  case LEAVE_RESPONSE_ACTION.DECLINE:
+  case LeaveResponseAction.DECLINE:
     requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
     responseType = LEAVE_RESPONSE_TYPE.DECLINED;
     break;
@@ -232,7 +232,7 @@ export async function adjustDays(params: {
       const leaveRequest = await txn.leaveRequest.update({
         where: { id },
         data: {
-          numberOfDays: data.adjustment === ADJUSTMENT_OPTIONS.DECREASE
+          numberOfDays: data.adjustment === AdjustmentOptions.DECREASE
             ? { decrement: data.count }
             : { increment: data.count }
         },

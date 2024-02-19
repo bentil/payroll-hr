@@ -4,10 +4,10 @@ import coreJoi from 'joi';
 import { REIMBURESEMENT_REQUEST_STATUS } from '@prisma/client';
 import config from '../../config';
 import { 
-  REIMBURSEMENT_RESPONSE_ACTION, 
+  ReimbursementResponseAction, 
   ReimbursementRequestOrderBy 
 } from '../dto/reimbursement-request.dto';
-import { REQUEST_QUERY_MODE } from '../dto/leave-request.dto';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -73,7 +73,7 @@ export const QUERY_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
   approverId: Joi.number().optional(),
   signerId: Joi.number().optional(),
   queryMode: Joi.string()
-    .valid(REQUEST_QUERY_MODE.ALL, REQUEST_QUERY_MODE.SELF, REQUEST_QUERY_MODE.SUPERVISEES),
+    .valid(RequestQueryMode.ALL, RequestQueryMode.SELF, RequestQueryMode.SUPERVISEES),
   'expenditureDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'expenditureDate.lte': joi.date().optional()
@@ -117,9 +117,9 @@ export const CREATE_REIMBURSEMENT_RESPONSE_SCHEMA = Joi.object({
   action: Joi.string()
     .required()
     .valid(
-      REIMBURSEMENT_RESPONSE_ACTION.APPROVE,
-      REIMBURSEMENT_RESPONSE_ACTION.QUERY,
-      REIMBURSEMENT_RESPONSE_ACTION.REJECT
+      ReimbursementResponseAction.APPROVE,
+      ReimbursementResponseAction.QUERY,
+      ReimbursementResponseAction.REJECT
     ),
   comment: Joi.string()
     .optional()

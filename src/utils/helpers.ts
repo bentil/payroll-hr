@@ -10,7 +10,7 @@ import {
   CreateReimbursementAttachment,
   CreateReimbursementAttachmentWithReqId
 } from '../domain/dto/reimbursement-request.dto';
-import { REQUEST_QUERY_MODE } from '../domain/dto/leave-request.dto';
+import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { getParentEmployee, getSupervisees } from '../services/company-tree-node.service';
 import { getEmployee } from '../services/employee.service';
 
@@ -221,13 +221,13 @@ export async function applySupervisionScopeToQuery(
   } else {
     authorized = true;
     switch (queryMode) {
-    case REQUEST_QUERY_MODE.SUPERVISEES:
+    case RequestQueryMode.SUPERVISEES:
       scopeQuery.employeeId = { in: superviseeIds };
       break;
-    case REQUEST_QUERY_MODE.ALL:
+    case RequestQueryMode.ALL:
       scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
       break;
-    case REQUEST_QUERY_MODE.SELF:
+    case RequestQueryMode.SELF:
     default:
       scopeQuery.employeeId = employeeId;
       break;
@@ -244,10 +244,13 @@ export async function applySupervisionScopeToQuery(
 export async function validateResponder(
   authUser: AuthorizedUser,
   requestorEmployeeId: number, 
-) {
+): Promise<void> {
   const { employeeId, category, companyIds } = authUser;
-  const parentEmployee = await getParentEmployee(requestorEmployeeId);
-  const requestorEmployee = await getEmployee(requestorEmployeeId);
+  const [parentEmployee, requestorEmployee] = await Promise.all([
+    getParentEmployee(requestorEmployeeId),
+    getEmployee(requestorEmployeeId)
+  ]);
+
   if (
     category !== USER_CATEGORY.HR 
     && (!parentEmployee || employeeId !== parentEmployee.id)

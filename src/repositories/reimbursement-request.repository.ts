@@ -7,7 +7,7 @@ import {
 import { 
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
-  REIMBURSEMENT_RESPONSE_ACTION, 
+  ReimbursementResponseAction, 
   ReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto
@@ -119,15 +119,15 @@ export async function respond(params: {
   
   let requestStatus: REIMBURESEMENT_REQUEST_STATUS, requestState: REIMBURESEMENT_REQUEST_STATE;
   switch (data.action) {
-  case REIMBURSEMENT_RESPONSE_ACTION.APPROVE:
+  case ReimbursementResponseAction.APPROVE:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.APPROVED;
     requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
     break;
-  case REIMBURSEMENT_RESPONSE_ACTION.REJECT:
+  case ReimbursementResponseAction.REJECT:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.REJECTED;
     requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
     break;
-  case REIMBURSEMENT_RESPONSE_ACTION.QUERY:
+  case ReimbursementResponseAction.QUERY:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.QUERIED;
     requestState = REIMBURESEMENT_REQUEST_STATE.QUERY;
     break;

@@ -31,16 +31,16 @@ export enum LeaveRequestOrderBy {
   MODIFIED_AT_ASC = 'modifiedAt:asc',
   MODIFIED_AT_DESC = 'modifiedAt:desc',
 }
-export type REQUEST_QUERY_MODE ='SELF' | 'SUPERVISEES' | 'ALL';
-export const REQUEST_QUERY_MODE = {
-  SELF: 'SELF',
-  SUPERVISEES: 'SUPERVISEES',
-  ALL: 'ALL'
-};
+
+export enum RequestQueryMode {
+  SELF,
+  SUPERVISEES,
+  ALL
+}
 export class QueryLeaveRequestDto {
   employeeId?: number;
   leavePackageId?: number;
-  queryMode?: REQUEST_QUERY_MODE;
+  queryMode?: RequestQueryMode;
   status?: LEAVE_REQUEST_STATUS;
   'startDate.gte'?: string;
   'startDate.lte'?: string;
@@ -51,17 +51,13 @@ export class QueryLeaveRequestDto {
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
 
-export const LEAVE_RESPONSE_ACTION = {
-  APPROVE: 'APPROVE',
-  DECLINE: 'DECLINE'
-};
-
-type LEAVE_RESPONSE_ACTION = 
-  (typeof LEAVE_RESPONSE_ACTION)[keyof typeof LEAVE_RESPONSE_ACTION];
-
+export enum LeaveResponseAction {
+  APPROVE,
+  DECLINE
+}
 
 export class LeaveResponseInputDto {
-  action!: LEAVE_RESPONSE_ACTION;
+  action!: LeaveResponseAction;
   comment!: string;
 }
 
@@ -70,16 +66,13 @@ export interface LeaveRequestDto extends LeaveRequest {
 	leavePackage?: LeavePackage
 }
 
-export const ADJUSTMENT_OPTIONS = {
-  INCREASE: 'INCREASE',
-  DECREASE: 'DECREASE'
-};
-
-export type ADJUSTMENT_OPTIONS = 
-  (typeof ADJUSTMENT_OPTIONS)[keyof typeof ADJUSTMENT_OPTIONS];
+export enum AdjustmentOptions {
+  INCREASE,
+  DECREASE
+}
 
 export class AdjustDaysDto {
-  adjustment!: ADJUSTMENT_OPTIONS;
+  adjustment!: AdjustmentOptions;
   count!: number;
   comment!: string;
 }

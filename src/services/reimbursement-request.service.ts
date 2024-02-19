@@ -4,7 +4,7 @@ import {
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
   QueryReimbursementRequestDto, 
-  REIMBURSEMENT_RESPONSE_ACTION, 
+  ReimbursementResponseAction, 
   ReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
@@ -279,7 +279,7 @@ export async function addResponse(
     const updatedReimbursementRequest = await repository.respond({
       id,
       data: { ...responseData, approvingEmployeeId, 
-        approvedAt: action === REIMBURSEMENT_RESPONSE_ACTION.APPROVE ? new Date() : undefined
+        approvedAt: action === ReimbursementResponseAction.APPROVE ? new Date() : undefined
       },
       include: { 
         employee: true, 

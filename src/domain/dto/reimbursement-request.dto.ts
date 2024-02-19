@@ -8,7 +8,7 @@ import {
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import config from '../../config';
-import { REQUEST_QUERY_MODE } from './leave-request.dto';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateReimbursementRequestDto{
   employeeId!: number;
@@ -81,7 +81,7 @@ export class QueryReimbursementRequestDto {
   'expenditureDate.lte'?: string;
   approverId?: number;
   completerId?: number;
-  queryMode?: REQUEST_QUERY_MODE;
+  queryMode?: RequestQueryMode;
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   'approvedAt.gte'?: string;
@@ -93,16 +93,14 @@ export class QueryReimbursementRequestDto {
   orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_ASC;
 }
 
-export const REIMBURSEMENT_RESPONSE_ACTION = {
-  APPROVE: 'APPROVE',
-  REJECT: 'REJECT',
-  QUERY: 'QUERY'
-};
-
-export type REIMBURSEMENT_RESPONSE_ACTION = 'APPROVE' | 'REJECT' | 'QUERY';
+export enum ReimbursementResponseAction {
+  APPROVE,
+  REJECT,
+  QUERY
+}
 
 export class ReimbursementResponseInputDto {
-  action!: REIMBURSEMENT_RESPONSE_ACTION;
+  action!: ReimbursementResponseAction;
   comment?: string;
   attachmentUrls?: string[];
 }
