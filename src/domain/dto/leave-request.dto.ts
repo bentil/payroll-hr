@@ -33,9 +33,9 @@ export enum LeaveRequestOrderBy {
 }
 
 export enum RequestQueryMode {
-  SELF,
-  SUPERVISEES,
-  ALL
+  SELF = 'SELF',
+  SUPERVISEES = 'SUPERVISEES',
+  ALL = 'ALL'
 }
 export class QueryLeaveRequestDto {
   employeeId?: number;
@@ -52,8 +52,8 @@ export class QueryLeaveRequestDto {
 }
 
 export enum LeaveResponseAction {
-  APPROVE,
-  DECLINE
+  APPROVE = 'APPROVE',
+  DECLINE = 'DECLINE'
 }
 
 export class LeaveResponseInputDto {
@@ -67,8 +67,8 @@ export interface LeaveRequestDto extends LeaveRequest {
 }
 
 export enum AdjustmentOptions {
-  INCREASE,
-  DECREASE
+  INCREASE = 'INCREASE',
+  DECREASE = 'DECREASE'
 }
 
 export class AdjustDaysDto {
