@@ -210,11 +210,12 @@ export async function applySupervisionScopeToQuery(
     employee: { companyId: { in: companyIds } },
   } as { [key: string]: any, employeeId?: { in: number[] } | number };
 
-  if (category === USER_CATEGORY.HR) {
-    scopeQuery.employeeId = qEmployeeId || undefined;
-    authorized = true;
-  } else if (qEmployeeId) {
-    if (employeeId === qEmployeeId || superviseeIds?.includes(qEmployeeId)) {
+  if (qEmployeeId) {
+    if (
+      category === USER_CATEGORY.HR || 
+      employeeId === qEmployeeId || 
+      superviseeIds?.includes(qEmployeeId)
+    ) {
       scopeQuery.employeeId = qEmployeeId;
       authorized = true;
     }
@@ -225,7 +226,11 @@ export async function applySupervisionScopeToQuery(
       scopeQuery.employeeId = { in: superviseeIds };
       break;
     case RequestQueryMode.ALL:
-      scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+      if (category === USER_CATEGORY.HR) {
+        scopeQuery.employeeId = undefined;
+      } else {
+        scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+      }
       break;
     case RequestQueryMode.SELF:
     default:
