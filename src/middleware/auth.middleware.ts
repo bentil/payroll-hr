@@ -50,7 +50,7 @@ export function authenticateUser(
       ) {
         throw new ForbiddenError({});
       }
-      next();
+      return next();
     }
 
     authenticateRequest(req);
