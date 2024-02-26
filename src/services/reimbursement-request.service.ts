@@ -340,6 +340,9 @@ export async function postUpdate(
     });
   }
   logger.info('ReimbursementRequest[%s] exists and update can be posted on', id);
+  if (updatingEmployeeId !== reimbursementRequest.employeeId) {
+    await helpers.validateResponder(authorizedUser, updatingEmployeeId);
+  }
   
   logger.debug('Adding response to ReimbursementRequest[%s]', id);
   const updatedReimbursementRequest = await repository.postUpdate({
@@ -397,6 +400,8 @@ export async function completeRequest(
       message: 'Can not complete this reimbursement request'
     });
   }
+
+  await helpers.validateResponder(authorizedUser, completingEmployeeId);
 
   logger.debug('Completing ReimbursementRequest[%s]', id);
   const updatedReimbursementRequest = await repository.completeRequest({
