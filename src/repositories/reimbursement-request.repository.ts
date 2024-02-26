@@ -246,7 +246,7 @@ export async function completeRequest(params: {
       const reimbursementRequest = await txn.reimbursementRequest.update({
         where: { id },
         data: {
-          status: REIMBURESEMENT_REQUEST_STATUS.APPROVED,
+          status: REIMBURESEMENT_REQUEST_STATUS.COMPLETED,
           completerId: data.completingEmployeeId,
           statusLastModifiedAt: new Date(),
           completedAt: new Date()
