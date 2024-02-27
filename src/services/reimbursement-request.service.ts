@@ -204,7 +204,7 @@ export async function getReimbursementRequest(
 export async function updateReimbursementRequest(
   id: number, 
   updateData: UpdateReimbursementRequestDto
-): Promise<ReimbursementRequest> {
+): Promise<ReimbursementRequestDto> {
   const { currencyId } = updateData;
 
   const reimbursementRequest = await repository.findOne({ id });
@@ -232,7 +232,12 @@ export async function updateReimbursementRequest(
 
   logger.debug('Persisting update(s) to ReimbursementRequest[%s]', id);
   const updatedReimbursementRequest = await repository.update({
-    where: { id }, data: updateData
+    where: { id }, 
+    data: updateData, 
+    include: { 
+      requestAttachments: { include: { uploader: true } },
+      requestComments: { include: { commenter: true } } 
+    }
   });
   logger.info('Update(s) to ReimbursementRequest[%s] persisted successfully!', id);
 
