@@ -20,25 +20,6 @@ export class CreateReimbursementRequestDto{
   attachmentUrls?: string[];
 }
 
-export class CreateReimbursementAttachment {
-  uploaderId: number;
-  attachmentUrl: string;
-
-  constructor(attachmentUrl: string, employeeId: number) {
-    this.uploaderId = employeeId;
-    this.attachmentUrl = attachmentUrl;
-  }
-}
-
-export class CreateReimbursementAttachmentWithReqId {
-  uploaderId: number;
-  attachmentUrl: string;
-  constructor(attachmentUrl: string, employeeId: number) {
-    this.uploaderId = employeeId;
-    this.attachmentUrl = attachmentUrl;
-  }
-}
-
 export interface ReimbursementRequestDto  extends ReimbursementRequest {
   employee?: Employee;
   approver?: Employee | null;

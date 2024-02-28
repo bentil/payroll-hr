@@ -14,7 +14,6 @@ import {
 } from '../domain/dto/reimbursement-request.dto';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, InputError } from '../errors/http-errors';
-import * as helpers from '../utils/helpers';
 import { ListWithPagination, getListWithPagination } from './types';
 
 export async function create(
@@ -27,8 +26,12 @@ export async function create(
         employee: { connect: { id: employeeId } },
         currency: { connect: { id: currencyId } },
         requestAttachments: attachmentUrls && {
-          createMany: {
-            data: helpers.generateReimbursementAttachments(attachmentUrls, employeeId)
+          createMany: { 
+            data: attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: employeeId };
+              }
+            )
           }
         } 
       }
@@ -145,8 +148,10 @@ export async function respond(params: {
         approverId: data.approvingEmployeeId,
         requestAttachments: data.attachmentUrls && {
           createMany: { 
-            data: helpers.genReimbAttachmentsWithReqId(
-              data.attachmentUrls, data.approvingEmployeeId
+            data: data.attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: data.approvingEmployeeId };
+              }
             )
           }
         },
@@ -185,9 +190,11 @@ export async function postUpdate(params: {
       where: { id },
       data: {
         requestAttachments: data.attachmentUrls && {
-          createMany: {
-            data: helpers.genReimbAttachmentsWithReqId(
-              data.attachmentUrls, data.updatingEmployeeId
+          createMany: { 
+            data: data.attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: data.updatingEmployeeId };
+              }
             )
           }
         },
