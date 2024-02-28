@@ -100,11 +100,11 @@ export function generateReimbursementAttachments(attachmentUrls: string[], emplo
 }
 
 export function genReimbAttachmentsWithReqId(
-  attachmentUrls: string[], employeeId: number, requestId: number
+  attachmentUrls: string[], employeeId: number
 ) {
   return attachmentUrls.map(
     attachmentUrl => new CreateReimbursementAttachmentWithReqId(
-      attachmentUrl, employeeId, requestId
+      attachmentUrl, employeeId
     )
   );
 }

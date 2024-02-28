@@ -33,12 +33,9 @@ export class CreateReimbursementAttachment {
 export class CreateReimbursementAttachmentWithReqId {
   uploaderId: number;
   attachmentUrl: string;
-  requestId: number;
-
-  constructor(attachmentUrl: string, employeeId: number, requestId: number) {
+  constructor(attachmentUrl: string, employeeId: number) {
     this.uploaderId = employeeId;
     this.attachmentUrl = attachmentUrl;
-    this.requestId = requestId;
   }
 }
 

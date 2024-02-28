@@ -345,8 +345,11 @@ export async function postUpdate(
     });
   }
   logger.info('ReimbursementRequest[%s] exists and update can be posted on', id);
+
   if (updatingEmployeeId !== reimbursementRequest.employeeId) {
-    await helpers.validateResponder(authorizedUser, updatingEmployeeId);
+    logger.debug('Validating if Employee[%s] can post update to this request', updatingEmployeeId);
+    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+    logger.info('Employee[%s] can post update to this request', updatingEmployeeId);
   }
   
   logger.debug('Adding response to ReimbursementRequest[%s]', id);
@@ -406,7 +409,9 @@ export async function completeRequest(
     });
   }
 
-  await helpers.validateResponder(authorizedUser, completingEmployeeId);
+  logger.debug('Validating if Employee[%s] can complete this request', completingEmployeeId);
+  await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+  logger.info('Employee[%s] can complete this request', completingEmployeeId);
 
   logger.debug('Completing ReimbursementRequest[%s]', id);
   const updatedReimbursementRequest = await repository.completeRequest({
