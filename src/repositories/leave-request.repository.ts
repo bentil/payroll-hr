@@ -186,27 +186,22 @@ export async function respond(params: {
   }
 
   try {
-    return await prisma.$transaction(async (txn) => {
-      const leaveRequest = await txn.leaveRequest.update({
-        where: { id },
-        data: {
-          status: requestStatus,
-          responseCompletedAt: new Date()
-        },
-        include: includeRelations 
-          ? { leavePackage: { include: { leaveType: true } } } 
-          : undefined
-      });
-      await txn.leaveResponse.create({
-        data: {
-          leaveRequest: { connect: { id } },
-          employee: { connect: { id: data.approvingEmployeeId } },
-          comment: data.comment,
-          responseType
+    return await prisma.leaveRequest.update({
+      where: { id },
+      data: {
+        status: requestStatus,
+        responseCompletedAt: new Date(),
+        leaveResponses: {
+          create: {
+            employee: { connect: { id: data.approvingEmployeeId } },
+            comment: data.comment,
+            responseType
+          }
         }
-      });
-
-      return leaveRequest;
+      },
+      include: includeRelations 
+        ? { leavePackage: { include: { leaveType: true } } } 
+        : undefined
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -228,30 +223,25 @@ export async function adjustDays(params: {
   const { id, data } = params;
 
   try {
-    return await prisma.$transaction(async (txn) => {
-      const leaveRequest = await txn.leaveRequest.update({
-        where: { id },
-        data: {
-          numberOfDays: data.adjustment === AdjustmentOptions.DECREASE
-            ? { decrement: data.count }
-            : { increment: data.count }
-        },
-        include: {
-          leavePackage: {
-            include: { leaveType: true }
+    return await prisma.leaveRequest.update({
+      where: { id },
+      data: {
+        numberOfDays: data.adjustment === AdjustmentOptions.DECREASE
+          ? { decrement: data.count }
+          : { increment: data.count },
+        leaveResponses: {
+          create: {
+            comment: data.comment,
+            responseType: LEAVE_RESPONSE_TYPE.ADJUSTED,
+            employee: { connect: { id: data.respondingEmployeeId } }
           }
         }
-      });
-      await txn.leaveResponse.create({
-        data: {
-          leaveRequest: { connect: { id } },
-          comment: data.comment,
-          responseType: LEAVE_RESPONSE_TYPE.ADJUSTED,
-          employee: { connect: { id: data.respondingEmployeeId } }
+      },
+      include: {
+        leavePackage: {
+          include: { leaveType: true }
         }
-      });
-      
-      return leaveRequest;
+      }
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {

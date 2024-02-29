@@ -354,7 +354,7 @@ export async function getParentEmployee(employeeId: number): Promise<Employee | 
 
   if (!companyTreeNode) {
     throw new NotFoundError({
-      message: 'Employee does not belong to any organization'
+      message: 'Employee does not belong to this company'
     });
   }
   const employee = companyTreeNode.parent?.employee; 

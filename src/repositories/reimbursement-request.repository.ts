@@ -14,7 +14,6 @@ import {
 } from '../domain/dto/reimbursement-request.dto';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, InputError } from '../errors/http-errors';
-import * as helpers from '../utils/helpers';
 import { ListWithPagination, getListWithPagination } from './types';
 
 export async function create(
@@ -27,8 +26,12 @@ export async function create(
         employee: { connect: { id: employeeId } },
         currency: { connect: { id: currencyId } },
         requestAttachments: attachmentUrls && {
-          createMany: {
-            data: helpers.generateReimbursementAttachments(attachmentUrls, employeeId)
+          createMany: { 
+            data: attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: employeeId };
+              }
+            )
           }
         } 
       }
@@ -136,41 +139,31 @@ export async function respond(params: {
   }
 
   try {
-    return await prisma.$transaction(async (txn) => {
-      const reimbursementRequest = await txn.reimbursementRequest.update({
-        where: { id },
-        data: {
-          status: requestStatus,
-          statusLastModifiedAt: new Date(),
-          approvedAt: data.approvedAt,
-          approverId: data.approvingEmployeeId,
+    return await prisma.reimbursementRequest.update({
+      where: { id },
+      data: {
+        status: requestStatus,
+        statusLastModifiedAt: new Date(),
+        approvedAt: data.approvedAt,
+        approverId: data.approvingEmployeeId,
+        requestAttachments: data.attachmentUrls && {
+          createMany: { 
+            data: data.attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: data.approvingEmployeeId };
+              }
+            )
+          }
         },
-        include
-      });
-
-      if (data.attachmentUrls) {
-        const attachments = helpers.genReimbAttachmentsWithReqId(
-          data.attachmentUrls, data.approvingEmployeeId, id
-        );
-    
-        await txn.reimbursementRequestAttachment.createMany({
-          data: attachments
-        });
-        
-      }
-
-      if (data.comment) {
-        await txn.reimbursementRequestComment.create({
-          data: {
-            requestId: id,
+        requestComments: data.comment ? {
+          create: {
             commenterId: data.approvingEmployeeId,
             comment: data.comment,
             requestState
           }
-        });
-      }
-
-      return reimbursementRequest;
+        } : undefined
+      },
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -190,36 +183,30 @@ export async function postUpdate(params: {
   data: ReimbursementRequestUpdatesDto & { updatingEmployeeId: number };
   include: Prisma.ReimbursementRequestInclude;
 }): Promise<ReimbursementRequestDto | null> {
-  //what should be returned for the post update
   const { id, data, include } = params;
 
   try {
-    return await prisma.$transaction(async (txn) => {
-      const reimbRequest = await txn.reimbursementRequest.findUnique({ where: { id }, include });
-
-      if (data.attachmentUrls) {
-        const attachments = helpers.genReimbAttachmentsWithReqId(
-          data.attachmentUrls, data.updatingEmployeeId, id
-        );
-    
-        await txn.reimbursementRequestAttachment.createMany({
-          data: attachments
-        });
-        
-      }
-
-      if (data.comment) {
-        await txn.reimbursementRequestComment.create({
-          data: {
-            requestId: id,
+    return await prisma.reimbursementRequest.update({
+      where: { id },
+      data: {
+        requestAttachments: data.attachmentUrls && {
+          createMany: { 
+            data: data.attachmentUrls.map(
+              (attachmentUrl) => { 
+                return { attachmentUrl, uploaderId: data.updatingEmployeeId };
+              }
+            )
+          }
+        },
+        requestComments: data.comment ? {
+          create: {
             commenterId: data.updatingEmployeeId,
             comment: data.comment,
             requestState: REIMBURESEMENT_REQUEST_STATE.QUERY
           }
-        });
-      }
-      
-      return reimbRequest;
+        } : undefined
+      },
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -242,30 +229,22 @@ export async function completeRequest(params: {
   const { id, data, include } = params;
 
   try {
-    return await prisma.$transaction(async (txn) => {
-      const reimbursementRequest = await txn.reimbursementRequest.update({
-        where: { id },
-        data: {
-          status: REIMBURESEMENT_REQUEST_STATUS.APPROVED,
-          completerId: data.completingEmployeeId,
-          statusLastModifiedAt: new Date(),
-          completedAt: new Date()
-        },
-        include
-      });
-
-      if (data.comment) {
-        await txn.reimbursementRequestComment.create({
-          data: {
-            requestId: id,
+    return await prisma.reimbursementRequest.update({
+      where: { id },
+      data: {
+        status: REIMBURESEMENT_REQUEST_STATUS.COMPLETED,
+        completerId: data.completingEmployeeId,
+        statusLastModifiedAt: new Date(),
+        completedAt: new Date(),
+        requestComments: data.comment ? {
+          create: {
             commenterId: data.completingEmployeeId,
             comment: data.comment,
             requestState: REIMBURESEMENT_REQUEST_STATE.COMPLETION
           }
-        });
-      }
-
-      return reimbursementRequest;
+        } : undefined
+      },
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {

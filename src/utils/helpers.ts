@@ -6,10 +6,6 @@ import {
 import { CreateCompanyLevelLeavePackageDto } from '../domain/dto/leave-package.dto';
 import { ForbiddenError } from '../errors/http-errors';
 import { CreateChildNodeDto, ChildNode } from '../domain/dto/company-tree-node.dto';
-import {
-  CreateReimbursementAttachment,
-  CreateReimbursementAttachmentWithReqId
-} from '../domain/dto/reimbursement-request.dto';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { getParentEmployee, getSupervisees } from '../services/company-tree-node.service';
 import { getEmployee } from '../services/employee.service';
@@ -91,22 +87,6 @@ export function generateLeavePackageRecordsForACompanyLevel(
 
 export function generateChildNodes(childNodes: ChildNode[], companyId: number) {
   return childNodes.map(node => new CreateChildNodeDto(node, companyId));
-}
-
-export function generateReimbursementAttachments(attachmentUrls: string[], employeeId: number) {
-  return attachmentUrls.map(
-    attachmentUrl => new CreateReimbursementAttachment(attachmentUrl, employeeId)
-  );
-}
-
-export function genReimbAttachmentsWithReqId(
-  attachmentUrls: string[], employeeId: number, requestId: number
-) {
-  return attachmentUrls.map(
-    attachmentUrl => new CreateReimbursementAttachmentWithReqId(
-      attachmentUrl, employeeId, requestId
-    )
-  );
 }
 
 type ManagePermissionScopeQueryOptsType = {
