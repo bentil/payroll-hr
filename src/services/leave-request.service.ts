@@ -10,6 +10,7 @@ import {
   QueryLeaveRequestDto,
   LeaveResponseInputDto,
   UpdateLeaveRequestDto,
+  RequestQueryMode,
 } from '../domain/dto/leave-request.dto';
 import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
 import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
@@ -145,6 +146,21 @@ export async function getLeaveRequests(
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
+  let include;
+  if (queryMode === RequestQueryMode.SUPERVISEES) {
+    include = {
+      leavePackage: {
+        include: { leaveType: true }
+      },
+      employee: true,
+    };
+  } else {
+    include = {
+      leavePackage: {
+        include: { leaveType: true }
+      },
+    };
+  }
 
   let result: ListWithPagination<LeaveRequestDto>;
   try {
@@ -166,7 +182,7 @@ export async function getLeaveRequests(
         }
       },
       orderBy: orderByInput,
-      includeRelations: true
+      include
     });
     logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
   } catch (err) {
@@ -406,7 +422,10 @@ export async function addLeaveResponse(
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     id,
     data: { ...responseData, approvingEmployeeId },
-    includeRelations: true
+    include: { 
+      leavePackage: { include: { leaveType: true } },
+      leaveResponses: true,
+    } 
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
 
@@ -605,6 +624,12 @@ export async function adjustDays(
     data: {
       ...payload,
       respondingEmployeeId: authorizedUser.employeeId!
+    },
+    include: {
+      leavePackage: {
+        include: { leaveType: true }
+      },
+      leaveResponses: true
     }
   });
   logger.info('Number of days adjusted for LeaveRequest[%s] successfully!', id);

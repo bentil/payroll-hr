@@ -76,9 +76,9 @@ export async function find(params: {
   take?: number,
   where?: Prisma.LeaveRequestWhereInput,
   orderBy?: Prisma.LeaveRequestOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean,
+  include?: Prisma.LeaveRequestInclude,
 }): Promise<ListWithPagination<LeaveRequestDto>> {
-  const { skip, take } = params;
+  const { skip, take, include } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
     prisma.leaveRequest.findMany({
@@ -86,9 +86,7 @@ export async function find(params: {
       take: params.take,
       where: params.where,
       orderBy: params.orderBy,
-      include: params.includeRelations ? { leavePackage: {
-        include: { leaveType: true }
-      } } : undefined
+      include
     }),
     paginate ? prisma.leaveRequest.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
@@ -167,9 +165,9 @@ export async function cancel(params: {
 export async function respond(params: {
   id: number;
   data: LeaveResponseInputDto & { approvingEmployeeId: number };
-  includeRelations?: boolean;
+  include?: Prisma.LeaveRequestInclude
 }): Promise<LeaveRequest> {
-  const { id, data, includeRelations } = params;
+  const { id, data, include } = params;
   
   let requestStatus: LEAVE_REQUEST_STATUS, responseType: LEAVE_RESPONSE_TYPE;
   switch (data.action) {
@@ -199,9 +197,7 @@ export async function respond(params: {
           }
         }
       },
-      include: includeRelations 
-        ? { leavePackage: { include: { leaveType: true } } } 
-        : undefined
+      include,
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -219,8 +215,9 @@ export async function respond(params: {
 export async function adjustDays(params: {
   id: number;
   data: AdjustDaysDto & { respondingEmployeeId: number }
+  include?: Prisma.LeaveRequestInclude,
 }): Promise<LeaveRequest> {
-  const { id, data } = params;
+  const { id, data, include } = params;
 
   try {
     return await prisma.leaveRequest.update({
@@ -237,11 +234,7 @@ export async function adjustDays(params: {
           }
         }
       },
-      include: {
-        leavePackage: {
-          include: { leaveType: true }
-        }
-      }
+      include,
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
