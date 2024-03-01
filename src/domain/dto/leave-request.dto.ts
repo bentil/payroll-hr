@@ -2,7 +2,8 @@ import {
   Employee,
   LEAVE_REQUEST_STATUS, 
   LeavePackage, 
-  LeaveRequest 
+  LeaveRequest, 
+  LeaveResponse
 } from '@prisma/client';
 import config from '../../config';
 
@@ -63,7 +64,8 @@ export class LeaveResponseInputDto {
 
 export interface LeaveRequestDto extends LeaveRequest {
 	employee?: Employee,
-	leavePackage?: LeavePackage
+	leavePackage?: LeavePackage,
+  leaveResponses?: LeaveResponse[]
 }
 
 export enum AdjustmentOptions {
