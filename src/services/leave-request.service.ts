@@ -1,6 +1,7 @@
 import { 
   LEAVE_REQUEST_STATUS,
-  LeaveRequest 
+  LeaveRequest, 
+  Prisma
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
@@ -146,8 +147,8 @@ export async function getLeaveRequests(
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
-  let include;
-  if (queryMode === RequestQueryMode.SUPERVISEES) {
+  let include: Prisma.LeaveRequestInclude;
+  if (queryMode !== RequestQueryMode.SELF) {
     include = {
       leavePackage: {
         include: { leaveType: true }
