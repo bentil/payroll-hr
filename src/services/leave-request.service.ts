@@ -147,7 +147,7 @@ export async function getLeaveRequests(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
   let include;
-  if (queryMode === RequestQueryMode.SUPERVISEES) {
+  if (queryMode !== RequestQueryMode.SELF) {
     include = {
       leavePackage: {
         include: { leaveType: true }
