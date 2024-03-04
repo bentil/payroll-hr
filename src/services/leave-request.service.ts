@@ -202,7 +202,7 @@ export async function getLeaveRequest(
   id: number,
   authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId, category } = authorizedUser;
 
   logger.debug('Getting details for LeaveRequest[%s]', id);
   let leaveRequest: LeaveRequestDto | null;
@@ -223,13 +223,13 @@ export async function getLeaveRequest(
 
   const parent = await getParentEmployee(leaveRequest.employeeId);
   if (parent){
-    if (!employeeId || employeeId !== parent.id) {
+    if (!employeeId || employeeId !== parent.id || category !== USER_CATEGORY.HR) {
       throw new ForbiddenError({
         message: 'You are not allowed to perform this action'
       });
     }  
   } else {
-    if (!employeeId || employeeId !== leaveRequest.employeeId) {
+    if (!employeeId || employeeId !== leaveRequest.employeeId || category !== USER_CATEGORY.HR) {
       throw new ForbiddenError({
         message: 'You are not allowed to perform this action'
       });
