@@ -9,6 +9,10 @@ import { CreateChildNodeDto, ChildNode } from '../domain/dto/company-tree-node.d
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { getParentEmployee, getSupervisees } from '../services/company-tree-node.service';
 import { getEmployee } from '../services/employee.service';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
+import { rootLogger } from '../utils/logger';
+
+const logger = rootLogger.child({ context: 'HelpersUtil' });
 
 export function getSkip(page: number, limit: number): number {
   if (page < 1 || limit < 1) return 0;
@@ -181,6 +185,10 @@ export async function applySupervisionScopeToQuery(
 ): Promise<ScopedQuery> {
   const { employeeId, category, companyIds } = user;
   const { employeeId: qEmployeeId, queryMode, ...query } = queryParams;
+  if (!employeeId) {
+    logger.warn('employeeId not present in AuthUser object');
+    throw new UnauthorizedError({});
+  }
 
   let authorized = false;
   const supervisees = await getSupervisees(user.employeeId!);
@@ -231,6 +239,12 @@ export async function validateResponder(
   requestorEmployeeId: number, 
 ): Promise<void> {
   const { employeeId, category, companyIds } = authUser;
+  if (employeeId === requestorEmployeeId) {
+    logger.warn('Responder of request cannot be same as requestor');
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
+  }
   const [parentEmployee, requestorEmployee] = await Promise.all([
     getParentEmployee(requestorEmployeeId),
     getEmployee(requestorEmployeeId)

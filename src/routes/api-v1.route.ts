@@ -530,7 +530,7 @@ router.post(
 
 router.post(
   '/reimbursement-requests/:id/completion',
-  authenticatePlatformUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA),
   reimbReqV1Controller.completeRequest
 );
