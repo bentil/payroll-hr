@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { CompanyTreeNodeV1Controller } from './openapi/company-tree-node-v1.oas.controller';
-import { DeleteCompanyTreeNodeQueryDto } from '../domain/dto/company-tree-node.dto';
+import { 
+  DeleteCompanyTreeNodeQueryDto, 
+  CheckIfSupervisorDto 
+} from '../domain/dto/company-tree-node.dto';
 
 const controller = new CompanyTreeNodeV1Controller();
 
@@ -62,6 +65,18 @@ export async function deleteCompanyTreeNode( req: Request, res: Response, next: 
       +companyId, +nodeId, req.query as unknown as DeleteCompanyTreeNodeQueryDto
     );
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function checkIfSupervisor( req: Request, res: Response, next: NextFunction ) {
+  const { companyId } = req.params;
+  try {
+    const response = await controller.checkIfSupervisor(
+      +companyId, req, req.query as unknown as CheckIfSupervisorDto
+    );
+    res.json(response);
   } catch (err) {
     next(err);
   }

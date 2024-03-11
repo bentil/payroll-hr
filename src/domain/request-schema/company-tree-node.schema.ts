@@ -11,7 +11,7 @@ const CHILD_NODE = Joi.object({
     .messages({ 'number.base': 'EmployeeId must be a number' }),
 });
 
-export const CREATE_COMPANY_TREE_NODE = Joi.object({
+export const CREATE_COMPANY_TREE_NODE_SCHEMA = Joi.object({
   parentId: Joi.number()
     .optional()
     .messages({ 'number.base': 'ParentId must be a number' }),
@@ -24,12 +24,12 @@ export const CREATE_COMPANY_TREE_NODE = Joi.object({
   childNodes: Joi.array().items(CHILD_NODE).optional()
 });
 
-export const UPDATE_COMPANY_TREE_NODE = Joi.object({
+export const UPDATE_COMPANY_TREE_NODE_SCHEMA = Joi.object({
   parentId: Joi.number().optional(),
   employeeId: Joi.number().optional(),
 }).or('parentId', 'employeeId');
 
-export const QUERY_COMPANY_TREE_NODE = Joi.object({
+export const QUERY_COMPANY_TREE_NODE_SCHEMA = Joi.object({
   page: Joi.number()
     .optional()
     .min(1)
@@ -53,6 +53,10 @@ export const QUERY_COMPANY_TREE_NODE = Joi.object({
     })
 });
 
-export const DELETE_COMPANY_NODE = Joi.object({
+export const DELETE_COMPANY_NODE_SCHEMA = Joi.object({
   successorParentId: Joi.number().optional(),
+});
+
+export const CHECK_IF_SUPERVISEE_SCHEMA = Joi.object({
+  employeeId: Joi.number().optional(),
 });

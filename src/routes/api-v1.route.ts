@@ -56,9 +56,10 @@ import {
   ADJUST_DAYS_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
-  CREATE_COMPANY_TREE_NODE,
-  DELETE_COMPANY_NODE,
-  UPDATE_COMPANY_TREE_NODE,
+  CHECK_IF_SUPERVISEE_SCHEMA,
+  CREATE_COMPANY_TREE_NODE_SCHEMA,
+  DELETE_COMPANY_NODE_SCHEMA,
+  UPDATE_COMPANY_TREE_NODE_SCHEMA,
 } from '../domain/request-schema/company-tree-node.schema';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
@@ -451,7 +452,7 @@ router.post(
 router.post(
   '/payroll-company/:id/tree/nodes',
   authenticateUser(),
-  validateRequestBody(CREATE_COMPANY_TREE_NODE),
+  validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.addNewCompanyTreeNode
 );
 
@@ -470,7 +471,7 @@ router.get(
 router.patch(
   '/payroll-company/:companyId/tree/nodes/:nodeId',
   authenticateUser(),
-  validateRequestBody(UPDATE_COMPANY_TREE_NODE),
+  validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.updateCompanyTreeNode
 );
 
@@ -483,8 +484,15 @@ router.delete(
 router.delete(
   '/payroll-company/:companyId/tree/nodes/:nodeId',
   authenticateUser(),
-  validateRequestQuery(DELETE_COMPANY_NODE),
+  validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
   treeNodeV1Controller.deleteCompanyTreeNode
+);
+
+router.get(
+  '/payroll-company/:companyId/tree/nodes/employees/supervisees',
+  authenticateUser(),
+  validateRequestQuery(CHECK_IF_SUPERVISEE_SCHEMA),
+  treeNodeV1Controller.checkIfSupervisor
 );
 
 // ### REIMBURSEMENT REQUEST ROUTES

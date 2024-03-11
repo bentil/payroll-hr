@@ -1,4 +1,5 @@
 import { 
+  CheckIfSupervisorDto,
   CompanyTreeNodeDto, 
   CreateCompanyTreeNodeDto, 
   DeleteCompanyTreeNodeQueryDto, 
@@ -22,6 +23,8 @@ import { CompanyTreeNode, Employee } from '@prisma/client';
 // import { ListWithPagination } from '../repositories/types';
 // import * as helpers from '../utils/helpers';
 import { errors } from '../utils/constants';
+import { AuthorizedUser } from '../domain/user.domain';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'CompanyTreeNode' });
 
@@ -384,17 +387,9 @@ export async function getSupervisees(employeeId: number): Promise<Employee[]> {
       message: 'No position for Employee'
     });
   }
-
-  //filter
-  const supervisees: Employee[] = [];
-  companyTreeNode.children?.forEach(node => {
-    if (node.employee) {
-      supervisees.push(node.employee);
-    }
-  });
-
+  
   logger.info('Supervisees for Employee[%s] retrieved!', employeeId);
-  return supervisees;
+  return await getSuperviseesEmployeeData(companyTreeNode);
 }
 
 export async function unlinkEmployee(
@@ -503,4 +498,57 @@ async function validateCompanyId(
   if (employeeCompanyId && (employeeCompanyId !== companyId)) {
     throw new ForbiddenError({ message: 'Employee does not belong to this company' }); 
   }
+}
+
+export async function checkIfSupervisor(
+  companyId: number,
+  authorizedUser: AuthorizedUser,
+  queryData: CheckIfSupervisorDto,
+): Promise<Employee[]> {
+  const { employeeId: rEmployeeId } = authorizedUser;
+  const { employeeId: qEmployeeId } = queryData;
+  let employeeId: number, companyTreeNode: CompanyTreeNodeDto | null;
+  if (!rEmployeeId) {
+    logger.warn('employeeId not present in AuthUser object');
+    throw new UnauthorizedError({});
+  }
+  if (qEmployeeId) {
+    employeeId = qEmployeeId;
+  } else {
+    employeeId = rEmployeeId;
+  }
+
+  logger.debug('Getting supervisees of Employee[%s]', employeeId);
+  try {
+    companyTreeNode = await repository.findFirst(
+      { employeeId, companyId }, 
+      { children: { include: { employee: true } } }
+    );
+  } catch (err) {
+    logger.warn(
+      'Getting supervisees of Employee[%s] failed', employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!companyTreeNode) {
+    throw new NotFoundError({
+      message: 'No position for Employee'
+    });
+  }
+
+  const supervisees = await getSuperviseesEmployeeData(companyTreeNode);
+  logger.info('Supervisees for Employee[%s] retrieved!', employeeId);
+  return supervisees;
+}
+
+async function getSuperviseesEmployeeData(companyTreeNode: CompanyTreeNodeDto) {
+  const supervisees: Employee[] = [];
+  companyTreeNode.children?.forEach(node => {
+    if (node.employee) {
+      supervisees.push(node.employee);
+    }
+  });
+
+  return supervisees;
 }
