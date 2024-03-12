@@ -63,3 +63,7 @@ export class includeRelations {
     children?: boolean | any ;
   };
 }
+
+export class CheckIfSupervisorDto {
+  employeeId?: number;
+}

@@ -1,4 +1,4 @@
-import { CompanyTreeNode } from '@prisma/client';
+import { CompanyTreeNode, Employee } from '@prisma/client';
 import {
   Body,
   Delete,
@@ -8,6 +8,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -18,6 +19,7 @@ import * as service from '../../services/company-tree-node.service';
 import { rootLogger } from '../../utils/logger';
 import { errors } from '../../utils/constants';
 import { 
+  CheckIfSupervisorDto,
   CompanyTreeNodeDto,
   CreateCompanyTreeNodeDto, 
   DeleteCompanyTreeNodeQueryDto, 
@@ -153,5 +155,25 @@ export class CompanyTreeNodeV1Controller {
     this.logger.debug('Received request to delete CompanyTreeNode[%s]', nodeId);
     await service.deleteNode(nodeId, companyId, query);
     this.logger.debug('CompanyTreeNode[%s] deleted successfully', nodeId);
+  }
+
+  /**
+   * Checks if an employee is a supervisor
+   * @returns list of supervisees and meta info
+   */
+  @Get('/{companyId}/tree/nodes/employees/supervisees')
+  public async checkIfSupervisor(
+    @Path('companyId') companyId: number,
+    @Request() req: Express.Request,
+    @Queries() query: CheckIfSupervisorDto
+  ): Promise<ApiSuccessResponse<Employee[]>> {
+    this.logger.debug(
+      'Received request to check if Employee[%s] is supervisor', req.user?.employeeId
+    );
+    const reimbursementRequest = await service.checkIfSupervisor(companyId, req.user!, query);
+    return { 
+      data: reimbursementRequest,
+      meta: { hasSupervisees: reimbursementRequest.length === 0 ? false : true }
+    };
   }
 }
