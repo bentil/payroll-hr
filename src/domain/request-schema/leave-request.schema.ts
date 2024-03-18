@@ -8,6 +8,7 @@ import {
 import Joi from 'joi';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
+import { LEAVE_REQUEST_STATUS } from '@prisma/client';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -58,6 +59,7 @@ export const QUERY_LEAVE_REQUEST_SCHEMA = Joi.object({
   leaveTypeId: Joi.number(),
   queryMode: Joi.string()
     .valid(...Object.values(RequestQueryMode)),
+  status: Joi.string().valid(...Object.values(LEAVE_REQUEST_STATUS)),
   'startDate.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()
