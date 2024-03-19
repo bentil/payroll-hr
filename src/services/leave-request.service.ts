@@ -35,7 +35,6 @@ import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
 import { countWorkingDays } from './holiday.service';
 import * as employeeRepository from '../repositories/employee.repository';
-import { getParentEmployee } from './company-tree-node.service';
 import { findFirst as findCompanyTreeNode } from '../repositories/company-tree-node.repository';
 
 const kafkaService = KafkaService.getInstance();
@@ -85,7 +84,6 @@ export async function addLeaveRequest(
     includeHolidays: considerPublicHolidayAsWorkday,
     includeWeekends: considerWeekendAsWorkday 
   });
-  console.log(leaveSummary);
 
   if (numberOfDays > leaveSummary.numberOfDaysLeft) {
     logger.warn('Number of days requested is more than number of days left for this leave');
@@ -202,12 +200,16 @@ export async function getLeaveRequest(
   id: number,
   authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
-  const { employeeId, category } = authorizedUser;
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+  );
 
   logger.debug('Getting details for LeaveRequest[%s]', id);
   let leaveRequest: LeaveRequestDto | null;
   try {
-    leaveRequest = await leaveRequestRepository.findOne({ id }, true);
+    leaveRequest = await leaveRequestRepository.findFirst(scopedQuery, {
+      employee: true, leavePackage: { include: { leaveType: true } } 
+    });
   } catch (err) {
     logger.warn('Getting LeaveRequest[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -217,23 +219,8 @@ export async function getLeaveRequest(
     logger.warn('LeaveRequest[%s] does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_REQUEST_NOT_FOUND,
-      message: 'Leave request does not exist'
+      message: 'Leave request not found'
     });
-  }
-
-  const parent = await getParentEmployee(leaveRequest.employeeId);
-  if (parent){
-    if (!employeeId || employeeId !== parent.id || category !== USER_CATEGORY.HR) {
-      throw new ForbiddenError({
-        message: 'You are not allowed to perform this action'
-      });
-    }  
-  } else {
-    if (!employeeId || employeeId !== leaveRequest.employeeId || category !== USER_CATEGORY.HR) {
-      throw new ForbiddenError({
-        message: 'You are not allowed to perform this action'
-      });
-    }  
   }
   
   logger.info('LeaveRequest[%s] details retrieved!', id);

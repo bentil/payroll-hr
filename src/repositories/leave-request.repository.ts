@@ -96,8 +96,9 @@ export async function find(params: {
 
 export const findFirst = async (
   where: Prisma.LeaveRequestWhereInput,
+  include: Prisma.LeaveRequestInclude,
 ): Promise<LeaveRequestDto | null> => {
-  return prisma.leaveRequest.findFirst({ where });
+  return prisma.leaveRequest.findFirst({ where, include });
 };
 
 export async function update(params: {

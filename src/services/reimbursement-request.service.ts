@@ -28,6 +28,7 @@ import { rootLogger } from '../utils/logger';
 import * as employeeService from '../services/employee.service';
 import * as currencyService from '../services/company-currency.service';
 import { getParentEmployee } from './company-tree-node.service';
+import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'ReimbursementRequest' });
@@ -168,13 +169,17 @@ export async function getReimbursementRequests(
 
 export async function getReimbursementRequest(
   id: number,
+  authorizedUser: AuthorizedUser
 ): Promise<ReimbursementRequestDto> {
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+  );
 
   logger.debug('Getting details for ReimbursementRequest[%s]', id);
   let reimbursementRequest: ReimbursementRequestDto | null;
   try {
-    reimbursementRequest = await repository.findOne(
-      { id },
+    reimbursementRequest = await repository.findFirst(
+      scopedQuery,
       { 
         employee: true, 
         completer: true, 
@@ -193,7 +198,7 @@ export async function getReimbursementRequest(
     logger.warn('ReimbursementRequest[%s] does not exist', id);
     throw new NotFoundError({
       name: errors.REIMBURSEMENT_REQUEST_NOT_FOUND,
-      message: 'Reimbursement request does not exist'
+      message: 'Reimbursement request not found'
     });
   }  
   

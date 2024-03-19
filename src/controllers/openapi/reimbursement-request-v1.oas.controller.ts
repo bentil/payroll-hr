@@ -76,10 +76,11 @@ export class ReimbursementRequestV1Controller {
     details: [],
   })
   public async getReimbursementRequest(
-    @Path('id') id: number
+    @Path('id') id: number, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<ReimbursementRequest>> {
     this.logger.debug('Received request to get ReimbursementRequest[%s]', id);
-    const reimbursementRequest = await reimbursementReqService.getReimbursementRequest(id);
+    const reimbursementRequest = 
+      await reimbursementReqService.getReimbursementRequest(id, req.user!);
     return { data: reimbursementRequest };
   }
 

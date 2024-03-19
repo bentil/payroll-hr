@@ -83,8 +83,9 @@ export async function find(params: {
 
 export const findFirst = async (
   where: Prisma.ReimbursementRequestWhereInput,
+  include: Prisma.ReimbursementRequestInclude
 ): Promise<ReimbursementRequestDto | null> => {
-  return prisma.reimbursementRequest.findFirst({ where });
+  return prisma.reimbursementRequest.findFirst({ where, include });
 };
 
 export async function update(params: {
