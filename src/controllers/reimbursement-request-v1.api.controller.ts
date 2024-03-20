@@ -29,7 +29,7 @@ export async function getReimbursementRequests(req: Request, res: Response, next
 export async function getReimbursementRequest(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.getReimbursementRequest(+id);
+    const response = await controller.getReimbursementRequest(+id, req);
     res.json(response);
   } catch (err) {
     next(err);
