@@ -58,7 +58,7 @@ export async function searchDisciplinaryActionType(
 ) {
   try {
     const response = await controller.searchDisciplinaryActionType(
-      req.query as unknown as SearchDisciplinaryActionTypeDto
+      req.query as unknown as SearchDisciplinaryActionTypeDto, req
     );
     res.json(response);
   } catch (err) {

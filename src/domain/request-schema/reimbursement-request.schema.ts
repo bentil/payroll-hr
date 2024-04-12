@@ -135,3 +135,28 @@ export const COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
     .default('')
     .trim(),
 });
+
+export const SEARCH_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
+  q: Joi.string().trim().required(),
+  page: Joi.number()
+    .optional()
+    .min(1)
+    .default(1)
+    .messages({
+      'number.min': 'page must be more than or equal to 1'
+    }),
+  limit: Joi.number()
+    .optional()
+    .min(1)
+    .default(config.pagination.limit)
+    .messages({
+      'number.min': 'limit must be more than or equal to 1'
+    }),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(ReimbursementRequestOrderBy))
+    .default(ReimbursementRequestOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(ReimbursementRequestOrderBy)}`
+    })
+});

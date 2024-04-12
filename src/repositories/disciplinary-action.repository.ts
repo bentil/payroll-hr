@@ -113,19 +113,12 @@ export async function search(params: {
   take?: number,
   where?: Prisma.DisciplinaryActionWhereInput,
   orderBy?: Prisma.DisciplinaryActionOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean
+  include?: Prisma.DisciplinaryActionInclude
 }): Promise<ListWithPagination<DisciplinaryAction>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.disciplinaryAction.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations 
-        ? { actionType: true, grievanceReport: { include: { grievanceType: true } } } : undefined
-    }),
+    prisma.disciplinaryAction.findMany(params),
     paginate 
       ? prisma.disciplinaryAction.count({ where: params.where }) 
       : Promise.resolve(undefined),

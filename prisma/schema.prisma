@@ -428,6 +428,7 @@ model ReimbursementRequest {
   requestAttachments ReimbursementRequestAttachment[]
   requestComments    ReimbursementRequestComment[]
 
+  @@fulltext([title, description])
   @@map("reimbursement_request")
 }
 

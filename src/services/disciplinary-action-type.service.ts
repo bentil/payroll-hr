@@ -18,6 +18,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'DisciplinaryActionType' });
@@ -127,7 +128,8 @@ export async function getDisciplinaryActionType(id: number): Promise<Disciplinar
 }
 
 export async function searchDisciplinaryActionType(
-  query: SearchDisciplinaryActionTypeDto
+  query: SearchDisciplinaryActionTypeDto,
+  authUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionType>> {
   const {
     q: searchParam,
@@ -137,6 +139,7 @@ export async function searchDisciplinaryActionType(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
+  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
 
   let result: ListWithPagination<DisciplinaryActionType>;
   try {
@@ -146,6 +149,7 @@ export async function searchDisciplinaryActionType(
       take,
       orderBy: orderByInput,
       where: {
+        ...scopedQuery,
         description: {
           search: searchParam,
         },

@@ -20,6 +20,7 @@ import {
   QueryReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
+  SearchReimbursementRequestDto, 
   UpdateReimbursementRequestDto
 } from '../../domain/dto/reimbursement-request.dto';
 import * as reimbursementReqService from '../../services/reimbursement-request.service';
@@ -201,6 +202,25 @@ export class ReimbursementRequestV1Controller {
     );
     this.logger.info('ReimbursementRequest[%s] completed successfully!', id);
     return { data: updateReimbursementRequest };
+  }
+
+  /**
+   * Search a reimbursementRequest by title and description
+   * 
+   * @param searchParam search parameters including title and description
+   * @returns reimbursementRequest that match search
+   */
+  @Get('search')
+  public async searchReimbursementRequest(
+    @Queries() searchParam: SearchReimbursementRequestDto,  @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<ReimbursementRequest[]>> {
+    this.logger.info(
+      'Received request to get ReimbursementRequest(s) matching search query', { searchParam }
+    );   
+    const { data, pagination } = 
+      await reimbursementReqService.searchReimbursementRequest(searchParam, req.user!);
+    this.logger.info('Returning %d ReimbursementRequest(s) that matched search query', data.length);
+    return { data, pagination };
   }
 
 }

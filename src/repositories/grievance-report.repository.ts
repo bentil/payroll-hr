@@ -158,18 +158,12 @@ export async function search(params: {
   take?: number,
   where?: Prisma.GrievanceReportWhereInput,
   orderBy?: Prisma.GrievanceReportOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean
+  include: Prisma.GrievanceReportInclude
 }): Promise<ListWithPagination<GrievanceReportDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.grievanceReport.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations ? { grievanceType: true } : undefined
-    }),
+    prisma.grievanceReport.findMany(params),
     paginate ? prisma.grievanceReport.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
 

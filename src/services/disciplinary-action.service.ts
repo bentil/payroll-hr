@@ -24,6 +24,7 @@ import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import { generateDisciplinaryActionNumber } from '../utils/generator.util';
 import * as dateutil from '../utils/date.util';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'DisciplinaryAction' });
@@ -163,7 +164,8 @@ export async function getDisciplinaryAction(id: number): Promise<DisciplinaryAct
 }
 
 export async function searchDisciplinaryAction(
-  query: SearchDisciplinaryActionDto
+  query: SearchDisciplinaryActionDto,
+  authUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionDto>> {
   const {
     q: searchParam,
@@ -173,6 +175,7 @@ export async function searchDisciplinaryAction(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
+  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
 
   let result: ListWithPagination<DisciplinaryAction>;
   try {
@@ -182,6 +185,7 @@ export async function searchDisciplinaryAction(
       take,
       orderBy: orderByInput,
       where: {
+        ...scopedQuery,
         actionNumber: {
           search: searchParam,
         },
@@ -189,7 +193,11 @@ export async function searchDisciplinaryAction(
           search: searchParam,
         },
       },
-      includeRelations: true
+      include: {
+        actionType: true, 
+        grievanceReport: { include: { grievanceType: true } },
+        employee: true
+      }
     });
     logger.info('Found %d DisciplinaryAction(s) that matched query', { query });
   } catch (err) {

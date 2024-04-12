@@ -200,7 +200,8 @@ export async function getGrievanceReport(id: number): Promise<GrievanceReportDto
 }
 
 export async function searchGrievanceReport(
-  query: SearchGrievanceReportDto
+  query: SearchGrievanceReportDto,
+  authUser: AuthorizedUser
 ): Promise<ListWithPagination<GrievanceReportDto>> {
   const {
     q: searchParam,
@@ -210,6 +211,8 @@ export async function searchGrievanceReport(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
+  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
+
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {
@@ -219,6 +222,7 @@ export async function searchGrievanceReport(
       take,
       orderBy: orderByInput,
       where: {
+        ...scopedQuery,
         reportNumber: {
           search: searchParam,
         },
@@ -226,7 +230,10 @@ export async function searchGrievanceReport(
           search: searchParam,
         },
       },
-      includeRelations: true
+      include: {
+        grievanceType: true,
+        reportingEmployee: true
+      }
     });
     logger.info('Found %d GrievanceReport(s) that matched query', { query });
   } catch (err) {
