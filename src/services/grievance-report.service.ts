@@ -68,27 +68,6 @@ export async function addGrievanceReport(
       'PayrollCompany[%s], ReportEmployee[%s] and GrievanceType[%s] exists',
       company, reportingEmployee, grievanceType
     );
-
-    logger.debug('Adding new GrievanceReport to the database...');
-    try {
-      newGrievanceReport = 
-        await grievanceReportRepository.createReportWithReportedEmployee({ 
-          companyId, 
-          reportingEmployeeId, 
-          reportedEmployeeId, 
-          grievanceTypeId,
-          reportDate: creatData.reportDate,
-          reportNumber,
-          note: creatData.note,
-        }, true);
-      logger.info('GreivanceReport[%s] added successfully!', newGrievanceReport.id);
-    } catch (err) {
-      logger.error('Adding GrievanceReport failed', { error: err });
-      throw new ServerError({
-        message: (err as Error).message,
-        cause: err
-      });
-    }
   } else {
     try {
       [company, reportingEmployee, grievanceType] = await Promise.all([
@@ -105,26 +84,27 @@ export async function addGrievanceReport(
       });
     }
     logger.info('PayrollCompany[%s] and ReportEmployee[%s] exists', company, reportingEmployee);
-
-    logger.debug('Adding new GrievanceReport to the database...');
-    try {
-      newGrievanceReport = 
-        await grievanceReportRepository.create({
-          companyId, 
-          reportingEmployeeId, 
-          grievanceTypeId,
-          reportDate: creatData.reportDate,
-          reportNumber,
-          note: creatData.note,
-        }, true);
-      logger.info('GreivanceReport[%s] added successfully!', newGrievanceReport.id);
-    } catch (err) {
-      logger.error('Adding GrievanceReport failed', { error: err });
-      throw new ServerError({
-        message: (err as Error).message,
-        cause: err
-      });
-    }
+  }
+  
+  logger.debug('Adding new GrievanceReport to the database...');
+  try {
+    newGrievanceReport = 
+      await grievanceReportRepository.create({ 
+        companyId, 
+        reportingEmployeeId, 
+        reportedEmployeeId, 
+        grievanceTypeId,
+        reportDate: creatData.reportDate,
+        reportNumber,
+        note: creatData.note,
+      }, true);
+    logger.info('GreivanceReport[%s] added successfully!', newGrievanceReport.id);
+  } catch (err) {
+    logger.error('Adding GrievanceReport failed', { error: err });
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
   }
 
   // Emit event.GrievanceReport.created event

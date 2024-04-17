@@ -49,47 +49,27 @@ export const createLeavePackage = async (
   let leavePackage: LeavePackageDto | null /*validateCompanyLevels: void*/;
 
   if (companyLevelIds) {
-    try {
-      await companyLevelService.validateCompanyLevels(companyLevelIds),
-      leavePackage = await repository.createLeavePackageWithCompanyLevels(
-        createLeavePackageDto,
-        {
-          leaveType: true,
-          companyLevelLeavePackages: {
-            include: {
-              companyLevel: true,
-            }
-          },
-        }
-      );
-
-      if (!leavePackage) {
-        logger.error('Persisting LeavePackage with CompanyLevelIds for Company[%s]', companyId);
-        throw new ServerError({
-          message: 'Persisting leave package with company level id for company failed'+ companyId
-        });
+    await companyLevelService.validateCompanyLevels(companyLevelIds);
+  }
+  try {
+    leavePackage = await repository.create(
+      createLeavePackageDto,
+      {
+        leaveType: true,
+        companyLevelLeavePackages: {
+          include: {
+            companyLevel: true,
+          }
+        },
       }
-      logger.info('LeavePackage[%s] with CompanyLevelIds persisted successfully!', leavePackage.id);
-    } catch (err) {
-      if (err instanceof HttpError) throw err;
-      logger.error('Persisting LeavePackage with CompanyLevelIds failed', { error: err });
-      throw new ServerError({ message: (err as Error).message, cause: err });
-    }
-    return leavePackage;
+    );
+    logger.info('LeavePackage[%s] with CompanyLevelIds persisted successfully!', leavePackage.id);
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    logger.error('Persisting LeavePackage with CompanyLevelIds failed', { error: err });
+    throw new ServerError({ message: (err as Error).message, cause: err });
   }
-  else {
-    try {
-      leavePackage = await repository.create(createLeavePackageDto, {
-        leaveType: true
-      });
-      logger.info('LeavePackage[%s] persisted successfully!', leavePackage.id);
-    } catch (err) {
-      if (err instanceof HttpError) throw err;
-      logger.error('Persisting LeavePackage failed', { error: err });
-      throw new ServerError({ message: (err as Error).message, cause: err });
-    }
-    return leavePackage;
-  }
+  return leavePackage;
 };
 
 export const updateLeavePackage = async (id: number,

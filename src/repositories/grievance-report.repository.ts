@@ -4,68 +4,28 @@ import {
   CreateGrievanceReportDto, 
   GrievanceReportDto, 
 } from '../domain/dto/grievance-report.dto';
-import { AlreadyExistsError, FailedDependencyError, RecordInUse } from '../errors/http-errors';
-import * as helpers from '../utils/helpers';
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
 export async function create(
   { 
-    companyId, grievanceTypeId, reportingEmployeeId, ...dtoData 
-  }: CreateGrievanceReportDto,
-  includeRelations?: boolean,
-): Promise<GrievanceReportDto> {
-  const data: Prisma.GrievanceReportCreateInput = {
-    ...dtoData,
-    company: { connect: { id: companyId } },
-    grievanceType: { connect: { id: grievanceTypeId } },
-    reportingEmployee: { connect: { id: reportingEmployeeId } },
-  };
-  try {
-    return await prisma.grievanceReport.create({ 
-      data,
-      include: includeRelations 
-        ?  { company: true, grievanceType: true, reportingEmployee: true }
-        : undefined
-    });
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        throw new AlreadyExistsError({
-          message: 'Grievance report already exists',
-          cause: err
-        });
-      }
-    }
-    throw err;
-  }
-}
-
-export async function createReportWithReportedEmployee(
-  { 
     companyId, grievanceTypeId, reportingEmployeeId, reportedEmployeeId, ...dtoData 
   }: CreateGrievanceReportDto, includeRelations?: boolean
 ): Promise<GrievanceReportDto> {
-  if (!reportedEmployeeId) {
-    throw new FailedDependencyError({
-      message: 'Dependency check(s) failed',
-    });
-  }
-  const grievanceReportWithgrievanceReportedEmployee = helpers.
-    generateMultiGrievanceReportedEmployeesDto(reportedEmployeeId);
-  const data: Prisma.GrievanceReportCreateInput = {
-    ...dtoData,
-    company: { connect: { id: companyId } },
-    grievanceType: { connect: { id: grievanceTypeId } },
-    reportingEmployee: { connect: { id: reportingEmployeeId } },
-    grievanceReportedEmployees: { createMany: { 
-      data: grievanceReportWithgrievanceReportedEmployee 
-    } }
-  };
-
   let createGrievanceReportResult: GrievanceReportDto;
   try {
     createGrievanceReportResult = await prisma.grievanceReport.create({ 
-      data, 
+      data: {
+        ...dtoData,
+        company: { connect: { id: companyId } },
+        grievanceType: { connect: { id: grievanceTypeId } },
+        reportingEmployee: { connect: { id: reportingEmployeeId } },
+        grievanceReportedEmployees: reportedEmployeeId && { createMany: { 
+          data: reportedEmployeeId.map(
+            (employeeId) => { return { reportedEmployeeId: employeeId }; }
+          )
+        } }
+      }, 
       include: includeRelations 
         ? { 
           company: true, grievanceType: true, 

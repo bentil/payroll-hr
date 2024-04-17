@@ -163,7 +163,7 @@ export async function addCompanyTreeNode(
   logger.debug('Adding new CompanyTreeNode to the database...');
   try {
     if (childNodes) {
-      newCompanyTreeNode = await repository.createNodeWithChild({
+      newCompanyTreeNode = await repository.create({
         companyId,
         jobTitleId,
         employeeId,
