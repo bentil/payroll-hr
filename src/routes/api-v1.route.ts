@@ -89,6 +89,7 @@ import {
   CREATE_REIMBURSEMENT_RESPONSE_SCHEMA, 
   QUERY_REIMBURSEMENT_REQUEST_SCHEMA, 
   REIMBURSEMENT_REQUEST_UPDATES_SCHEMA, 
+  SEARCH_REIMBURSEMENT_REQUEST_SCHEMA, 
   UPDATE_REIMBURSEMENT_REQUEST_SCHEMA 
 } from '../domain/request-schema/reimbursement-request.schema';
 
@@ -514,6 +515,13 @@ router.get(
   authenticateUser(),
   validateRequestQuery(QUERY_REIMBURSEMENT_REQUEST_SCHEMA),
   reimbReqV1Controller.getReimbursementRequests
+);
+
+router.get(
+  '/reimbursement-requests/search',
+  authenticateUser(),
+  validateRequestQuery(SEARCH_REIMBURSEMENT_REQUEST_SCHEMA),
+  reimbReqV1Controller.searchReimbursementRequest
 );
 
 router.get(

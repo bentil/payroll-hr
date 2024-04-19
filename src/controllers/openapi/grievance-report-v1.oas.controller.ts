@@ -116,13 +116,13 @@ export class GrievanceReportV1Controller {
    */
   @Get('search')
   public async searchGrievanceReport(
-    @Queries() searchParam: SearchGrievanceReportDto,
+    @Queries() searchParam: SearchGrievanceReportDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<GrievanceReport[]>> {
     this.logger.info(
       'Received request to get GrievanceReport(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await grievanceReportService.searchGrievanceReport(searchParam);
+      await grievanceReportService.searchGrievanceReport(searchParam, req.user!);
     this.logger.info('Returning %d GrievanceReport(s) that matched search query', data.length);
     return { data, pagination };
   }

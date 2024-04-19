@@ -8,7 +8,8 @@ import {
   ReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
-  UpdateReimbursementRequestDto
+  UpdateReimbursementRequestDto,
+  SearchReimbursementRequestDto
 } from '../domain/dto/reimbursement-request.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
@@ -439,4 +440,50 @@ export async function completeRequest(
   logger.info(`${events.modified} event emitted successfully!`);
 
   return updatedReimbursementRequest;
+}
+
+export async function searchReimbursementRequest(
+  query: SearchReimbursementRequestDto,
+  authUser: AuthorizedUser
+): Promise<ListWithPagination<ReimbursementRequestDto>> {
+  const {
+    q: searchParam,
+    page,
+    limit: take,
+    orderBy,
+  } = query;
+  const skip = helpers.getSkip(page, take);
+  const orderByInput = helpers.getOrderByInput(orderBy); 
+  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
+
+
+  let result: ListWithPagination<ReimbursementRequestDto>;
+  try {
+    logger.debug('Finding ReimbursementRequest(s) that matched search query', { query });
+    result = await repository.search({
+      skip,
+      take,
+      orderBy: orderByInput,
+      where: {
+        ...scopedQuery,
+        title: {
+          search: searchParam,
+        },
+        description: {
+          search: searchParam,
+        },
+      },
+    });
+    logger.info('Found %d ReimbursementRequest(s) that matched query', { query });
+  } catch (err) {
+    logger.warn(
+      'Searching ReimbursementRequest with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  return result;
 }

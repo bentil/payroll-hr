@@ -91,3 +91,10 @@ export class ReimbursementRequestUpdatesDto {
 export class CompleteReimbursementRequestDto {
   comment?: string;
 }
+
+export class SearchReimbursementRequestDto {
+  q?: string;
+  page = 1;
+  limit: number = config.pagination.limit;
+  orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_DESC;
+}

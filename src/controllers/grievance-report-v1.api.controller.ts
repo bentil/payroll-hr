@@ -51,7 +51,7 @@ export async function updateGrievanceReport(req: Request, res: Response, next: N
 export async function searchGrievanceReport(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.searchGrievanceReport(
-      req.query as unknown as SearchGrievanceReportDto
+      req.query as unknown as SearchGrievanceReportDto, req
     );
     res.json(response);
   } catch (err) {

@@ -1,61 +1,29 @@
 import { LeavePackage, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { CreateLeavePackageDto, LeavePackageDto } from '../domain/dto/leave-package.dto';
-import * as helpers from '../utils/helpers';
+import { CreateLeavePackageDto } from '../domain/dto/leave-package.dto';
 import { getListWithPagination } from './types';
 
-export const create = async (
-  data: Prisma.LeavePackageCreateInput,
-  include: Prisma.LeavePackageInclude):
-  Promise<LeavePackage> => {
-  try {
-    return await prisma.leavePackage.create({ data, include });
-  }
-  catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') {
-        throw new AlreadyExistsError({
-          message: 'Leave package already exists',
-          cause: err
-        });
-      }
-    }
-    throw err;
-  }
-};
-
-export async function createLeavePackageWithCompanyLevels(
+export async function create(
   createLeavePackageDto: CreateLeavePackageDto,
   include: Prisma.LeavePackageInclude
-): Promise<LeavePackageDto | null> {
+): Promise<LeavePackage> {
   const { companyLevelIds, ...createLeavePackageData } = createLeavePackageDto;
 
-  let leavePackage: LeavePackage | null;
   try {
-    leavePackage = await prisma.$transaction(async (prismatxn) => {
-      const createLeavePackageResult = 
-        await prismatxn.leavePackage.create({ data: createLeavePackageData });
-      const leavePackageId = createLeavePackageResult.id;
-
-      if (companyLevelIds) {
-        const leavePackageWithCompanyLevels = helpers.
-          generateMultiCompanyLevelLeavePackageRecords(companyLevelIds, leavePackageId);
-        await prismatxn.companyLevelLeavePackage.createMany({
-          data: leavePackageWithCompanyLevels,
+    return await prisma.leavePackage.create({ data: {
+      ...createLeavePackageData,
+      companyLevelLeavePackages: companyLevelIds && {
+        createMany: {
+          data: companyLevelIds.map(
+            (companyLevelId) => { return { companyLevelId }; }
+          ),
           skipDuplicates: true
-        });
-
-        leavePackage = await prismatxn.leavePackage.findUnique({
-          where: {
-            id: leavePackageId
-          },
-          include
-        });
+        }
       }
-      return leavePackage;
+    }, 
+    include 
     });
-    return leavePackage;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {

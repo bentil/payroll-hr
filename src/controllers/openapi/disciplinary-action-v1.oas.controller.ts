@@ -7,6 +7,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -117,13 +118,13 @@ export class DisciplinaryActionV1Controller {
    */
   @Get('search')
   public async searchDisciplinaryAction(
-    @Queries() searchParam: SearchDisciplinaryActionDto,
+    @Queries() searchParam: SearchDisciplinaryActionDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction[]>> {
     this.logger.info(
       'Received request to get DisciplinaryAction(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await service.searchDisciplinaryAction(searchParam);
+      await service.searchDisciplinaryAction(searchParam, req.user!);
     this.logger.info(
       'Returning %d DisciplinaryAction(s) that matched search query', data.length
     );
