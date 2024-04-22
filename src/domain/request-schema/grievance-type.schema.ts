@@ -9,6 +9,8 @@ export const CREATE_GRIEVANCE_TYPE_SCHEMA = Joi.object({
       'number.base': 'Company Id must be a number'
     }),
   code: Joi.string()
+    .alphanum()
+    .uppercase()
     .required()
     .trim()
     .messages({
@@ -48,7 +50,10 @@ export const UPDATE_GRIEVANCE_TYPE_SCHEMA = Joi.object({
 
 export const QUERY_GRIEVANCE_TYPE_SCHEMA = Joi.object({
   companyId: Joi.number(),
-  code: Joi.string(),
+  code: Joi.string()
+    .alphanum()
+    .uppercase()
+    .trim(),
   page: Joi.number()
     .optional()
     .min(1)

@@ -10,6 +10,8 @@ export const CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA = Joi.object({
     }),
   code: Joi.string()
     .required()
+    .alphanum()
+    .uppercase()
     .trim()
     .messages({
       'string.base': 'code must be a string',
@@ -35,6 +37,8 @@ export const CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA = Joi.object({
 
 export const UPDATE_DISCIPLINARY_ACTION_TYPE_SCHEMA = Joi.object({
   code: Joi.string()
+    .alphanum()
+    .uppercase()
     .optional()
     .trim(),
   name: Joi.string()

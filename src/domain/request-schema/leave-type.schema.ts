@@ -4,6 +4,9 @@ import Joi from 'joi';
 
 export const CREATE_LEAVE_TYPE_SCHEMA = Joi.object({
   code: Joi.string()
+    .alphanum()
+    .uppercase()
+    .trim()
     .required(),
   name: Joi.string()
     .required(),
@@ -16,6 +19,9 @@ export const CREATE_LEAVE_TYPE_SCHEMA = Joi.object({
 
 export const UPDATE_LEAVE_TYPE_SCHEMA = Joi.object({
   code: Joi.string()
+    .alphanum()
+    .uppercase()
+    .trim()
     .optional(),
   name: Joi.string()
     .optional(),
