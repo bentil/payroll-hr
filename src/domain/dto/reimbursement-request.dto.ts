@@ -94,6 +94,7 @@ export class CompleteReimbursementRequestDto {
 
 export class SearchReimbursementRequestDto {
   q?: string;
+  queryMode?: RequestQueryMode;
   page = 1;
   limit: number = config.pagination.limit;
   orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_DESC;
