@@ -26,7 +26,7 @@ import * as employeeRepository from '../repositories/employee.repository';
 
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'GrievanceType' });
+const logger = rootLogger.child({ context: 'LeavePlan' });
 
 const events = {
   created: 'event.LeavePlan.created',

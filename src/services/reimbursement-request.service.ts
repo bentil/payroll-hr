@@ -455,7 +455,6 @@ export async function searchReimbursementRequest(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  //const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authUser, { queryMode }
   );
