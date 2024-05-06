@@ -138,6 +138,8 @@ export const COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
 
 export const SEARCH_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
   q: Joi.string().trim().required(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
   page: Joi.number()
     .optional()
     .min(1)

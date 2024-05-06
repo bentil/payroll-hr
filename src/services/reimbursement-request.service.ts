@@ -448,14 +448,16 @@ export async function searchReimbursementRequest(
 ): Promise<ListWithPagination<ReimbursementRequestDto>> {
   const {
     q: searchParam,
+    queryMode,
     page,
     limit: take,
     orderBy,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
-
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authUser, { queryMode }
+  );
 
   let result: ListWithPagination<ReimbursementRequestDto>;
   try {
