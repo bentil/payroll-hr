@@ -37,6 +37,7 @@ const logger = rootLogger.child({ context: 'ReimbursementRequest' });
 const events = {
   created: 'event.ReimbursementRequest.created',
   modified: 'event.ReimbursementRequest.modified',
+  deleted: 'event.ReimbursementRequest.deleted',
 };
 
 export async function addReimbursementRequest(
@@ -488,4 +489,39 @@ export async function searchReimbursementRequest(
   }
 
   return result;
+}
+
+export async function deleteReimbursementRequest(id: number): Promise<void> {
+  logger.debug('Finding ReimbursementRequest[%s] to delete', id);
+  const reimbursementRequest = await repository.findOne({ id });
+  if (!reimbursementRequest) {
+    logger.warn('ReimbursementRequest[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.REIMBURSEMENT_REQUEST_NOT_FOUND,
+      message: 'Reimbursement request to delete does not exist'
+    });
+  } else if (reimbursementRequest.status !== REIMBURESEMENT_REQUEST_STATUS.SUBMITTED) {
+    logger.warn(
+      'ReimbursementRequest[%s] cannot be deleted due to current status[%s]',
+      id, reimbursementRequest.status
+    );
+    throw new InvalidStateError({
+      message: 'Reimbursement request can not be deleted due to its status'
+    });
+  }
+
+  let deletedReimbursementRequest: ReimbursementRequest;
+  logger.debug('Deleting ReimbursementRequest[%s] from database...', id);
+  try {
+    deletedReimbursementRequest = await repository.deleteReimbursementRequest({ id });
+    logger.info('ReimbursementRequest[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting ReimbursementRequest[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  // Emit event.ReimbursementRequest.deleted event
+  logger.debug(`Emitting ${events.deleted}`);
+  kafkaService.send(events.deleted, deletedReimbursementRequest);
+  logger.info(`${events.deleted} event emitted successfully!`);
 }

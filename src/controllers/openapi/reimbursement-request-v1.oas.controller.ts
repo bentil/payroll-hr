@@ -12,6 +12,7 @@ import {
   Security,
   SuccessResponse,
   Tags,
+  Delete,
 } from 'tsoa';
 import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
 import { 
@@ -25,6 +26,7 @@ import {
 } from '../../domain/dto/reimbursement-request.dto';
 import * as reimbursementReqService from '../../services/reimbursement-request.service';
 import { rootLogger } from '../../utils/logger';
+import { errors } from '../../utils/constants';
 
 @Tags('reimbursement-requests')
 @Route('/api/v1/reimbursement-requests')
@@ -223,4 +225,23 @@ export class ReimbursementRequestV1Controller {
     return { data, pagination };
   }
 
+  /**
+   * Remove an existing ReimbursementRequest
+   * @param id reimbursementRequest ID
+   * @returns nothing
+   */
+  @Delete('{id}')
+  @SuccessResponse(204)
+  @Response<ApiErrorResponse>(404, 'Not Found', {
+    error: errors.REIMBURSEMENT_REQUEST_NOT_FOUND,
+    message: 'Reimbursement request does not exist',
+    details: [],
+  })
+  public async deleteReimbursementRequest(
+    @Path('id') id: number
+  ): Promise<void> {
+    this.logger.debug('Received request to delete ReimbursementRequest[%s]', id);
+    await reimbursementReqService.deleteReimbursementRequest(id);
+    this.logger.debug('ReimbursementRequest[%s] deleted successfully', id);
+  }
 }

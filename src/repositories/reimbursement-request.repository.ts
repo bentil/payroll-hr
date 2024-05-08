@@ -13,7 +13,7 @@ import {
   ReimbursementResponseInputDto
 } from '../domain/dto/reimbursement-request.dto';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, InputError } from '../errors/http-errors';
+import { AlreadyExistsError, InputError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
 export async function create(
@@ -276,4 +276,22 @@ export async function search(params: {
   ]);
 
   return getListWithPagination(data, { skip, take, totalCount });
+}
+
+export async function deleteReimbursementRequest(
+  where: Prisma.ReimbursementRequestWhereUniqueInput
+) {
+  try {
+    return await prisma.reimbursementRequest.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Reimbursement request is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }

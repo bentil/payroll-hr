@@ -89,3 +89,13 @@ export async function searchReimbursementRequest(req: Request, res: Response, ne
     next(err);
   }
 }
+
+export async function deleteReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+  const { id } = req.params;
+  try {
+    await controller.deleteReimbursementRequest(+id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
