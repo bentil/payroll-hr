@@ -8,6 +8,7 @@ import HolidayConsumer from './holiday.consumer';
 import JobTitleConsumer from './job-title.consumer';
 import CompanyCurrencyConsumer from './company-currency.consumer';
 import CurrencyConsumer from './currency.consumer';
+import PayPeriodConsumer from './pay-period.consumer';
 
 type ConsumerHandler = (data: any) => void | Promise<void>;
 const topicHandlers: Record<string, ConsumerHandler> = {
@@ -27,6 +28,9 @@ const topicHandlers: Record<string, ConsumerHandler> = {
   'event.CompanyCurrencyConfig.modified': CompanyCurrencyConsumer.handleModified,
   'event.Currency.created': CurrencyConsumer.handleCreated,
   'event.Currency.modified': CurrencyConsumer.handleModified,
+  'event.PayPeriod.created': PayPeriodConsumer.handleCreated,
+  'event.PayPeriod.modified': PayPeriodConsumer.handleModified,
+  'event.PayPeriod.deleted': PayPeriodConsumer.handleDeleted,
 } as const;
 
 export default class MainConsumer {

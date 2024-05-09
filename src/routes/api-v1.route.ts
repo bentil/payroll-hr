@@ -551,4 +551,10 @@ router.post(
   reimbReqV1Controller.completeRequest
 );
 
+router.delete(
+  '/reimbursement-requests/:id',
+  authenticateUser(),
+  reimbReqV1Controller.deleteReimbursementRequest
+);
+
 export default router;
