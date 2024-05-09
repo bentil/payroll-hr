@@ -1,7 +1,7 @@
 
 -- Lock Table and Related Table(s)
 LOCK TABLES
-  `_prisma_migrations` WRITE,
+  -- `_prisma_migrations` WRITE,
   `company_level` WRITE,
   `company_level_leave_package` WRITE;
 

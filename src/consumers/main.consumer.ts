@@ -30,6 +30,7 @@ const topicHandlers: Record<string, ConsumerHandler> = {
   'event.Currency.modified': CurrencyConsumer.handleModified,
   'event.PayPeriod.created': PayPeriodConsumer.handleCreated,
   'event.PayPeriod.modified': PayPeriodConsumer.handleModified,
+  'event.PayPeriod.deleted': PayPeriodConsumer.handleDeleted,
 } as const;
 
 export default class MainConsumer {

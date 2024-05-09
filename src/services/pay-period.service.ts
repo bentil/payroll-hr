@@ -55,3 +55,23 @@ export async function getPayPeriod(id: number): Promise<PayPeriod> {
   logger.info('PayPeriod[%s] details retrieved!', id);
   return payPeriod;
 }
+
+export async function deletePayPeriod(id: number): Promise<void> {
+  const payPeriod = await repository.findOne({ id });
+  if (!payPeriod) {
+    logger.warn('PayPeriod[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.PAY_PERIOD_NOT_FOUND,
+      message: 'Pay period to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting PayPeriod[%s] from database...', id);
+  try {
+    await repository.deletePayPeriod({ id });
+    logger.info('PayPeriod[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting Payperiod[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

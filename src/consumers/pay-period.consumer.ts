@@ -31,4 +31,14 @@ export default class PayPeriodConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: PayPeriodEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle PayPeriod deleted', { data });
+    const { id } = data;
+
+    logger.debug('Deleting PayPeriod[%s]', id);
+    await payPeriodService.deletePayPeriod(id);
+    logger.info('PayPeriod[%s] deleted successfully!', id);
+  }
 }

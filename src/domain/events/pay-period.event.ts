@@ -1,4 +1,4 @@
-import { PAY_PERIOD_TIME_TYPE } from '@prisma/client';
+import { PayPeriodTimeType } from '@prisma/client';
 
 export type PayPeriodEvent = {
     id: number;
@@ -10,7 +10,7 @@ export type PayPeriodEvent = {
     startDate: Date | null;
     endDate: Date | null;
     sequenceNumber: number;
-    timePeriod: PAY_PERIOD_TIME_TYPE;
+    timePeriod: PayPeriodTimeType;
     createdAt: Date;
     modifiedAt: Date | null;
 }

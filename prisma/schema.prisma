@@ -525,7 +525,7 @@ model CompanyTreeNode {
   @@map("company_tree_node")
 }
 
-enum PAY_PERIOD_TIME_TYPE {
+enum PayPeriodTimeType {
   DAILY
   WEEKLY
   FORTNIGHTLY
@@ -545,7 +545,7 @@ model PayPeriod {
   startDate         DateTime?            @map("start_date") @db.Date
   endDate           DateTime?            @map("end_date") @db.Date
   sequenceNumber    Int                  @map("sequence_number") @db.UnsignedInt()
-  timePeriod        PAY_PERIOD_TIME_TYPE @map("time_period")
+  timePeriod        PayPeriodTimeType @map("time_period")
   createdAt         DateTime             @default(now()) @map("created_at")
   modifiedAt        DateTime?            @updatedAt @map("modified_at")
 
@@ -554,7 +554,7 @@ model PayPeriod {
   @@map("pay_period")
 }
 
-enum WORK_TIME_UNIT_OPTIONS {
+enum WorkTimeUnit {
   HOUR
   DAY
 }
@@ -563,7 +563,7 @@ model EmployeeWorkTime {
   id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
   employeeId  Int                    @map("employee_id") @db.UnsignedInt()
   payPeriodId Int                    @map("pay_period_id") @db.UnsignedInt()
-  timeUnit    WORK_TIME_UNIT_OPTIONS @map("time_unit")
+  timeUnit    WorkTimeUnit           @map("time_unit")
   timeValue   Int                    @map("time_value")
   createdAt   DateTime               @default(now()) @map("created_at")
   modifiedAt  DateTime?              @updatedAt @map("modified_at")

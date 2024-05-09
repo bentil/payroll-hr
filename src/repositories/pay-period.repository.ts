@@ -1,6 +1,6 @@
 import { PayPeriod, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError } from '../errors/http-errors';
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { PayPeriodEvent } from '../domain/events/pay-period.event';
  
 export async function createOrUpdate(
@@ -39,4 +39,20 @@ export async function findOne(
   return prisma.payPeriod.findUnique({
     where: whereUniqueInput
   });
+}
+
+export async function deletePayPeriod(where: Prisma.PayPeriodWhereUniqueInput) {
+  try {
+    return await prisma.payPeriod.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Pay period is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }
