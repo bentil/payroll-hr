@@ -96,6 +96,7 @@ model Employee {
   majorGradeLevel                 GradeLevel?                      @relation(fields: [majorGradeLevelId], references: [id])
   company                         PayrollCompany                   @relation(fields: [companyId], references: [id])
   companyTreeNodes                CompanyTreeNode[]
+  employeeWorkTimes EmployeeWorkTime[]
 
   @@map("employee")
 }
@@ -522,4 +523,53 @@ model CompanyTreeNode {
   children         CompanyTreeNode[] @relation(name: "parent_child")
 
   @@map("company_tree_node")
+}
+
+enum PAY_PERIOD_TIME_TYPE {
+  DAILY
+  WEEKLY
+  FORTNIGHTLY
+  MONTHLY
+  QUARTERLY
+  BIANNUALLY
+  ANNUALLY
+}
+
+model PayPeriod {
+  id                Int                  @id @db.UnsignedInt()
+  organizationId    String               @map("organization_id") @db.VarChar(100)
+  companyId         Int?                 @map("company_Id") @db.UnsignedInt()
+  code              String               @map("code")
+  year              Int                  @map("year") @db.Year
+  taxCodeId         Int                  @map("tax_code_id") @db.UnsignedInt()
+  startDate         DateTime?            @map("start_date") @db.Date
+  endDate           DateTime?            @map("end_date") @db.Date
+  sequenceNumber    Int                  @map("sequence_number") @db.UnsignedInt()
+  timePeriod        PAY_PERIOD_TIME_TYPE @map("time_period")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  modifiedAt        DateTime?            @updatedAt @map("modified_at")
+
+  employeeWorkTimes EmployeeWorkTime[]
+
+  @@map("pay_period")
+}
+
+enum WORK_TIME_UNIT_OPTIONS {
+  HOUR
+  DAY
+}
+
+model EmployeeWorkTime {
+  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId  Int                    @map("employee_id") @db.UnsignedInt()
+  payPeriodId Int                    @map("pay_period_id") @db.UnsignedInt()
+  timeUnit    WORK_TIME_UNIT_OPTIONS @map("time_unit")
+  timeValue   Int                    @map("time_value")
+  createdAt   DateTime               @default(now()) @map("created_at")
+  modifiedAt  DateTime?              @updatedAt @map("modified_at")
+
+  employee    Employee               @relation(fields: [employeeId], references: [id])
+  payPeriod   PayPeriod              @relation(fields: [payPeriodId], references: [id])
+
+  @@map("employee_work_time")
 }

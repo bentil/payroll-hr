@@ -476,6 +476,12 @@ export async function searchReimbursementRequest(
           search: searchParam,
         },
       },
+      include: { 
+        employee: true, 
+        completer: true, 
+        approver: true, 
+        currency: { include: { currency: true } } 
+      }
     });
     logger.info('Found %d ReimbursementRequest(s) that matched query', { query });
   } catch (err) {

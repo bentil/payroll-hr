@@ -264,6 +264,7 @@ export async function search(params: {
   skip?: number,
   take?: number,
   where: Prisma.ReimbursementRequestWhereInput,
+  include?: Prisma.ReimbursementRequestInclude,
   orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput
 }): Promise<ListWithPagination<ReimbursementRequest>> {
   const { skip, take } = params;
