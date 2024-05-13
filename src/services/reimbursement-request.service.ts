@@ -497,7 +497,17 @@ export async function searchReimbursementRequest(
   return result;
 }
 
-export async function deleteReimbursementRequest(id: number): Promise<void> {
+export async function deleteReimbursementRequest(
+  id: number, 
+  authorizedUser: AuthorizedUser
+): Promise<void> {
+  const { employeeId } = authorizedUser;
+  let deletingEmployeeId: number;
+  if (employeeId) {
+    deletingEmployeeId = employeeId;
+  } else {
+    throw new UnauthorizedError({});
+  }
   logger.debug('Finding ReimbursementRequest[%s] to delete', id);
   const reimbursementRequest = await repository.findOne({ id });
   if (!reimbursementRequest) {
@@ -514,6 +524,12 @@ export async function deleteReimbursementRequest(id: number): Promise<void> {
     throw new InvalidStateError({
       message: 'Reimbursement request can not be deleted due to its status'
     });
+  }
+
+  if (deletingEmployeeId !== reimbursementRequest.employeeId) {
+    logger.debug('Validating if Employee[%s] can delete this request', deletingEmployeeId);
+    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+    logger.info('Employee[%s] can deletd this request', deletingEmployeeId);
   }
 
   let deletedReimbursementRequest: ReimbursementRequest;
