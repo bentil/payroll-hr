@@ -238,10 +238,11 @@ export class ReimbursementRequestV1Controller {
     details: [],
   })
   public async deleteReimbursementRequest(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<void> {
     this.logger.debug('Received request to delete ReimbursementRequest[%s]', id);
-    await reimbursementReqService.deleteReimbursementRequest(id);
+    await reimbursementReqService.deleteReimbursementRequest(id, req.user!);
     this.logger.debug('ReimbursementRequest[%s] deleted successfully', id);
   }
 }

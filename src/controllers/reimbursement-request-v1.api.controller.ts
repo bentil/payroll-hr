@@ -93,7 +93,7 @@ export async function searchReimbursementRequest(req: Request, res: Response, ne
 export async function deleteReimbursementRequest(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    await controller.deleteReimbursementRequest(+id);
+    await controller.deleteReimbursementRequest(+id, req);
     res.status(204).send();
   } catch (err) {
     next(err);
