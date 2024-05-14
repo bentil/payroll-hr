@@ -394,6 +394,7 @@ model CompanyCurrency {
   currency              Currency               @relation(fields: [currencyId], references: [id], name: "currency")
   company               PayrollCompany         @relation(fields: [companyId], references: [id])
   reimbursementRequests ReimbursementRequest[]
+  overtimePaymentTiers OvertimePaymentTier[]
 
   @@map("company_currency")
 }
@@ -591,6 +592,7 @@ model Overtime {
   modifiedAt           DateTime?             @updatedAt @map("modified_at")
 
   employeeOvertimeEntries EmployeeOvertimeEntry[]
+  overtimePaymentTiers OvertimePaymentTier[]
 
   @@map("overtime")
 }
@@ -608,4 +610,28 @@ model EmployeeOvertimeEntry {
   payPeriod   PayPeriod              @relation(fields: [payPeriodId], references: [id])
   overtime   Overtime                 @relation(fields: [overtimeId], references: [id])
   @@map("employee_overtime_entry")
+}
+
+enum OvertimePaymentTierType {
+  FIXED
+  PER_HOUR
+  BY_HOURLY_WAGE
+}
+
+model OvertimePaymentTier {
+  id              Int                        @id @db.UnsignedInt()
+  overtimeId      Int                        @map("overtime_id") @db.UnsignedInt()
+  type            OvertimePaymentTierType @map("type")
+  fixedComponent  Decimal                    @default(0.0) @map("fixed_component") @db.Decimal(20, 4)
+  factorComponent Decimal                    @default(0.0) @map("factor_component") @db.Decimal(20, 4)
+  minHours        Int                        @map("min_hours")
+  maxHours        Int                        @map("max_hours")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  modifiedAt      DateTime?                  @updatedAt @map("modified_at")
+  currencyId      Int?                       @map("currency_id") @db.UnsignedInt()
+
+  companyCurrency CompanyCurrency?           @relation(fields: [currencyId], references: [id])
+  overtime        Overtime?                  @relation(fields: [overtimeId], references: [id])
+
+  @@map("overtime_payment_tier")
 }

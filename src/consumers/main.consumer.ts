@@ -9,6 +9,8 @@ import JobTitleConsumer from './job-title.consumer';
 import CompanyCurrencyConsumer from './company-currency.consumer';
 import CurrencyConsumer from './currency.consumer';
 import PayPeriodConsumer from './pay-period.consumer';
+import OvertimeConsumer from './overtime.consumer';
+import OvertimePaymentTierConsumer from './overtime-payment-tier.consumer';
 
 type ConsumerHandler = (data: any) => void | Promise<void>;
 const topicHandlers: Record<string, ConsumerHandler> = {
@@ -31,6 +33,12 @@ const topicHandlers: Record<string, ConsumerHandler> = {
   'event.PayPeriod.created': PayPeriodConsumer.handleCreated,
   'event.PayPeriod.modified': PayPeriodConsumer.handleModified,
   'event.PayPeriod.deleted': PayPeriodConsumer.handleDeleted,
+  'event.Overtime.created': OvertimeConsumer.handleCreated,
+  'event.Overtime.modified': OvertimeConsumer.handleModified,
+  'event.Overtime.deleted': OvertimeConsumer.handleDeleted,
+  'event.OvertimePaymentTier.created': OvertimePaymentTierConsumer.handleCreated,
+  'event.OvertimePaymentTier.modified': OvertimePaymentTierConsumer.handleModified,
+  'event.OvertimePaymentTier.deleted': OvertimePaymentTierConsumer.handleDeleted,
 } as const;
 
 export default class MainConsumer {
