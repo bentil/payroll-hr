@@ -6,7 +6,6 @@ import { GradeLevelEvent } from '../domain/events/grade-level.event';
  
 export async function createOrUpdate(
   { companyLevelId, ...dtoData }:  Omit<GradeLevelEvent, 'createdAt' | 'modifiedAt'>
-  
 ): Promise<GradeLevel> {
   const data: Prisma.GradeLevelCreateInput = {
     ...dtoData,
