@@ -47,7 +47,7 @@ export async function getOvertime(id: number): Promise<Overtime> {
 
   if (!overtime) {
     throw new NotFoundError({
-      name: errors.OVERTIME_NOT_FOUNT,
+      name: errors.OVERTIME_NOT_FOUND,
       message: 'Overtime does not exist'
     });
   }
@@ -61,7 +61,7 @@ export async function deleteOvertime(id: number): Promise<void> {
   if (!overtime) {
     logger.warn('Overtime[%s] to delete does not exist', id);
     throw new NotFoundError({
-      name: errors.OVERTIME_NOT_FOUNT,
+      name: errors.OVERTIME_NOT_FOUND,
       message: 'Overtime to delete does not exisit'
     });
   }
