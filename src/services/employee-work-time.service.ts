@@ -210,7 +210,7 @@ export async function deleteEmployeeWorkTime(id: number): Promise<void> {
     });
   }
 
-  logger.debug('Deleting DisciplinaryAction[%s] from database...', id);
+  logger.debug('Deleting EmployeeWorkTime[%s] from database...', id);
   try {
     deletedEmployeeWorkTime = await repository.deleteEmployeeWorkTime({ id });
     logger.info('EmployeeWorkTime[%s] successfully deleted', id);

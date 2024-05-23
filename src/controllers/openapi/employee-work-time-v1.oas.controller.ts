@@ -55,7 +55,7 @@ export class EmployeeWorkTimeV1Controller {
     @Queries() query: QueryEmployeeWorkTimeDto
   ): Promise<ApiSuccessResponse<EmployeeWorkTime[]>> {
     this.logger.debug(
-      'Received request to get DisciplinaryAction(s) matching query', { query }
+      'Received request to get EmployeeWorkTime(s) matching query', { query }
     );
     const { data, pagination } = await service.getEmployeeWorkTimes(query);
     this.logger.info('Returning %d EmployeeWorkTime(s) that matched the query', data.length);

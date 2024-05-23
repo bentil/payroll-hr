@@ -1,9 +1,8 @@
 import Joi from 'joi';
 import config from '../../config';
-import { EmployeeWorkTimeOrderBy } from '../dto/employee-work-time.dto';
-import { WorkTimeUnit } from '@prisma/client';
+import { EmployeeOvertimeEntryOrderBy } from '../dto/employee-overtime-entry.dto';
 
-export const CREATE_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
+export const CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA = Joi.object({
   employeeId: Joi.number()
     .required()
     .messages({
@@ -14,32 +13,33 @@ export const CREATE_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
     .messages({
       'number.base': 'Pay period id must be a number'
     }),
-  timeUnit: Joi.string()
-    .required()
-    .valid(...Object.values(WorkTimeUnit)),
-  timeValue: Joi.number()
+  overtimeId: Joi.number()
     .required()
     .messages({
-      'number.base': 'time value must be a number',
+      'number.base': 'Overtime id must be a number'
+    }),
+  numberOfHours: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Number of hours must be a number',
     })
 });
 
-export const UPDATE_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
+export const UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA = Joi.object({
   employeeId: Joi.number()
     .optional(),
   payPeriodId: Joi.number()
     .optional(),
-  timeUnit: Joi.string()
+  overtimeId: Joi.number()
+    .optional(),
+  numberOfHours: Joi.number()
     .optional()
-    .valid(...Object.values(WorkTimeUnit)),
-  timeValue: Joi.number()
-    .optional()
-}).or('employeeId', 'payPeriodId', 'timeUnit', 'timeValue');
+}).or('employeeId', 'payPeriodId', 'overtimeId', 'numberOfHours');
 
-export const QUERY_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
+export const QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   payPeriodId: Joi.number(),
-  timeUnit: Joi.string().valid(...Object.values(WorkTimeUnit)),
+  overtimeId: Joi.number(),
   page: Joi.number()
     .optional()
     .min(1)
@@ -56,9 +56,9 @@ export const QUERY_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
     }),
   orderBy: Joi.string()
     .optional()
-    .valid(...Object.values(EmployeeWorkTimeOrderBy))
-    .default(EmployeeWorkTimeOrderBy.CREATED_AT_DESC)
+    .valid(...Object.values(EmployeeOvertimeEntryOrderBy))
+    .default(EmployeeOvertimeEntryOrderBy.CREATED_AT_DESC)
     .messages({
-      'any.only': `orderBy must be one of these: ${Object.values(EmployeeWorkTimeOrderBy)}`
+      'any.only': `orderBy must be one of these: ${Object.values(EmployeeOvertimeEntryOrderBy)}`
     })
 });
