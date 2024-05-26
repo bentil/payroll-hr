@@ -78,6 +78,9 @@ import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.contr
 import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
 import * as treeNodeV1Controller from '../controllers/company-tree-node-v1.api.controller';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
+import * as employeeWorkTimeV1Controller from '../controllers/employee-work-time-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-entry-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -92,6 +95,16 @@ import {
   SEARCH_REIMBURSEMENT_REQUEST_SCHEMA, 
   UPDATE_REIMBURSEMENT_REQUEST_SCHEMA 
 } from '../domain/request-schema/reimbursement-request.schema';
+import { 
+  CREATE_EMPLOYEE_WORK_TIME_SCHEMA, 
+  QUERY_EMPLOYEE_WORK_TIME_SCHEMA, 
+  UPDATE_EMPLOYEE_WORK_TIME_SCHEMA
+} from '../domain/request-schema/employee-work-time.schema';
+import { 
+  CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA,
+  QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA, 
+  UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA 
+} from '../domain/request-schema/employee-overtime-entry.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -555,6 +568,68 @@ router.delete(
   '/reimbursement-requests/:id',
   authenticateUser(),
   reimbReqV1Controller.deleteReimbursementRequest
+);
+
+// ### EMPLOYEE WORK TIME ROUTES
+
+router.post(
+  '/employee-work-times',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_WORK_TIME_SCHEMA),
+  employeeWorkTimeV1Controller.addNewEmployeeWorkTime
+);
+
+router.patch(
+  '/employee-work-times/:id',
+  authenticateUser(),
+  validateRequestBody(UPDATE_EMPLOYEE_WORK_TIME_SCHEMA),
+  employeeWorkTimeV1Controller.updateEmployeeWorkTime
+);
+router.get(
+  '/employee-work-times',
+  validateRequestQuery(QUERY_EMPLOYEE_WORK_TIME_SCHEMA),
+  employeeWorkTimeV1Controller.getEmployeeWorkTimes
+);
+
+router.get(
+  '/employee-work-times/:id',
+  employeeWorkTimeV1Controller.getEmployeeWorkTime
+);
+
+router.delete(
+  '/employee-work-times/:id',
+  employeeWorkTimeV1Controller.deleteEmployeeWorkTime
+);
+
+// ### EMPLOYEE OVERTIME ENTRY ROUTES
+
+router.post(
+  '/employee-overtime-entries',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
+  empOvertimeEntryV1Controller.addNewEmployeeOvertimeEntry
+);
+
+router.patch(
+  '/employee-overtime-entries/:id',
+  authenticateUser(),
+  validateRequestBody(UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
+  empOvertimeEntryV1Controller.updateEmployeeOvertimeEntry
+);
+router.get(
+  '/employee-overtime-entries',
+  validateRequestQuery(QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
+  empOvertimeEntryV1Controller.getEmployeeOvertimeEntries
+);
+
+router.get(
+  '/employee-overtime-entries/:id',
+  empOvertimeEntryV1Controller.getEmployeeOvertimeEntry
+);
+
+router.delete(
+  '/employee-overtime-entries/:id',
+  empOvertimeEntryV1Controller.deleteEmployeeOvertimeEntry
 );
 
 export default router;
