@@ -105,6 +105,7 @@ import {
   QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA, 
   UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA 
 } from '../domain/request-schema/employee-overtime-entry.schema';
+import { UserCategory } from '../domain/user.domain';
 
 const router = Router();
 router.use(authenticateClient);
@@ -574,30 +575,33 @@ router.delete(
 
 router.post(
   '/employee-work-times',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(CREATE_EMPLOYEE_WORK_TIME_SCHEMA),
   employeeWorkTimeV1Controller.addNewEmployeeWorkTime
 );
 
 router.patch(
   '/employee-work-times/:id',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(UPDATE_EMPLOYEE_WORK_TIME_SCHEMA),
   employeeWorkTimeV1Controller.updateEmployeeWorkTime
 );
 router.get(
   '/employee-work-times',
+  authenticateUser(),
   validateRequestQuery(QUERY_EMPLOYEE_WORK_TIME_SCHEMA),
   employeeWorkTimeV1Controller.getEmployeeWorkTimes
 );
 
 router.get(
   '/employee-work-times/:id',
+  authenticateUser(),
   employeeWorkTimeV1Controller.getEmployeeWorkTime
 );
 
 router.delete(
   '/employee-work-times/:id',
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   employeeWorkTimeV1Controller.deleteEmployeeWorkTime
 );
 
@@ -618,17 +622,20 @@ router.patch(
 );
 router.get(
   '/employee-overtime-entries',
+  authenticateUser(),
   validateRequestQuery(QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.getEmployeeOvertimeEntries
 );
 
 router.get(
   '/employee-overtime-entries/:id',
+  authenticateUser(),
   empOvertimeEntryV1Controller.getEmployeeOvertimeEntry
 );
 
 router.delete(
   '/employee-overtime-entries/:id',
+  authenticateUser(),
   empOvertimeEntryV1Controller.deleteEmployeeOvertimeEntry
 );
 

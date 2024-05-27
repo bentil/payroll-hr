@@ -14,7 +14,7 @@ import {
   RequestQueryMode,
 } from '../domain/dto/leave-request.dto';
 import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
-import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import { 
@@ -578,7 +578,7 @@ export async function adjustDays(
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   // check for employee being an hr
-  if(category !== USER_CATEGORY.HR) {
+  if(category !== UserCategory.HR) {
     throw new ForbiddenError({
       message: 'You are not allowed to perform this action'
     });

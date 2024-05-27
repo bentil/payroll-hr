@@ -22,7 +22,7 @@ export async function addNewEmployeeOvertimeEntry(
 export async function getEmployeeOvertimeEntries(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.getEmployeeOvertimeEntries(
-      req.query as unknown as QueryEmployeeOvertimeEntryDto,
+      req.query as unknown as QueryEmployeeOvertimeEntryDto, req
     );
     res.json(response);
   } catch (err) {

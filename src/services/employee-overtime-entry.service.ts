@@ -20,6 +20,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeOvertimeEntryService' });
@@ -34,7 +35,6 @@ export async function addEmployeeOvertimeEntry(
   creatData: CreateEmployeeOvertimeEntryDto,
 ): Promise<EmployeeOvertimeEntryDto> {
   const { employeeId, payPeriodId, overtimeId } = creatData;
-
   // validate employeeId, payPeriod and overtimeId
   try {
     await Promise.all([
@@ -82,18 +82,24 @@ export async function addEmployeeOvertimeEntry(
 }
 
 export async function getEmployeeOvertimeEntries(
-  query: QueryEmployeeOvertimeEntryDto
+  query: QueryEmployeeOvertimeEntryDto,
+  user: AuthorizedUser,
 ): Promise<ListWithPagination<EmployeeOvertimeEntryDto>> {
   const {
     page,
     limit: take,
     orderBy,
-    employeeId,
+    employeeId: qEmployeeId,
     payPeriodId,
     overtimeId,
+    companyId,
+    queryMode, 
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    user, { employeeId: qEmployeeId, queryMode,  companyId },
+  );
 
   let result: ListWithPagination<EmployeeOvertimeEntryDto>;
   try {
@@ -101,7 +107,11 @@ export async function getEmployeeOvertimeEntries(
     result = await repository.find({
       skip,
       take,
-      where: { employeeId, payPeriodId, overtimeId },
+      where: { 
+        ...scopedQuery, 
+        payPeriodId, 
+        overtimeId,
+      },
       orderBy: orderByInput,
       include: {
         employee: true,

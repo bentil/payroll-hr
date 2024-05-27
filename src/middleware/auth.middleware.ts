@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { USER_CATEGORY, isAuthorizedUser } from '../domain/user.domain';
+import { UserCategory, isAuthorizedUser } from '../domain/user.domain';
 import { ForbiddenError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { rootLogger } from '../utils/logger';
@@ -15,7 +15,7 @@ export function authenticateClient(req: Request, _res: Response, next: NextFunct
 }
 
 export function authenticateUser(
-  options?: { optional?: boolean, isEmployee?: boolean }
+  options?: { optional?: boolean, isEmployee?: boolean, category?: UserCategory[] }
 ): RequestHandler {
   //add a checker for employeeId in authUser and throw forbidden error if not employees
   const optional = options?.optional !== undefined ? options.optional : false;
@@ -46,8 +46,17 @@ export function authenticateUser(
     if (options?.isEmployee) {
       if (
         !req.user.employeeId || 
-        ![USER_CATEGORY.EMPLOYEE, USER_CATEGORY.HR].includes(req.user.category) 
+        ![UserCategory.EMPLOYEE, UserCategory.HR].includes(req.user.category) 
       ) {
+        throw new ForbiddenError({});
+      }
+    }
+
+    if (options?.category) {
+      if (
+        !req.user.category || !options.category.includes(req.user.category) 
+      ) {
+        console.log(options.category);
         throw new ForbiddenError({});
       }
     }

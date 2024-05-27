@@ -1,4 +1,4 @@
-import { AuthorizedUser, USER_CATEGORY } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import {
   AddGrievanceReportedEmployeeRecord,
   CreateGrievanceReportedEmployeeRecord
@@ -184,7 +184,7 @@ export async function applySupervisionScopeToQuery(
   queryParams: Record<string, any>
 ): Promise<ScopedQuery> {
   const { employeeId, category, companyIds } = user;
-  const { employeeId: qEmployeeId, queryMode, ...query } = queryParams;
+  const { employeeId: qEmployeeId, queryMode, companyId: qCompanyId, ...query } = queryParams;
   if (!employeeId) {
     logger.warn('employeeId not present in AuthUser object');
     throw new UnauthorizedError({});
@@ -195,12 +195,12 @@ export async function applySupervisionScopeToQuery(
   const superviseeIds = supervisees.map(e => e.id);
   const scopeQuery = {
     employeeId,
-    employee: { companyId: { in: companyIds } },
+    employee: { companyId: qCompanyId? qCompanyId : { in: companyIds } },
   } as { [key: string]: any, employeeId?: { in: number[] } | number };
 
   if (qEmployeeId) {
     if (
-      category === USER_CATEGORY.HR || 
+      category === UserCategory.HR || 
       employeeId === qEmployeeId || 
       superviseeIds?.includes(qEmployeeId)
     ) {
@@ -214,7 +214,7 @@ export async function applySupervisionScopeToQuery(
       scopeQuery.employeeId = { in: superviseeIds };
       break;
     case RequestQueryMode.ALL:
-      if (category === USER_CATEGORY.HR) {
+      if (category === UserCategory.HR) {
         scopeQuery.employeeId = undefined;
       } else {
         scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
@@ -251,7 +251,7 @@ export async function validateResponder(
   ]);
 
   if (
-    category !== USER_CATEGORY.HR 
+    category !== UserCategory.HR 
     && (!parentEmployee || employeeId !== parentEmployee.id)
   ) {
     throw new ForbiddenError({
@@ -259,7 +259,7 @@ export async function validateResponder(
     });
   }
   //check if hr employee is of same company as requestor employee
-  if ([USER_CATEGORY.HR, USER_CATEGORY.EMPLOYEE].includes(category) && (companyIds.length === 1)) {
+  if ([UserCategory.HR, UserCategory.EMPLOYEE].includes(category) && (companyIds.length === 1)) {
     if(!companyIds.includes(requestorEmployee.companyId)) {
       throw new ForbiddenError({
         message: 'You are not allowed to perform this action'

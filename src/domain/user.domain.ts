@@ -1,10 +1,8 @@
-type UserCategory = 'OPERATIONS' | 'EMPLOYEE' | 'HR';
-
-export const USER_CATEGORY = {
-  OPERATIONS: 'OPERATIONS',
-  EMPLOYEE: 'EMPLOYEE',
-  HR: 'HR',
-};
+export enum UserCategory {
+  OPERATIONS = 'OPERATIONS',
+  EMPLOYEE = 'EMPLOYEE',
+  HR = 'HR',
+}
 
 export interface AuthorizedUser {
   userId: string;

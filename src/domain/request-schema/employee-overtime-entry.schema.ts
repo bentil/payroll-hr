@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import config from '../../config';
 import { EmployeeOvertimeEntryOrderBy } from '../dto/employee-overtime-entry.dto';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 export const CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA = Joi.object({
   employeeId: Joi.number()
@@ -40,6 +41,9 @@ export const QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   payPeriodId: Joi.number(),
   overtimeId: Joi.number(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
+  companyId: Joi.number(),
   page: Joi.number()
     .optional()
     .min(1)

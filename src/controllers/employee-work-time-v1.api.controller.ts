@@ -23,7 +23,7 @@ export async function addNewEmployeeWorkTime(
 export async function getEmployeeWorkTimes(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.getEmployeeWorkTimes(
-      req.query as unknown as QueryEmployeeWorkTimeDto,
+      req.query as unknown as QueryEmployeeWorkTimeDto, req
     );
     res.json(response);
   } catch (err) {
