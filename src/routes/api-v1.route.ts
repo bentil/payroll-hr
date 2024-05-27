@@ -609,14 +609,14 @@ router.delete(
 
 router.post(
   '/employee-overtime-entries',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.addNewEmployeeOvertimeEntry
 );
 
 router.patch(
   '/employee-overtime-entries/:id',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.updateEmployeeOvertimeEntry
 );
@@ -635,7 +635,7 @@ router.get(
 
 router.delete(
   '/employee-overtime-entries/:id',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   empOvertimeEntryV1Controller.deleteEmployeeOvertimeEntry
 );
 
