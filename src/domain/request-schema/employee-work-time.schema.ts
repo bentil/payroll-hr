@@ -2,6 +2,7 @@ import Joi from 'joi';
 import config from '../../config';
 import { EmployeeWorkTimeOrderBy } from '../dto/employee-work-time.dto';
 import { WorkTimeUnit } from '@prisma/client';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 export const CREATE_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
   employeeId: Joi.number()
@@ -40,6 +41,9 @@ export const QUERY_EMPLOYEE_WORK_TIME_SCHEMA = Joi.object({
   employeeId: Joi.number(),
   payPeriodId: Joi.number(),
   timeUnit: Joi.string().valid(...Object.values(WorkTimeUnit)),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
+  companyId: Joi.number(),
   page: Joi.number()
     .optional()
     .min(1)

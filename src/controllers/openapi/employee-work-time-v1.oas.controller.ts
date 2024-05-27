@@ -7,6 +7,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -52,12 +53,13 @@ export class EmployeeWorkTimeV1Controller {
    */
   @Get()
   public async getEmployeeWorkTimes(
-    @Queries() query: QueryEmployeeWorkTimeDto
+    @Queries() query: QueryEmployeeWorkTimeDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeWorkTime[]>> {
     this.logger.debug(
       'Received request to get EmployeeWorkTime(s) matching query', { query }
     );
-    const { data, pagination } = await service.getEmployeeWorkTimes(query);
+    const { data, pagination } = await service.getEmployeeWorkTimes(query, req.user!);
     this.logger.info('Returning %d EmployeeWorkTime(s) that matched the query', data.length);
     return { data, pagination };
   }

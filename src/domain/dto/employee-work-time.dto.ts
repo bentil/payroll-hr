@@ -1,5 +1,6 @@
 import { Employee, EmployeeWorkTime, PayPeriod, WorkTimeUnit } from '@prisma/client';
 import config from '../../config';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateEmployeeWorkTimeDto {
   employeeId!: number;
@@ -32,6 +33,8 @@ export class QueryEmployeeWorkTimeDto {
   employeeId?: number;
   payPeriodId?: number;
   timeUnit?: WorkTimeUnit;
+  queryMode?: RequestQueryMode;
+  companyId?: number;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: EmployeeWorkTimeOrderBy = EmployeeWorkTimeOrderBy.CREATED_AT_DESC;

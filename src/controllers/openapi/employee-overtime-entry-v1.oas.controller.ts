@@ -7,6 +7,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -52,12 +53,13 @@ export class EmployeeOvertimeEntryV1Controller {
    */
   @Get()
   public async getEmployeeOvertimeEntries(
-    @Queries() query: QueryEmployeeOvertimeEntryDto
+    @Queries() query: QueryEmployeeOvertimeEntryDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeOvertimeEntry[]>> {
     this.logger.debug(
       'Received request to get EmployeeOvertimeEntry(ies) matching query', { query }
     );
-    const { data, pagination } = await service.getEmployeeOvertimeEntries(query);
+    const { data, pagination } = await service.getEmployeeOvertimeEntries(query, req.user!);
     this.logger.info('Returning %d EmployeeOvertimeEntry(ies) that matched the query', data.length);
     return { data, pagination };
   }
