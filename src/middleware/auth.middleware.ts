@@ -56,7 +56,6 @@ export function authenticateUser(
       if (
         !req.user.category || !options.category.includes(req.user.category) 
       ) {
-        console.log(options.category);
         throw new ForbiddenError({});
       }
     }

@@ -195,7 +195,7 @@ export async function applySupervisionScopeToQuery(
   const superviseeIds = supervisees.map(e => e.id);
   const scopeQuery = {
     employeeId,
-    employee: { companyId: qCompanyId? qCompanyId : { in: companyIds } },
+    employee: { companyId: qCompanyId ? qCompanyId : { in: companyIds } },
   } as { [key: string]: any, employeeId?: { in: number[] } | number };
 
   if (qEmployeeId) {

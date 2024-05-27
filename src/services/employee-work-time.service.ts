@@ -96,7 +96,7 @@ export async function getEmployeeWorkTimes(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    user, { employeeId: qEmployeeId, queryMode,  companyId }
+    user, { employeeId: qEmployeeId, queryMode, companyId }
   );
 
   let result: ListWithPagination<EmployeeWorkTimeDto>;
