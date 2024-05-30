@@ -13,18 +13,6 @@ export class ChildNode {
   employeeId?: number;
 }
 
-export class CreateChildNodeDto {
-  jobTitleId!: number;
-  employeeId?: number;
-  companyId!: number;
-
-  constructor(childNode: ChildNode, companyId: number) {
-    this.jobTitleId = childNode.jobTitleId;
-    this.employeeId = childNode.employeeId;
-    this.companyId = companyId;
-  }
-}
-
 export class UpdateCompanyTreeNodeDto {
   parentId?: number;
   employeeId?: number;

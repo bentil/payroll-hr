@@ -1,15 +1,12 @@
-import { Employee, GrievanceReportedEmployee, GrievanceType, PayrollCompany } from '@prisma/client';
+import {
+  Employee,
+  GrievanceReportedEmployee,
+  GrievanceType,
+  PayrollCompany
+} from '@prisma/client';
 
 export class AddGrievanceReportedEmployeeDto {
   reportedEmployeeIds!: number[];
-}
-
-export class AddGrievanceReportedEmployeeRecord {
-  reportedEmployeeId!: number;
-
-  constructor(reportedEmployeeId: number) {
-    this.reportedEmployeeId = reportedEmployeeId;
-  }
 }
 
 export interface ReportedEmployeesDto extends GrievanceReportedEmployee {
