@@ -19,7 +19,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeWorkTimeService' });
@@ -96,7 +96,9 @@ export async function getEmployeeWorkTimes(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    user, { employeeId: qEmployeeId, queryMode, companyId }
+    user, 
+    { employeeId: qEmployeeId, queryMode, companyId },
+    { extendAdminCategories: [ UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<EmployeeWorkTimeDto>;
