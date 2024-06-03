@@ -18,6 +18,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'CompanyDocumentTypeService' });
@@ -69,16 +70,18 @@ export async function addCompanyDocumentType(
 }
 
 export async function getCompanyDocumentTypes(
-  query: QueryCompanyDocumentTypeDto
+  query: QueryCompanyDocumentTypeDto,
+  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<CompanyDocumentType>> {
   const {
     page,
     limit: take,
     orderBy,
-    companyId,
+    ...queryParam
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, queryParam);
 
   let result: ListWithPagination<CompanyDocumentType>;
   try {
@@ -86,7 +89,7 @@ export async function getCompanyDocumentTypes(
     result = await repository.find({
       skip,
       take,
-      where: { companyId },
+      where: scopedQuery,
       orderBy: orderByInput,
     });
     logger.info(

@@ -21,6 +21,7 @@ export async function getCompanyDocumentTypes(req: Request, res: Response, next:
   try {
     const response = await controller.getCompanyDocumentTypes(
       req.query as unknown as QueryCompanyDocumentTypeDto,
+      req
     );
     res.json(response);
   } catch (err) {

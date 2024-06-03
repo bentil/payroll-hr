@@ -226,6 +226,25 @@ export async function applySupervisionScopeToQuery(
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
 
+export async function applyEmployeeScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>,
+): Promise<ScopedQuery> {
+  const { category } = user;
+
+  let queryMode: RequestQueryMode;
+  if (category === UserCategory.HR) {
+    queryMode = RequestQueryMode.ALL;
+  } else {
+    queryMode = RequestQueryMode.SELF;
+  }
+
+  return await applySupervisionScopeToQuery(
+    user, 
+    { queryMode, ...queryParams }
+  );
+}
+
 export async function validateResponder(
   authUser: AuthorizedUser,
   requestorEmployeeId: number, 

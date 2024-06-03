@@ -656,35 +656,41 @@ router.delete(
 
 router.post(
   '/company-document-types',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.addCompanyDocumentType
 );
 
 router.get(
   '/company-document-types',
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.getCompanyDocumentTypes
 );
 
 router.get(
   '/company-document-types/search',
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.searchCompanyDocumentTypes
 );
 
 router.get(
   '/company-document-types/:id',
+  authenticateUser({ isEmployee: true }),
   compDocTypeV1Controller.getCompanyDocumentType
 );
 
 router.patch(
   '/company-document-types/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.updateCompanyDocumentType
 );
 
 router.delete(
   '/company-document-types/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
   compDocTypeV1Controller.deleteCompanyDocumentType
 );
 
@@ -692,29 +698,34 @@ router.delete(
 
 router.post(
   '/employee-documents',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(CREATE_EMPLOYEE_DOCUMENT_SCHEMA),
   employeeDocumentV1Controller.addEmployeeDocument
 );
 
 router.get(
   '/employee-documents',
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_EMPLOYEE_DOCUMENT_SCHEMA),
   employeeDocumentV1Controller.getEmployeeDocuments
 );
 
 router.get(
   '/employee-documents/:id',
+  authenticateUser({ isEmployee: true }),
   employeeDocumentV1Controller.getEmployeeDocument
 );
 
 router.patch(
   '/employee-documents/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_EMPLOYEE_DOCUMENT_SCHEMA),
   employeeDocumentV1Controller.updateEmployeeDocument
 );
 
 router.delete(
   '/employee-documents/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
   employeeDocumentV1Controller.deleteEmployeeDocument
 );
 

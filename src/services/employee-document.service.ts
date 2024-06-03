@@ -19,6 +19,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
+import { AuthorizedUser } from '../domain/user.domain';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeDocumentService' });
@@ -76,17 +77,21 @@ export async function addEmployeeDocument(
 }
 
 export async function getEmployeeDocuments(
-  query: QueryEmployeeDocumentDto
+  query: QueryEmployeeDocumentDto,
+  authorizedUser: AuthorizedUser,
 ): Promise<ListWithPagination<EmployeeDocumentDto>> {
   const {
     page,
     limit: take,
     orderBy,
-    employeeId,
-    typeId
+    ...queryParams
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authorizedUser, queryParams
+  );
+
 
   let result: ListWithPagination<EmployeeDocumentDto>;
   try {
@@ -94,7 +99,7 @@ export async function getEmployeeDocuments(
     result = await repository.find({
       skip,
       take,
-      where: { employeeId, typeId },
+      where: scopedQuery,
       orderBy: orderByInput,
       include: { employee: true, documentType: true }
     });
@@ -110,12 +115,18 @@ export async function getEmployeeDocuments(
   return result;
 } 
 
-export async function getEmployeeDocument(id: number): Promise<EmployeeDocumentDto> {
+export async function getEmployeeDocument(
+  id: number,
+  authorizedUser: AuthorizedUser
+): Promise<EmployeeDocumentDto> {
   logger.debug('Getting details for EmployeeDocument[%s]', id);
   let employeeDocument: EmployeeDocument | null;
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authorizedUser, {});
 
   try {
-    employeeDocument = await repository.findOne({ id }, { employee: true, documentType: true });
+    employeeDocument = await repository.findFirst(
+      { id, ...scopedQuery }, { employee: true, documentType: true }
+    );
   } catch (err) {
     logger.warn('Getting EmployeeDocument[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });

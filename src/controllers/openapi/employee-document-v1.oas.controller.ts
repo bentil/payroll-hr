@@ -6,6 +6,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -54,10 +55,11 @@ export class EmployeeDocumentV1Controller {
    */
   @Get()
   public async getEmployeeDocuments(
-    @Queries() query: QueryEmployeeDocumentDto
+    @Queries() query: QueryEmployeeDocumentDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeDocument[]>> {
     this.logger.debug('Received request to get EmployeeDocument(s) matching query', { query });
-    const { data, pagination } = await service.getEmployeeDocuments(query);
+    const { data, pagination } = await service.getEmployeeDocuments(query, req.user!);
     this.logger.info('Returning %d EmployeeDocument(s) that matched the query', data.length);
     return { data, pagination };
   }
@@ -74,10 +76,11 @@ export class EmployeeDocumentV1Controller {
     details: [],
   })
   public async getEmployeeDocument(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeDocumentDto>> {
     this.logger.debug('Received request to get EmployeeDocument[%s]', id);
-    const employeeDocument = await service.getEmployeeDocument(id);
+    const employeeDocument = await service.getEmployeeDocument(id, req.user!);
     return { data: employeeDocument };
   }
 

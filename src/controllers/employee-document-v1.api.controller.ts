@@ -18,6 +18,7 @@ export async function getEmployeeDocuments(req: Request, res: Response, next: Ne
   try {
     const response = await controller.getEmployeeDocuments(
       req.query as unknown as QueryEmployeeDocumentDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -28,7 +29,7 @@ export async function getEmployeeDocuments(req: Request, res: Response, next: Ne
 export async function getEmployeeDocument(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.getEmployeeDocument(+id);
+    const response = await controller.getEmployeeDocument(+id, req);
     res.json(response);
   } catch (err) {
     next(err);

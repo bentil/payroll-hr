@@ -8,6 +8,7 @@ import {
   Post,
   Queries,
   Response,
+  Request,
   Route,
   Security,
   SuccessResponse,
@@ -54,10 +55,11 @@ export class CompanyDocumentTypeV1Controller {
    */
   @Get()
   public async getCompanyDocumentTypes(
-    @Queries() query: QueryCompanyDocumentTypeDto
+    @Queries() query: QueryCompanyDocumentTypeDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType[]>> {
     this.logger.debug('Received request to get CompanyDocumentType(s) matching query', { query });
-    const { data, pagination } = await service.getCompanyDocumentTypes(query);
+    const { data, pagination } = await service.getCompanyDocumentTypes(query, req.user!);
     this.logger.info('Returning %d CompanyDocumentType(s) that matched the query', data.length);
     return { data, pagination };
   }
