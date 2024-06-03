@@ -8,7 +8,7 @@ import {
 } from '../domain/dto/employee-document.dto';
 import * as repository from '../repositories/employee-document.repository';
 import * as employeeService from '../services/employee.service';
-import * as typeService from '../services/company-document-data.service';
+import * as typeService from './company-document-type.service';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
@@ -31,7 +31,8 @@ const events = {
 };
 
 export async function addEmployeeDocument(
-  creatData: CreateEmployeeDocumentDto
+  creatData: CreateEmployeeDocumentDto,
+  authorizedUser: AuthorizedUser,
 ): Promise<EmployeeDocumentDto> {
   const { employeeId, typeId } = creatData;
 
@@ -39,7 +40,7 @@ export async function addEmployeeDocument(
   try {
     await Promise.all([
       employeeService.getEmployee(employeeId),
-      typeService.getCompanyDocumentType(typeId)
+      typeService.getCompanyDocumentType(typeId, authorizedUser)
     ]);
   } catch (err) {
     logger.warn('Getting Employee[%s] or EmployeeDocumentType[%s]fialed', employeeId, typeId);
@@ -121,11 +122,11 @@ export async function getEmployeeDocument(
 ): Promise<EmployeeDocumentDto> {
   logger.debug('Getting details for EmployeeDocument[%s]', id);
   let employeeDocument: EmployeeDocument | null;
-  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authorizedUser, {});
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authorizedUser, { id });
 
   try {
     employeeDocument = await repository.findFirst(
-      { id, ...scopedQuery }, { employee: true, documentType: true }
+      scopedQuery, { employee: true, documentType: true }
     );
   } catch (err) {
     logger.warn('Getting EmployeeDocument[%s] failed', id, { error: (err as Error).stack });
@@ -145,10 +146,12 @@ export async function getEmployeeDocument(
 
 export async function updateEmployeeDocument(
   id: number, 
-  updateData: UpdateEmployeeDocumentDto
+  updateData: UpdateEmployeeDocumentDto,
+  authorizedUser: AuthorizedUser
 ): Promise<EmployeeDocumentDto> {
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authorizedUser, { id });
   const { employeeId, typeId } = updateData;
-  const employeeDocument = await repository.findOne({ id });
+  const employeeDocument = await repository.findFirst(scopedQuery);
   if (!employeeDocument) {
     logger.warn('EmployeeDocument[%s] to update does not exist', id);
     throw new NotFoundError({
@@ -160,7 +163,7 @@ export async function updateEmployeeDocument(
   try {
     await Promise.all([
       employeeId ? employeeService.getEmployee(employeeId) : undefined,
-      typeId ? typeService.getCompanyDocumentType(typeId) : undefined
+      typeId ? typeService.getCompanyDocumentType(typeId, authorizedUser) : undefined
     ]);
   } catch (err) {
     logger.warn('Getting Employee[%s] or EmployeeDocumentType[%s]fialed', employeeId, typeId);
@@ -185,8 +188,12 @@ export async function updateEmployeeDocument(
   return updatedEmployeeDocument;
 }
 
-export async function deleteEmployeeDocument(id: number): Promise<void> {
-  const employeeDocument = await repository.findOne({ id });
+export async function deleteEmployeeDocument(
+  id: number, 
+  authorizedUser: AuthorizedUser
+): Promise<void> {
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authorizedUser, { id });
+  const employeeDocument = await repository.findFirst(scopedQuery);
   let deletedEmployeeDocument: EmployeeDocument;
   if (!employeeDocument) {
     logger.warn('EmployeeDocument[%s] to delete does not exist', id);

@@ -40,10 +40,11 @@ export class EmployeeDocumentV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addEmployeeDocument(
-    @Body() createData: CreateEmployeeDocumentDto
+    @Body() createData: CreateEmployeeDocumentDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeDocument>> {
     this.logger.debug('Received request to add EmployeeDocument', { data: createData, });
-    const employeeDocument = await service.addEmployeeDocument(createData);
+    const employeeDocument = await service.addEmployeeDocument(createData, req.user!);
     return { data: employeeDocument };
   }
 
@@ -103,10 +104,11 @@ export class EmployeeDocumentV1Controller {
   })
   public async updateEmployeeDocument(
     @Path('id') id: number,
-    @Body() updateDto: UpdateEmployeeDocumentDto
+    @Body() updateDto: UpdateEmployeeDocumentDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeDocumentDto>> {
     this.logger.debug('Received request to update EmployeeDocument[%s]', id);
-    const updatedEmployeeDocument = await service.updateEmployeeDocument(id, updateDto);
+    const updatedEmployeeDocument = await service.updateEmployeeDocument(id, updateDto, req.user!);
     this.logger.info('CompanyDocumentType[%s] updated successfully!', id);
     return { data: updatedEmployeeDocument };
   }
@@ -124,10 +126,10 @@ export class EmployeeDocumentV1Controller {
     details: [],
   })
   public async deleteEmployeeDocument(
-    @Path('id') id: number
+    @Path('id') id: number, @Request() req: Express.Request
   ): Promise<void> {
     this.logger.debug('Received request to delete EmployeeDocument[%s]', id);
-    await service.deleteEmployeeDocument(id);
+    await service.deleteEmployeeDocument(id, req.user!);
     this.logger.debug('EmployeeDocument[%s] deleted successfully', id);
   }
 

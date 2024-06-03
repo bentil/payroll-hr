@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { CompanyDocumentTypeV1Controller } from './openapi/company-document-data-v1.oas.controller';
+import { CompanyDocumentTypeV1Controller } from './openapi/company-document-type-v1.oas.controller';
 import { 
   QueryCompanyDocumentTypeDto, 
   SearchCompanyDocumentTypeDto 
@@ -32,7 +32,7 @@ export async function getCompanyDocumentTypes(req: Request, res: Response, next:
 export async function getCompanyDocumentType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.getCompanyDocumentType(+id);
+    const response = await controller.getCompanyDocumentType(+id, req);
     res.json(response);
   } catch (err) {
     next(err);
@@ -42,7 +42,7 @@ export async function getCompanyDocumentType(req: Request, res: Response, next: 
 export async function updateCompanyDocumentType(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.updateCompanyDocumentType(+id, req.body);
+    const response = await controller.updateCompanyDocumentType(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);
@@ -52,7 +52,7 @@ export async function updateCompanyDocumentType(req: Request, res: Response, nex
 export async function searchCompanyDocumentTypes(req: Request, res: Response, next: NextFunction) {
   try {
     const response = await controller.searchCompanyDocumentType(
-      req.query as unknown as SearchCompanyDocumentTypeDto
+      req.query as unknown as SearchCompanyDocumentTypeDto, req
     );
     res.json(response);
   } catch (err) {
@@ -63,7 +63,7 @@ export async function searchCompanyDocumentTypes(req: Request, res: Response, ne
 export async function deleteCompanyDocumentType( req: Request, res: Response, next: NextFunction ) {
   const { id } = req.params;
   try {
-    await controller.deleteCompanyDocumentType(+id);
+    await controller.deleteCompanyDocumentType(+id, req);
     res.status(204).send();
   } catch (err) {
     next(err);

@@ -7,7 +7,7 @@ import {
   UpdateCompanyDocumentTypeDto
 } from '../domain/dto/company-document-type.dto';
 import * as repository from '../repositories/company-document-type.repository';
-import * as payrollCompanyService from '../services/payroll-company.service';
+import * as payrollCompanyService from './payroll-company.service';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { 
@@ -77,11 +77,11 @@ export async function getCompanyDocumentTypes(
     page,
     limit: take,
     orderBy,
-    ...queryParam
+    ...queryParams
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, queryParam);
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, queryParams);
 
   let result: ListWithPagination<CompanyDocumentType>;
   try {
@@ -108,12 +108,16 @@ export async function getCompanyDocumentTypes(
   return result;
 } 
 
-export async function getCompanyDocumentType(id: number): Promise<CompanyDocumentType> {
+export async function getCompanyDocumentType(
+  id: number,
+  authorizedUser: AuthorizedUser
+): Promise<CompanyDocumentType> {
   logger.debug('Getting details for CompanyDocumentType[%s]', id);
   let companyDocumentType: CompanyDocumentType | null;
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, { id });
 
   try {
-    companyDocumentType = await repository.findOne({ id });
+    companyDocumentType = await repository.findFirst(scopedQuery);
   } catch (err) {
     logger.warn('Getting CompanyDocumentType[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -131,7 +135,8 @@ export async function getCompanyDocumentType(id: number): Promise<CompanyDocumen
 }
 
 export async function searchCompanyDocumentType(
-  query: SearchCompanyDocumentTypeDto
+  query: SearchCompanyDocumentTypeDto,
+  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<CompanyDocumentType>> {
   const {
     q: searchParam,
@@ -141,6 +146,7 @@ export async function searchCompanyDocumentType(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, {});
 
   let result: ListWithPagination<CompanyDocumentType>;
   try {
@@ -150,6 +156,7 @@ export async function searchCompanyDocumentType(
       take,
       orderBy: orderByInput,
       where: {
+        ...scopedQuery,
         description: {
           search: searchParam,
         },
@@ -174,9 +181,11 @@ export async function searchCompanyDocumentType(
 
 export async function updateCompanyDocumentType(
   id: number, 
-  updateData: UpdateCompanyDocumentTypeDto
+  updateData: UpdateCompanyDocumentTypeDto,
+  authorizedUser: AuthorizedUser,
 ): Promise<CompanyDocumentType> {
-  const companyDocumentType = await repository.findOne({ id });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, { id });
+  const companyDocumentType = await repository.findFirst(scopedQuery);
   if (!companyDocumentType) {
     logger.warn('CompanyDocumentType[%s] to update does not exist', id);
     throw new NotFoundError({
@@ -199,8 +208,12 @@ export async function updateCompanyDocumentType(
   return updatedCompanyDocumentType;
 }
 
-export async function deleteCompanyDocumentType(id: number): Promise<void> {
-  const companyDocumentType = await repository.findOne({ id });
+export async function deleteCompanyDocumentType(
+  id: number,
+  authorizedUser: AuthorizedUser
+): Promise<void> {
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, { id });
+  const companyDocumentType = await repository.findFirst(scopedQuery);
   let deletedCompanyDocumentType: CompanyDocumentType;
   if (!companyDocumentType) {
     logger.warn('CompanyDocumentType[%s] to delete does not exist', id);

@@ -21,7 +21,7 @@ import {
   SearchCompanyDocumentTypeDto,
   UpdateCompanyDocumentTypeDto
 } from '../../domain/dto/company-document-type.dto';
-import * as service from '../../services/company-document-data.service';
+import * as service from '../../services/company-document-type.service';
 import { rootLogger } from '../../utils/logger';
 import { errors } from '../../utils/constants';
 
@@ -76,10 +76,11 @@ export class CompanyDocumentTypeV1Controller {
     details: [],
   })
   public async getCompanyDocumentType(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType>> {
     this.logger.debug('Received request to get CompanyDocumentType[%s]', id);
-    const companyDocumentType = await service.getCompanyDocumentType(id);
+    const companyDocumentType = await service.getCompanyDocumentType(id, req.user!);
     return { data: companyDocumentType };
   }
 
@@ -102,10 +103,12 @@ export class CompanyDocumentTypeV1Controller {
   })
   public async updateCompanyDocumentType(
     @Path('id') id: number,
-    @Body() updateDto: UpdateCompanyDocumentTypeDto
+    @Body() updateDto: UpdateCompanyDocumentTypeDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType>> {
     this.logger.debug('Received request to update CompanyDocumentType[%s]', id);
-    const updatedCompanyDocumentType = await service.updateCompanyDocumentType(id, updateDto);
+    const updatedCompanyDocumentType = 
+      await service.updateCompanyDocumentType(id, updateDto, req.user!);
     this.logger.info('CompanyDocumentType[%s] updated successfully!', id);
     return { data: updatedCompanyDocumentType };
   }
@@ -118,13 +121,13 @@ export class CompanyDocumentTypeV1Controller {
    */
   @Get('search')
   public async searchCompanyDocumentType(
-    @Queries() searchParam: SearchCompanyDocumentTypeDto,
+    @Queries() searchParam: SearchCompanyDocumentTypeDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType[]>> {
     this.logger.info(
       'Received request to get CompanyDocumentType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await service.searchCompanyDocumentType(searchParam);
+      await service.searchCompanyDocumentType(searchParam, req.user!);
     this.logger.info('Returning %d CompanyDocumentType(s) that matched search query', data.length);
     return { data, pagination };
   }
@@ -142,10 +145,10 @@ export class CompanyDocumentTypeV1Controller {
     details: [],
   })
   public async deleteCompanyDocumentType(
-    @Path('id') id: number
+    @Path('id') id: number, @Request() req: Express.Request
   ): Promise<void> {
     this.logger.debug('Received request to delete CompanyDocumentType[%s]', id);
-    await service.deleteCompanyDocumentType(id);
+    await service.deleteCompanyDocumentType(id, req.user!);
     this.logger.debug('CompanyDocumentType[%s] deleted successfully', id);
   }
 

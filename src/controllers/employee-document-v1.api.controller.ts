@@ -7,7 +7,7 @@ const controller = new EmployeeDocumentV1Controller();
 
 export async function addEmployeeDocument(req: Request, res: Response, next: NextFunction) {
   try {
-    const response = await controller.addEmployeeDocument(req.body);
+    const response = await controller.addEmployeeDocument(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -39,7 +39,7 @@ export async function getEmployeeDocument(req: Request, res: Response, next: Nex
 export async function updateEmployeeDocument(req: Request, res: Response, next: NextFunction) {
   const { id } = req.params;
   try {
-    const response = await controller.updateEmployeeDocument(+id, req.body);
+    const response = await controller.updateEmployeeDocument(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);
@@ -49,7 +49,7 @@ export async function updateEmployeeDocument(req: Request, res: Response, next: 
 export async function deleteEmployeeDocument( req: Request, res: Response, next: NextFunction ) {
   const { id } = req.params;
   try {
-    await controller.deleteEmployeeDocument(+id);
+    await controller.deleteEmployeeDocument(+id, req);
     res.status(204).send();
   } catch (err) {
     next(err);
