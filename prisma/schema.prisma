@@ -37,6 +37,7 @@ model PayrollCompany {
   companyCurrencies       CompanyCurrency[]
   employees               Employee[]
   companyTreeNodes        CompanyTreeNode[]
+  companyDocumentTypes     CompanyDocumentType[]
 
   @@map("payroll_company")
 }
@@ -98,6 +99,7 @@ model Employee {
   companyTreeNodes                CompanyTreeNode[]
   employeeWorkTimes EmployeeWorkTime[]
   employeeOvertimeEntries EmployeeOvertimeEntry[]
+  employeeDocuments EmployeeDocument[]
 
   @@map("employee")
 }
@@ -634,4 +636,34 @@ model OvertimePaymentTier {
   overtime        Overtime?                  @relation(fields: [overtimeId], references: [id])
 
   @@map("overtime_payment_tier")
+}
+
+model CompanyDocumentType {
+  id                   Int                   @id @default(autoincrement()) @db.UnsignedInt()
+  companyId            Int                   @map("company_id") @db.UnsignedInt()
+  description          String                @db.Text()
+  name                 String                @db.VarChar(100)  
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+
+  company         PayrollCompany         @relation(fields: [companyId], references: [id]) 
+  employeeDocuments EmployeeDocument[]
+
+  @@fulltext([name, description])
+  @@unique([companyId, name])
+  @@map("company_document_type")
+}
+
+model EmployeeDocument {
+  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId  Int                    @map("employee_id") @db.UnsignedInt()
+  typeId      Int                    @map("type_id") @db.UnsignedInt()
+  url          String                @db.Text()
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+
+  employee    Employee               @relation(fields: [employeeId], references: [id])
+  documentType CompanyDocumentType   @relation(fields: [typeId], references: [id])
+
+  @@map("employee_document")
 }

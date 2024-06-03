@@ -81,6 +81,8 @@ import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.a
 import * as employeeWorkTimeV1Controller from '../controllers/employee-work-time-v1.api.controller';
 // eslint-disable-next-line max-len
 import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-entry-v1.api.controller';
+import * as compDocTypeV1Controller from '../controllers/company-document-type-v1.api.controller';
+import * as employeeDocumentV1Controller from '../controllers/employee-document-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -105,6 +107,17 @@ import {
   QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA, 
   UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA 
 } from '../domain/request-schema/employee-overtime-entry.schema';
+import {
+  CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
+} from '../domain/request-schema/company-document-type.schema';
+import {
+  CREATE_EMPLOYEE_DOCUMENT_SCHEMA,
+  QUERY_EMPLOYEE_DOCUMENT_SCHEMA,
+  UPDATE_EMPLOYEE_DOCUMENT_SCHEMA,
+} from '../domain/request-schema/employee-document.schema';
 import { UserCategory } from '../domain/user.domain';
 
 const router = Router();
@@ -609,14 +622,14 @@ router.delete(
 
 router.post(
   '/employee-overtime-entries',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.addNewEmployeeOvertimeEntry
 );
 
 router.patch(
   '/employee-overtime-entries/:id',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.updateEmployeeOvertimeEntry
 );
@@ -635,8 +648,85 @@ router.get(
 
 router.delete(
   '/employee-overtime-entries/:id',
-  authenticateUser(),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   empOvertimeEntryV1Controller.deleteEmployeeOvertimeEntry
+);
+
+// ### COMPANY DOCUMENT TYPE ROUTES
+
+router.post(
+  '/company-document-types',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
+  compDocTypeV1Controller.addCompanyDocumentType
+);
+
+router.get(
+  '/company-document-types',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA),
+  compDocTypeV1Controller.getCompanyDocumentTypes
+);
+
+router.get(
+  '/company-document-types/search',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA),
+  compDocTypeV1Controller.searchCompanyDocumentTypes
+);
+
+router.get(
+  '/company-document-types/:id',
+  authenticateUser({ isEmployee: true }),
+  compDocTypeV1Controller.getCompanyDocumentType
+);
+
+router.patch(
+  '/company-document-types/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
+  compDocTypeV1Controller.updateCompanyDocumentType
+);
+
+router.delete(
+  '/company-document-types/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  compDocTypeV1Controller.deleteCompanyDocumentType
+);
+
+// ### EMPLOYEE DOCUMENT ROUTES
+
+router.post(
+  '/employee-documents',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(CREATE_EMPLOYEE_DOCUMENT_SCHEMA),
+  employeeDocumentV1Controller.addEmployeeDocument
+);
+
+router.get(
+  '/employee-documents',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(QUERY_EMPLOYEE_DOCUMENT_SCHEMA),
+  employeeDocumentV1Controller.getEmployeeDocuments
+);
+
+router.get(
+  '/employee-documents/:id',
+  authenticateUser({ isEmployee: true }),
+  employeeDocumentV1Controller.getEmployeeDocument
+);
+
+router.patch(
+  '/employee-documents/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(UPDATE_EMPLOYEE_DOCUMENT_SCHEMA),
+  employeeDocumentV1Controller.updateEmployeeDocument
+);
+
+router.delete(
+  '/employee-documents/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  employeeDocumentV1Controller.deleteEmployeeDocument
 );
 
 export default router;

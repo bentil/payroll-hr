@@ -1,15 +1,18 @@
-import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import {
-  AddGrievanceReportedEmployeeRecord,
   CreateGrievanceReportedEmployeeRecord
 } from '../domain/dto/grievance-reported-employee.dto';
-import { CreateCompanyLevelLeavePackageDto } from '../domain/dto/leave-package.dto';
-import { ForbiddenError } from '../errors/http-errors';
-import { CreateChildNodeDto, ChildNode } from '../domain/dto/company-tree-node.dto';
+import {
+  CreateCompanyLevelLeavePackageDto
+} from '../domain/dto/leave-package.dto';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
-import { getParentEmployee, getSupervisees } from '../services/company-tree-node.service';
-import { getEmployee } from '../services/employee.service';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
+import { ForbiddenError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
+import {
+  getParentEmployee,
+  getSupervisees
+} from '../services/company-tree-node.service';
+import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
 const logger = rootLogger.child({ context: 'HelpersUtil' });
@@ -65,32 +68,12 @@ export function generateMultiGrievanceReportedEmployeesRecords(
   );
 }
 
-export function generateMultiGrievanceReportedEmployeesDto(
-  reportedEmployeeIds: number[],
-) {
-  return reportedEmployeeIds.map(
-    reportedEmployeeId => new AddGrievanceReportedEmployeeRecord(reportedEmployeeId)
-  );
-}
-
-export function generateMultiCompanyLevelLeavePackageRecords(
-  companyLevelIds: number[],
-  leavePackageId: number
-) {
-  return companyLevelIds.map(companyLevelId =>
-    new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
-}
-
 export function generateLeavePackageRecordsForACompanyLevel(
   leavePackageIds: number[],
   companyLevelId: number
 ) {
   return leavePackageIds.map(leavePackageId =>
     new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
-}
-
-export function generateChildNodes(childNodes: ChildNode[], companyId: number) {
-  return childNodes.map(node => new CreateChildNodeDto(node, companyId));
 }
 
 type ManagePermissionScopeQueryOptsType = {
@@ -175,24 +158,33 @@ export async function applyCompanyScopeToQuery(
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
 
-/*pass authUser, superviseesEmployeeIds, queryMode?,
-if qemployeeId in superviseesEmployeeId or emplId === qempId
-*/
-
 export async function applySupervisionScopeToQuery(
   user: AuthorizedUser,
-  queryParams: Record<string, any>
+  queryParams: Record<string, any>,
+  options?: { extendAdminCategories?: UserCategory[]; },
 ): Promise<ScopedQuery> {
   const { employeeId, category, companyIds } = user;
-  const { employeeId: qEmployeeId, queryMode, companyId: qCompanyId, ...query } = queryParams;
-  if (!employeeId) {
+  const { extendAdminCategories } = options || {};
+  const {
+    employeeId: qEmployeeId,
+    companyId: qCompanyId,
+    queryMode,
+    ...query
+  } = queryParams;
+
+  let superviseeIds: number[] = [];
+  if (!extendAdminCategories?.includes(category) && !employeeId) {
     logger.warn('employeeId not present in AuthUser object');
     throw new UnauthorizedError({});
+  } else if (employeeId) {
+    const supervisees = await getSupervisees(employeeId);
+    superviseeIds = supervisees.map(e => e.id);
   }
 
+  const hasAdminCategory = (
+    category === UserCategory.HR || extendAdminCategories?.includes(category)
+  );
   let authorized = false;
-  const supervisees = await getSupervisees(user.employeeId!);
-  const superviseeIds = supervisees.map(e => e.id);
   const scopeQuery = {
     employeeId,
     employee: { companyId: qCompanyId ? qCompanyId : { in: companyIds } },
@@ -200,9 +192,9 @@ export async function applySupervisionScopeToQuery(
 
   if (qEmployeeId) {
     if (
-      category === UserCategory.HR || 
-      employeeId === qEmployeeId || 
-      superviseeIds?.includes(qEmployeeId)
+      hasAdminCategory
+      || employeeId === qEmployeeId
+      || superviseeIds.includes(qEmployeeId)
     ) {
       scopeQuery.employeeId = qEmployeeId;
       authorized = true;
@@ -214,7 +206,7 @@ export async function applySupervisionScopeToQuery(
       scopeQuery.employeeId = { in: superviseeIds };
       break;
     case RequestQueryMode.ALL:
-      if (category === UserCategory.HR) {
+      if (hasAdminCategory) {
         scopeQuery.employeeId = undefined;
       } else {
         scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
@@ -222,7 +214,7 @@ export async function applySupervisionScopeToQuery(
       break;
     case RequestQueryMode.SELF:
     default:
-      scopeQuery.employeeId = employeeId;
+      scopeQuery.employeeId = employeeId!;
       break;
     }
   }
@@ -232,6 +224,25 @@ export async function applySupervisionScopeToQuery(
   }
 
   return { scopedQuery: { ...query, ...scopeQuery } };
+}
+
+export async function applyEmployeeScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>,
+): Promise<ScopedQuery> {
+  const { category } = user;
+
+  let queryMode: RequestQueryMode;
+  if (category === UserCategory.HR) {
+    queryMode = RequestQueryMode.ALL;
+  } else {
+    queryMode = RequestQueryMode.SELF;
+  }
+
+  return await applySupervisionScopeToQuery(
+    user, 
+    { queryMode, ...queryParams }
+  );
 }
 
 export async function validateResponder(
