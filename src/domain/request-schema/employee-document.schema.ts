@@ -25,7 +25,11 @@ export const CREATE_EMPLOYEE_DOCUMENT_SCHEMA = Joi.object({
 export const UPDATE_EMPLOYEE_DOCUMENT_SCHEMA = Joi.object({
   employeeId: Joi.number().optional(),
   typeId: Joi.number().optional(),
-}).or('employeeId', 'typeId');
+  url: Joi.string()
+    .optional()
+    .uri()
+    .trim()
+}).or('employeeId', 'typeId', 'url');
 
 export const QUERY_EMPLOYEE_DOCUMENT_SCHEMA = Joi.object({
   employeeId: Joi.number().optional(),

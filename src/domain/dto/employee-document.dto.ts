@@ -10,6 +10,7 @@ export class CreateEmployeeDocumentDto {
 export class UpdateEmployeeDocumentDto {
   employeeId?: number;
   typeId?: number;
+  url?: string;
 }
 
 export interface EmployeeDocumentDto extends EmployeeDocument {
