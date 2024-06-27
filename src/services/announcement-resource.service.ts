@@ -1,5 +1,7 @@
-import { AnnouncementResource } from '@prisma/client';
-import { UpdateAnnouncementResourceDto } from '../domain/dto/announcement-resource.dto';
+import { 
+  AnnouncementResourceDto, 
+  UpdateAnnouncementResourceDto 
+} from '../domain/dto/announcement-resource.dto';
 import * as repository from '../repositories/announcement-resource.repository';
 import { KafkaService } from '../components/kafka.component';
 import { rootLogger } from '../utils/logger';
@@ -16,7 +18,7 @@ export async function updateAnnouncementResource(
   id: number, 
   resourceId: number,
   updateData: UpdateAnnouncementResourceDto
-): Promise<AnnouncementResource> {
+): Promise<AnnouncementResourceDto> {
 
   const announcementResource = await repository.findOne({ announcementId: id, id: resourceId });
   if (!announcementResource) {
