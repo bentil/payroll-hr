@@ -1,7 +1,9 @@
-import { GradeLevel } from '@prisma/client';
+import { GradeLevel, Prisma } from '@prisma/client';
 import { GradeLevelEvent } from '../domain/events/grade-level.event';
 import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/grade-level';
+import { ListWithPagination } from '../repositories/types';
+import { NotFoundError, ServerError } from '../errors/http-errors';
 
 const logger = rootLogger.child({ context: 'GradeLevelService' });
 
@@ -26,5 +28,45 @@ export async function createOrUpdateGradeLevel(
     data.id
   );
 
+  return gradeLevel;
+}
+
+export async function getGradeLevels(
+  where: Prisma.GradeLevelWhereInput,
+): Promise<ListWithPagination<GradeLevel>> {
+  let gradeLevel: ListWithPagination<GradeLevel>;
+  logger.debug('Finding GradeLevel(s) that match query', { where });
+  try {
+    gradeLevel = await repository.find({ where });
+    logger.info(
+      'Found %d GradeLevel that matched query',
+      gradeLevel.data.length, { where }
+    );
+  } catch (err) {
+    logger.warn(
+      'Querying GradeLevel with query failed',
+      { where }, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+  return gradeLevel;
+}
+
+export async function getGradeLevelById(id: number): Promise<GradeLevel> {
+  logger.debug('Getting details for GradeLevel[%s]', id);
+
+  let gradeLevel: GradeLevel | null;
+  try {
+    gradeLevel = await repository.findOne({ id });
+  } catch (err) {
+    logger.warn('Getting GradeLevel[%s] failed', id, { error: (err as Error).stack });
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  if (!gradeLevel) {
+    logger.warn('GradeLevel[%s] does not exist', id);
+    throw new NotFoundError({ message: 'Grade level does not exist' });
+  }
+  logger.info('GradeLevel[%s] details retrieved!', id);
   return gradeLevel;
 }

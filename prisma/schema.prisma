@@ -38,6 +38,7 @@ model PayrollCompany {
   employees               Employee[]
   companyTreeNodes        CompanyTreeNode[]
   companyDocumentTypes     CompanyDocumentType[]
+  announcements            Announcement[]
 
   @@map("payroll_company")
 }
@@ -233,6 +234,7 @@ model GradeLevel {
 
   companyLevel CompanyLevel @relation(fields: [companyLevelId], references: [id])
   employees    Employee[]
+  announcements Announcement[]
 
   @@map("grade_level")
 }
@@ -666,4 +668,42 @@ model EmployeeDocument {
   documentType CompanyDocumentType   @relation(fields: [typeId], references: [id])
 
   @@map("employee_document")
+}
+
+model Announcement {
+  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int                    @map("company_id") @db.UnsignedInt()
+  title       String                @db.VarChar(100) 
+  body        String                @db.Text()
+  active      Boolean               @default(true)
+  public      Boolean?               @default(false)
+  publishDate DateTime               @map("publish_date")  
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+
+  company         PayrollCompany         @relation(fields: [companyId], references: [id])
+
+  resources   AnnouncementResource[]
+  targetGradeLevels GradeLevel[]   
+
+  @@fulltext([title, body])
+  @@map("announcement")
+}
+
+enum ResourceType {
+  IMAGE
+  OTHER
+} 
+
+model AnnouncementResource {
+  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
+  announcementId Int                @map("announcement_id") @db.UnsignedInt()
+  resourceType  ResourceType            @map("resource_type")
+  url           String                @db.Text()
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  modifiedAt      DateTime?                  @updatedAt @map("modified_at")
+
+  announcement    Announcement       @relation(fields: [announcementId], references: [id])
+
+  @@map("announcement_resource")
 }
