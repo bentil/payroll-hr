@@ -127,7 +127,7 @@ export async function getDisciplinaryActionType(id: number): Promise<Disciplinar
   return disciplinaryActionType;
 }
 
-export async function searchDisciplinaryActionType(
+export async function searchDisciplinaryActionTypes(
   query: SearchDisciplinaryActionTypeDto,
   authUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionType>> {

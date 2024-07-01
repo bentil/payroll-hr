@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { CompanyTreeNodeV1Controller } from './openapi/company-tree-node-v1.oas.controller';
 import { 
   DeleteCompanyTreeNodeQueryDto, 
@@ -8,7 +7,11 @@ import {
 
 const controller = new CompanyTreeNodeV1Controller();
 
-export async function addNewCompanyTreeNode(req: Request, res: Response, next: NextFunction) {
+export async function addNewCompanyTreeNode(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.addCompanyTreeNode(req.body, +id);
@@ -18,7 +21,11 @@ export async function addNewCompanyTreeNode(req: Request, res: Response, next: N
   }
 }
 
-export async function getCompanyTree(req: Request, res: Response, next: NextFunction) {
+export async function getCompanyTree(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getCompanyTree(+id);
@@ -28,7 +35,11 @@ export async function getCompanyTree(req: Request, res: Response, next: NextFunc
   }
 }
 
-export async function getCompanyTreeNode(req: Request, res: Response, next: NextFunction) {
+export async function getCompanyTreeNode(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { companyId, nodeId } = req.params;
   try {
     const response = await controller.getCompanyTreeNode(+companyId, +nodeId);
@@ -38,7 +49,11 @@ export async function getCompanyTreeNode(req: Request, res: Response, next: Next
   }
 }
 
-export async function updateCompanyTreeNode(req: Request, res: Response, next: NextFunction) {
+export async function updateCompanyTreeNode(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { companyId, nodeId } = req.params;
   try {
     const response = await controller.updateCompanyTreeNode(+companyId, +nodeId, req.body);
@@ -48,7 +63,11 @@ export async function updateCompanyTreeNode(req: Request, res: Response, next: N
   }
 }
 
-export async function unlinkEmployee(req: Request, res: Response, next: NextFunction) {
+export async function unlinkEmployee(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { companyId, nodeId } = req.params;
   try {
     const response = await controller.unlinkEmployee(+companyId, +nodeId);
@@ -58,7 +77,11 @@ export async function unlinkEmployee(req: Request, res: Response, next: NextFunc
   }
 }
 
-export async function deleteCompanyTreeNode( req: Request, res: Response, next: NextFunction ) {
+export async function deleteCompanyTreeNode(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { companyId, nodeId } = req.params;
   try {
     await controller.deleteCompanyTreeNode(
@@ -70,7 +93,11 @@ export async function deleteCompanyTreeNode( req: Request, res: Response, next: 
   }
 }
 
-export async function checkIfSupervisor( req: Request, res: Response, next: NextFunction ) {
+export async function checkIfSupervisor(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { companyId } = req.params;
   try {
     const response = await controller.checkIfSupervisor(

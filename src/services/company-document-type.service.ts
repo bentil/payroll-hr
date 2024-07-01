@@ -134,7 +134,7 @@ export async function getCompanyDocumentType(
   return companyDocumentType;
 }
 
-export async function searchCompanyDocumentType(
+export async function searchCompanyDocumentTypes(
   query: SearchCompanyDocumentTypeDto,
   authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<CompanyDocumentType>> {

@@ -35,7 +35,7 @@ export class ReimbursementRequestV1Controller {
   private readonly logger = rootLogger.child({ context: ReimbursementRequestV1Controller.name, });
 
   /**
-   * Create a reimbursement request
+   * Create a ReimbursementRequest
    *
    * @param createData Request body
    * @returns API response
@@ -51,10 +51,10 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Get a list of reimbursement request matching query
+   * Get a list of ReimbursementRequest matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching reimbursement request
+   * @returns List of matching ReimbursementRequest
    */
   @Get()
   public async getReimbursementRequests(
@@ -68,9 +68,9 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Get a reimbursementRequest by ID
-   * @param id reimbursementRequest ID
-   * @returns reimbursementRequest
+   * Get a ReimbursementRequest by ID
+   * @param id ReimbursementRequest ID
+   * @returns ReimbursementRequest
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -88,10 +88,10 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Change the details of an existing reimbursementRequest
-   * @param id reimbursementRequest ID
-   * @param body Request body with reimbursementRequest to update to
-   * @returns Updated reimbursementRequest
+   * Change the details of an existing ReimbursementRequest
+   * @param id ReimbursementRequest ID
+   * @param body Request body with ReimbursementRequest to update to
+   * @returns Updated ReimbursementRequest
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -117,10 +117,10 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Change the details of existing reimbursementRequest and add reimbursementAttachment or comment
-   * @param id reimbursementRequest ID
-   * @param body Body of update data for reimbursementRequest and attachment or comment to be added
-   * @returns Updated reimbursementRequest
+   * Change the details of existing ReimbursementRequest and add ReimbursementAttachment or comment
+   * @param id ReimbursementRequest ID
+   * @param body Body of update data for ReimbursementRequest and attachment or comment to be added
+   * @returns Updated ReimbursementRequest
    */
   @Post('{id}/response')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -147,10 +147,10 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Add reimbursementAttachment or comment to an existing ReimbursementRequest
-   * @param id reimbursementRequest ID
-   * @param body Body of data for reimbursementAttachment or comment to be added
-   * @returns reimbursementRequest for which Attachment or comment has been added
+   * Add ReimbursementRequest or comment to an existing ReimbursementRequest
+   * @param id ReimbursementRequest ID
+   * @param body Body of data for ReimbursementRequest or comment to be added
+   * @returns Updated ReimbursementRequest
    */
   @Post('{id}/updates')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -178,9 +178,9 @@ export class ReimbursementRequestV1Controller {
 
   /**
    * Complete ReimbursementRequest
-   * @param id reimbursementRequest ID
+   * @param id ReimbursementRequest ID
    * @param body Body of data for comment to be added for completion
-   * @returns completed reimbursementRequest
+   * @returns completed ReimbursementRequest
    */
   @Post('{id}/completion')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -207,27 +207,27 @@ export class ReimbursementRequestV1Controller {
   }
 
   /**
-   * Search a reimbursementRequest by title and description
+   * Search a ReimbursementRequest(s) by title and description
    * 
    * @param searchParam search parameters including title and description
-   * @returns reimbursementRequest that match search
+   * @returns ReimbursementRequest(s) that match search
    */
   @Get('search')
-  public async searchReimbursementRequest(
+  public async searchReimbursementRequests(
     @Queries() searchParam: SearchReimbursementRequestDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<ReimbursementRequest[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get ReimbursementRequest(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await reimbursementReqService.searchReimbursementRequest(searchParam, req.user!);
+      await reimbursementReqService.searchReimbursementRequests(searchParam, req.user!);
     this.logger.info('Returning %d ReimbursementRequest(s) that matched search query', data.length);
     return { data, pagination };
   }
 
   /**
    * Remove an existing ReimbursementRequest
-   * @param id reimbursementRequest ID
+   * @param id ReimbursementRequest ID
    * @returns nothing
    */
   @Delete('{id}')

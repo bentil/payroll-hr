@@ -9,8 +9,10 @@ import {
 const controller = new EmployeeOvertimeEntryV1Controller();
 
 export async function addNewEmployeeOvertimeEntry(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addEmployeeOvertimeEntry(req.body);
     res.status(201).json(response);
@@ -19,7 +21,11 @@ export async function addNewEmployeeOvertimeEntry(
   }
 }
 
-export async function getEmployeeOvertimeEntries(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeOvertimeEntries(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getEmployeeOvertimeEntries(
       req.query as unknown as QueryEmployeeOvertimeEntryDto, req
@@ -30,7 +36,11 @@ export async function getEmployeeOvertimeEntries(req: Request, res: Response, ne
   }
 }
 
-export async function getEmployeeOvertimeEntry(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeOvertimeEntry(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getEmployeeOvertimeEntry(+id);
@@ -40,8 +50,10 @@ export async function getEmployeeOvertimeEntry(req: Request, res: Response, next
   }
 }
 export async function updateEmployeeOvertimeEntry(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateEmployeeOvertimeEntry(+id, req.body);
@@ -52,8 +64,10 @@ export async function updateEmployeeOvertimeEntry(
 }
 
 export async function deleteEmployeeOvertimeEntry(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteEmployeeOvertimeEntry(+id);

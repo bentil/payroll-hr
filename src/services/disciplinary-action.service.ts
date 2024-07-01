@@ -163,7 +163,7 @@ export async function getDisciplinaryAction(id: number): Promise<DisciplinaryAct
   return disciplinaryAction;
 }
 
-export async function searchDisciplinaryAction(
+export async function searchDisciplinaryActions(
   query: SearchDisciplinaryActionDto,
   authUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionDto>> {

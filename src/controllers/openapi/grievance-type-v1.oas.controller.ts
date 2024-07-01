@@ -30,7 +30,7 @@ export class GrievanceTypeV1Controller {
   private readonly logger = rootLogger.child({ context: GrievanceTypeV1Controller.name, });
 
   /**
-   * Create a grievance type
+   * Create a GrievanceType
    *
    * @param createData Request body
    * @returns API response
@@ -46,10 +46,10 @@ export class GrievanceTypeV1Controller {
   }
 
   /**
-   * Get a list of grievance type matching query
+   * Get a list of GrievanceType(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Grievance types
+   * @returns List of matching GrievanceType(s)
    */
   @Get()
   public async getGrievanceTypes(
@@ -62,9 +62,9 @@ export class GrievanceTypeV1Controller {
   }
 
   /**
-   * Get a grievanceType by ID
-   * @param id grievanceType ID
-   * @returns grievanceType
+   * Get a GrievanceType by ID
+   * @param id GrievanceType ID
+   * @returns GrievanceType
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -81,10 +81,10 @@ export class GrievanceTypeV1Controller {
   }
 
   /**
-   * Change the details of an existing grievanceType
-   * @param id grievanceType ID
-   * @param body Request body with grievanceType to update to
-   * @returns Updated grievanceType
+   * Change the details of an existing GrievanceType
+   * @param id GrievanceType ID
+   * @param body Request body with details to update to
+   * @returns Updated GrievanceType
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -108,27 +108,27 @@ export class GrievanceTypeV1Controller {
   }
 
   /**
-   * Search a grievanceType by name and description
+   * Search for GrievanceType(s) by name, code and description
    * 
-   * @param searchParam search parameters including name and description
-   * @returns grievanceType that match search
+   * @param searchParam search parameters including name, code and description
+   * @returns GrievanceType(s) that match search
    */
   @Get('search')
-  public async searchGrievanceType(
+  public async searchGrievanceTypes(
     @Queries() searchParam: SearchGrievanceTypeDto,
   ): Promise<ApiSuccessResponse<GrievanceType[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get GrievanceType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await grievanceTypeService.searchGrievanceType(searchParam);
+      await grievanceTypeService.searchGrievanceTypes(searchParam);
     this.logger.info('Returning %d GrievanceType(s) that matched search query', data.length);
     return { data, pagination };
   }
 
   /**
-   * Remove an existing grievanceType
-   * @param id grievanceType ID
+   * Remove an existing GrievanceType
+   * @param id GrievanceType ID
    * @returns nothing
    */
   @SuccessResponse(204)

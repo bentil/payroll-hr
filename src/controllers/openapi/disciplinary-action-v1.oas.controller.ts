@@ -31,7 +31,7 @@ export class DisciplinaryActionV1Controller {
   private readonly logger = rootLogger.child({ context: DisciplinaryActionV1Controller.name, });
 
   /**
-   * Create a disciplinary action
+   * Create a DisciplinaryAction
    *
    * @param createData Request body
    * @returns API response
@@ -47,10 +47,10 @@ export class DisciplinaryActionV1Controller {
   }
 
   /**
-   * Get a list of disciplinary action matching query
+   * Get a list of DisciplinaryAction(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Disciplinary actions
+   * @returns List of matching DisciplinaryAction(s)
    */
   @Get()
   public async getDisciplinaryActions(
@@ -111,20 +111,20 @@ export class DisciplinaryActionV1Controller {
   }
 
   /**
-   * Search a disciplinaryAction by name and description
+   * Search a disciplinaryAction by actionNumber and notes
    * 
-   * @param searchParam search parameters including name and description
-   * @returns disciplinaryAction that match search
+   * @param searchParam search parameters including actionNumber and notes
+   * @returns disciplinaryAction(s) that match search
    */
   @Get('search')
-  public async searchDisciplinaryAction(
+  public async searchDisciplinaryActions(
     @Queries() searchParam: SearchDisciplinaryActionDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get DisciplinaryAction(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await service.searchDisciplinaryAction(searchParam, req.user!);
+      await service.searchDisciplinaryActions(searchParam, req.user!);
     this.logger.info(
       'Returning %d DisciplinaryAction(s) that matched search query', data.length
     );

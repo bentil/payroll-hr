@@ -25,9 +25,9 @@ export class ReportedEmployeeV1Controller {
   private readonly logger = rootLogger.child({ context: ReportedEmployeeV1Controller.name, });
 
   /**
-   * Create a grievance type
+   * Create a GrievanceType
    *
-   * @param id reportedEmployee ID
+   * @param id ReportedEmployee ID
    * @param createData Request body
    * @returns API response
    */
@@ -41,8 +41,8 @@ export class ReportedEmployeeV1Controller {
     return { data: grievanceType };
   }
   /**
-   * Remove an existing grievanceType
-   * @param id grievanceType ID
+   * Remove an existing GrievanceType
+   * @param id GrievanceType ID
    * @returns nothing
    */
   @SuccessResponse(204)

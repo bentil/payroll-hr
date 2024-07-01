@@ -31,7 +31,7 @@ export class DisciplinaryActionTypeV1Controller {
   private readonly logger = rootLogger.child({ context: DisciplinaryActionTypeV1Controller.name, });
 
   /**
-   * Create a disciplinary action type
+   * Create a DisciplinaryActionType
    *
    * @param createData Request body
    * @returns API response
@@ -47,10 +47,10 @@ export class DisciplinaryActionTypeV1Controller {
   }
 
   /**
-   * Get a list of disciplinary action type matching query
+   * Get a list of DisciplinaryActionType(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Disciplinary action types
+   * @returns List of matching DisciplinaryActionType
    */
   @Get()
   public async getDisciplinaryActionTypes(
@@ -65,9 +65,9 @@ export class DisciplinaryActionTypeV1Controller {
   }
 
   /**
-   * Get a disciplinaryActionType by ID
-   * @param id disciplinaryActionType ID
-   * @returns disciplinaryActionType
+   * Get a DisciplinaryActionType by ID
+   * @param id DisciplinaryActionType ID
+   * @returns DisciplinaryActionType
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -84,10 +84,10 @@ export class DisciplinaryActionTypeV1Controller {
   }
 
   /**
-   * Change the details of an existing disciplinaryActionType
-   * @param id disciplinaryActionType ID
-   * @param body Request body with disciplinaryActionType to update to
-   * @returns Updated disciplinaryActionType
+   * Change the details of an existing DisciplinaryActionType
+   * @param id DisciplinaryActionType ID
+   * @param body Request body with DisciplinaryActionType to update to
+   * @returns Updated DisciplinaryActionType
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -111,20 +111,20 @@ export class DisciplinaryActionTypeV1Controller {
   }
 
   /**
-   * Search a disciplinaryActionType by name and description
+   * Search DisciplinaryActionType by code, name and description
    * 
-   * @param searchParam search parameters including name and description
-   * @returns disciplinaryActionType that match search
+   * @param searchParam search parameters including code, name and description
+   * @returns DisciplinaryActionType(s) that match search
    */
   @Get('search')
-  public async searchDisciplinaryActionType(
+  public async searchDisciplinaryActionTypes(
     @Queries() searchParam: SearchDisciplinaryActionTypeDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryActionType[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get DisciplinaryActionType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await service.searchDisciplinaryActionType(searchParam, req.user!);
+      await service.searchDisciplinaryActionTypes(searchParam, req.user!);
     this.logger.info(
       'Returning %d DisciplinaryActionType(s) that matched search query', data.length
     );
@@ -132,8 +132,8 @@ export class DisciplinaryActionTypeV1Controller {
   }
 
   /**
-   * Remove an existing disciplinaryActionType
-   * @param id disciplinaryActionType ID
+   * Remove an existing DisciplinaryActionType
+   * @param id DisciplinaryActionType ID
    * @returns nothing
    */
   @SuccessResponse(204)

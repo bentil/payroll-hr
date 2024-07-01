@@ -19,8 +19,8 @@ export class EmployeeLeaveTypeSummaryV1Controller {
   });
 
   /**
-   * Get Employee Leave Type summary
-   * @returns Employee Leave Type summary
+   * Get EmployeeLeaveTypeSummary
+   * @returns EmployeeLeaveTypeSummary
    */
   @Get('employees/{employeeId}/leave-types/{leaveTypeId}/summary')
   public async getSummary(

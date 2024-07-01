@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { EmployeeDocumentV1Controller } from './openapi/employee-document-v1.oas.controller';
 import { QueryEmployeeDocumentDto } from '../domain/dto/employee-document.dto';
 
 const controller = new EmployeeDocumentV1Controller();
 
-export async function addEmployeeDocument(req: Request, res: Response, next: NextFunction) {
+export async function addEmployeeDocument(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addEmployeeDocument(req.body, req);
     res.status(201).json(response);
@@ -14,7 +17,11 @@ export async function addEmployeeDocument(req: Request, res: Response, next: Nex
   }
 }
 
-export async function getEmployeeDocuments(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeDocuments(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getEmployeeDocuments(
       req.query as unknown as QueryEmployeeDocumentDto,
@@ -26,7 +33,11 @@ export async function getEmployeeDocuments(req: Request, res: Response, next: Ne
   }
 }
 
-export async function getEmployeeDocument(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeDocument(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getEmployeeDocument(+id, req);
@@ -36,7 +47,11 @@ export async function getEmployeeDocument(req: Request, res: Response, next: Nex
   }
 }
 
-export async function updateEmployeeDocument(req: Request, res: Response, next: NextFunction) {
+export async function updateEmployeeDocument(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateEmployeeDocument(+id, req.body, req);
@@ -46,7 +61,11 @@ export async function updateEmployeeDocument(req: Request, res: Response, next: 
   }
 }
 
-export async function deleteEmployeeDocument( req: Request, res: Response, next: NextFunction ) {
+export async function deleteEmployeeDocument(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteEmployeeDocument(+id, req);

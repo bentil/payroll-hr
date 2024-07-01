@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { GrievanceReportV1Controller } from './openapi/grievance-report-v1.oas.controller';
 import { 
   QueryGrievanceReportDto, 
@@ -8,16 +7,24 @@ import {
 
 const controller = new GrievanceReportV1Controller();
 
-export const addNewGrievanceReport = async (req: Request, res: Response, next: NextFunction) => {
+export async function addNewGrievanceReport(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addGrievanceReport(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);
   }
-};
+}
 
-export async function getGrievanceReports(req: Request, res: Response, next: NextFunction) {
+export async function getGrievanceReports(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getGrievanceReports(
       req.query as unknown as QueryGrievanceReportDto,
@@ -28,7 +35,11 @@ export async function getGrievanceReports(req: Request, res: Response, next: Nex
   }
 }
 
-export async function getGrievanceReport(req: Request, res: Response, next: NextFunction) {
+export async function getGrievanceReport(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getGrievanceReport(+id);
@@ -38,7 +49,11 @@ export async function getGrievanceReport(req: Request, res: Response, next: Next
   }
 }
 
-export async function updateGrievanceReport(req: Request, res: Response, next: NextFunction) {
+export async function updateGrievanceReport(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateGrievanceReport(+id, req.body);
@@ -48,9 +63,13 @@ export async function updateGrievanceReport(req: Request, res: Response, next: N
   }
 }
 
-export async function searchGrievanceReport(req: Request, res: Response, next: NextFunction) {
+export async function searchGrievanceReports(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchGrievanceReport(
+    const response = await controller.searchGrievanceReports(
       req.query as unknown as SearchGrievanceReportDto, req
     );
     res.json(response);
@@ -60,7 +79,11 @@ export async function searchGrievanceReport(req: Request, res: Response, next: N
 }
 
 
-export async function deleteGrievanceReport( req: Request, res: Response, next: NextFunction ) {
+export async function deleteGrievanceReport(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteGrievanceReport(+id);

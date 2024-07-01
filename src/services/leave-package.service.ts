@@ -22,9 +22,9 @@ import { AuthorizedUser } from '../domain/user.domain';
 
 const logger = rootLogger.child({ context: 'LeavePackageService' });
 
-export const createLeavePackage = async (
+export async function createLeavePackage(
   createLeavePackageDto: CreateLeavePackageDto, authorizedUser: AuthorizedUser
-): Promise<LeavePackageDto> => {
+): Promise<LeavePackageDto> {
   const { companyId, leaveTypeId, companyLevelIds } = createLeavePackageDto;
   const { organizationId } = authorizedUser;
 
@@ -70,11 +70,11 @@ export const createLeavePackage = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leavePackage;
-};
+}
 
-export const updateLeavePackage = async (id: number,
+export async function updateLeavePackage(id: number,
   updateLeavePackageDto: UpdateLeavePackageDto,
-): Promise<LeavePackageDto> => {
+): Promise<LeavePackageDto> {
 
   const leavePackage = await repository.findOne({ id });
   if (!leavePackage) {
@@ -91,11 +91,11 @@ export const updateLeavePackage = async (id: number,
 
   logger.info('Update(s) to LeavePackage[%s] persisted successfully!', id);
   return updatedLeavePackage;
-};
+}
 
-export const getLeavePackages = async (
+export async function getLeavePackages (
   query: QueryLeavePackageDto,
-): Promise<ListWithPagination<LeavePackageDto>> => {
+): Promise<ListWithPagination<LeavePackageDto>> {
   const {
     page,
     limit: take,
@@ -130,12 +130,12 @@ export const getLeavePackages = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leavePackage;
-};
+}
 
-export const getLeavePackageById = async (
+export async function getLeavePackageById(
   id: number,
   includeCompanyLevelsQueryDto: IncludeCompanyLevelsQueryDto,
-): Promise<LeavePackageDto> => {
+): Promise<LeavePackageDto> {
   const { includeCompanyLevels } = includeCompanyLevelsQueryDto;
   logger.debug('Getting details for LeavePackage[%s]', id);
 
@@ -171,7 +171,7 @@ export const getLeavePackageById = async (
   }
   logger.info('LeavePackage[%s] details retrieved!', id);
   return leavePackage;
-};
+}
 
 export async function getApplicableLeavePackage(
   employeeId: number, leaveTypeId: number
@@ -207,9 +207,9 @@ export async function getApplicableLeavePackage(
   return leavePackage;
 }
 
-export const searchLeavePackages = async (
+export async function searchLeavePackages(
   query: SearchLeavePackageDto,
-): Promise<ListWithPagination<LeavePackageDto>> => {
+): Promise<ListWithPagination<LeavePackageDto>> {
   const {
     page,
     limit: take,
@@ -243,11 +243,11 @@ export const searchLeavePackages = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leavePackage;
-};
+}
 
-export const deleteLeavePackage = async (
+export async function deleteLeavePackage(
   id: number,
-): Promise<void> => {
+): Promise<void> {
   logger.debug('Getting details for LeavePackage[%s]', id);
   let leavePackage: LeavePackage | null;
   try {
@@ -267,7 +267,7 @@ export const deleteLeavePackage = async (
     logger.warn('Deleting LeavePackage[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-};
+}
 
 export async function validateLeavePackageIds(
   leavePackageIds: number[],

@@ -33,7 +33,7 @@ export class CompanyTreeNodeV1Controller {
   private readonly logger = rootLogger.child({ context: CompanyTreeNodeV1Controller.name, });
 
   /**
-   * Create a company tree node
+   * Create a CompanyTreeNode
    *
    * @param createData Request body
    * @param id CompanyId
@@ -50,10 +50,10 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Get a Company tree 
+   * Get a CompanyTreeNode
    *
-   * @param id companyId,
-   * @returns Get matching Company tree
+   * @param id CompanyId,
+   * @returns Get matching CompanyTreeNode
    */
   @Get('/{id}/tree')
   public async getCompanyTree(
@@ -66,10 +66,10 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Get a companyTreeNode by ID
-   * @param companyId companyID
-   * @param nodeId  CompanyTreeNodeId
-   * @returns companyTreeNode
+   * Get a CompanyTreeNode by ID
+   * @param companyId Company ID
+   * @param nodeId  CompanyTreeNode ID
+   * @returns CompanyTreeNode
    */
   @Get('/{companyId}/tree/nodes/{nodeId}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -87,11 +87,11 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Change the details of an existing companyTreeNode
-   * @param nodeId companyTreeNode ID
+   * Change the details of an existing CompanyTreeNode
+   * @param nodeId CompanyTreeNode ID
    * @param companyId companyId
-   * @param body Request body with companyTreeNode to update to
-   * @returns Updated companyTreeNode
+   * @param body Request body with CompanyTreeNode to update to
+   * @returns Updated CompanyTreeNode
    */
   @Patch('/{companyId}/tree/nodes/{nodeId}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -116,10 +116,10 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Unliks an employee from an existing companyTreeNode
-   * @param nodeId companyTreeNode ID
-   * @param companyId companyId
-   * @returns Updated companyTreeNode
+   * Unliks an employee from an existing CompanyTreeNode
+   * @param nodeId CompanyTreeNode ID
+   * @param companyId CompanyId
+   * @returns Updated CompanyTreeNode
    */
   @Delete('/{companyId}/tree/nodes/{nodeId}/employee')
   public async unlinkEmployee(
@@ -134,8 +134,8 @@ export class CompanyTreeNodeV1Controller {
 
   
   /**
-   * Remove an existing companyTreeNode
-   * @param nodeId companyTreeNode ID
+   * Remove an existing CompanyTreeNode
+   * @param nodeId CompanyTreeNode ID
    * @param companyId companyId
    * @param query request query parameter successorParentId
    * @returns nothing
@@ -158,8 +158,8 @@ export class CompanyTreeNodeV1Controller {
   }
 
   /**
-   * Checks if an employee is a supervisor
-   * @returns list of supervisees and meta info
+   * Checks if an Employee is a supervisor
+   * @returns list of Supervisees and meta info
    */
   @Get('/{companyId}/tree/nodes/employees/supervisees')
   public async checkIfSupervisor(

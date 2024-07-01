@@ -5,7 +5,11 @@ import {
 
 const controller = new EmployeeLeaveTypeSummaryV1Controller();
 
-export async function getSummary(req: Request, res: Response, next: NextFunction) {
+export async function getSummary(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { employeeId, leaveTypeId } = req.params;
   try {
     const response = await controller.getSummary(+employeeId, +leaveTypeId);

@@ -34,7 +34,7 @@ export class LeavePackageV1Controller {
   private readonly logger = rootLogger.child({ context: LeavePackageV1Controller.name });
 
   /**
-* Add a leave package
+* Add a LeavePackage
 * 
 * @param createData Request body
 * @returns LeavePackage
@@ -51,9 +51,9 @@ export class LeavePackageV1Controller {
   }
 
   /**
-   * Update an existing leave package
+   * Update an existing LeavePackage
    *
-   * @param id leavePackage ID
+   * @param id LeavePackage ID
    * @param updateDto Request body with details to update
    * @returns Updated LeavePackage
    */
@@ -88,10 +88,10 @@ export class LeavePackageV1Controller {
   }
 
   /**
-    * Get a list of leave packages matching query
+    * Get a list of LeavePackage(s) matching query
     * 
     * @param query Query parameters, including pagination and ordering details
-    * @returns List of matching Leave packages
+    * @returns List of matching LeavePackage(s)
     */
 
   @Get()
@@ -105,11 +105,11 @@ export class LeavePackageV1Controller {
   }
 
   /**
-      * Get a leave package by ID,the includeCompanyLevels param
+      * Get a LeavePackage by ID,the includeCompanyLevels param
       * can be also be specified to fetch 
-      * CompanyLevels related to the leave package
+      * CompanyLevels related to the LeavePackage
       * 
-      * @param id leavePackage ID
+      * @param id LeavePackage ID
       * @param query Query param
       * @returns LeavePackage with CompanyLevels object if includeCompanyLevels true
       */
@@ -131,16 +131,16 @@ export class LeavePackageV1Controller {
   }
 
   /**
-     * Search an leave package by name,code or description
+     * Search for LeavePackage(s) by name,code or description
      * 
      * @param s code/name/description
-     * @returns LeavePackage
+     * @returns LeavePackage(s)
      */
   @Get('search')
-  public async searchLeavePackage(
+  public async searchLeavePackages(
     @Queries() query: SearchLeavePackageDto
   ): Promise<ApiSuccessResponse<LeavePackageDto[]>> {
-    this.logger.info('Received request to get leave-package matching search query', { query });
+    this.logger.debug('Received request to get leave-package matching search query', { query });
     const { data, pagination } =
       await leavePackageservice.searchLeavePackages(query);
     return { data, pagination };
@@ -148,9 +148,9 @@ export class LeavePackageV1Controller {
 
 
   /**
-      * Delete a leave package by ID
+      * Delete a LeavePackage by ID
       * 
-      * @param id leave package ID
+      * @param id LeavePackage ID
       * @returns empty body
       */
   @Delete('{id}')

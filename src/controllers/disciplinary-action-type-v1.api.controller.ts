@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { 
   DisciplinaryActionTypeV1Controller 
 } from './openapi/disciplinary-action-type-v1.oas.controller';
@@ -11,8 +10,10 @@ import {
 const controller = new DisciplinaryActionTypeV1Controller();
 
 export async function addNewDisciplinaryActionType(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addDisciplinaryActionType(req.body);
     res.status(201).json(response);
@@ -21,7 +22,11 @@ export async function addNewDisciplinaryActionType(
   }
 }
 
-export async function getDisciplinaryActionTypes(req: Request, res: Response, next: NextFunction) {
+export async function getDisciplinaryActionTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getDisciplinaryActionTypes(
       req.query as unknown as QueryDisciplinaryActionTypeDto,
@@ -32,7 +37,11 @@ export async function getDisciplinaryActionTypes(req: Request, res: Response, ne
   }
 }
 
-export async function getDisciplinaryActionType(req: Request, res: Response, next: NextFunction) {
+export async function getDisciplinaryActionType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getDisciplinaryActionType(+id);
@@ -42,8 +51,10 @@ export async function getDisciplinaryActionType(req: Request, res: Response, nex
   }
 }
 export async function updateDisciplinaryActionType(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateDisciplinaryActionType(+id, req.body);
@@ -53,11 +64,13 @@ export async function updateDisciplinaryActionType(
   }
 }
 
-export async function searchDisciplinaryActionType(
-  req: Request, res: Response, next: NextFunction
-) {
+export async function searchDisciplinaryActionTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchDisciplinaryActionType(
+    const response = await controller.searchDisciplinaryActionTypes(
       req.query as unknown as SearchDisciplinaryActionTypeDto, req
     );
     res.json(response);
@@ -68,8 +81,10 @@ export async function searchDisciplinaryActionType(
 
 
 export async function deleteDisciplinaryActionType(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteDisciplinaryActionType(+id);

@@ -1,20 +1,27 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { LeaveRequestV1Controller } from './openapi/leave-request-v1.oas.controller';
 import { QueryLeaveRequestDto } from '../domain/dto/leave-request.dto';
 
 const controller = new LeaveRequestV1Controller();
 
-export const addNewLeaveRequest = async (req: Request, res: Response, next: NextFunction) => {
+export async function addNewLeaveRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addLeaveRequest(req.body);
     res.status(201).json(response);
   } catch (err) {
     next(err);
   }
-};
+}
 
-export async function getLeaveRequests(req: Request, res: Response, next: NextFunction) {
+export async function getLeaveRequests(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getLeaveRequests(
       req.query as unknown as QueryLeaveRequestDto, req
@@ -25,7 +32,11 @@ export async function getLeaveRequests(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function getLeaveRequest(req: Request, res: Response, next: NextFunction) {
+export async function getLeaveRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getLeaveRequest(+id, req);
@@ -35,7 +46,11 @@ export async function getLeaveRequest(req: Request, res: Response, next: NextFun
   }
 }
 
-export async function updateLeaveRequest(req: Request, res: Response, next: NextFunction) {
+export async function updateLeaveRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateLeaveRequest(+id, req.body, req);
@@ -45,7 +60,11 @@ export async function updateLeaveRequest(req: Request, res: Response, next: Next
   }
 }
 
-export async function deleteLeaveRequest( req: Request, res: Response, next: NextFunction ) {
+export async function deleteLeaveRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteLeaveRequest(+id);
@@ -55,7 +74,11 @@ export async function deleteLeaveRequest( req: Request, res: Response, next: Nex
   }
 }
 
-export async function addLeaveResponse(req: Request, res: Response, next: NextFunction) {
+export async function addLeaveResponse(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.addLeaveResponse(+id, req.body, req);
@@ -65,7 +88,11 @@ export async function addLeaveResponse(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function cancelLeaveRequest(req: Request, res: Response, next: NextFunction) {
+export async function cancelLeaveRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.cancelLeaveRequest(+id, req);
@@ -75,7 +102,11 @@ export async function cancelLeaveRequest(req: Request, res: Response, next: Next
   }
 }
 
-export async function adjustDays(req: Request, res: Response, next: NextFunction) {
+export async function adjustDays(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.adjustDays(+id, req.body, req);

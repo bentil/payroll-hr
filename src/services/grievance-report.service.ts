@@ -179,7 +179,7 @@ export async function getGrievanceReport(id: number): Promise<GrievanceReportDto
   return grievanceReport;
 }
 
-export async function searchGrievanceReport(
+export async function searchGrievanceReports(
   query: SearchGrievanceReportDto,
   authUser: AuthorizedUser
 ): Promise<ListWithPagination<GrievanceReportDto>> {

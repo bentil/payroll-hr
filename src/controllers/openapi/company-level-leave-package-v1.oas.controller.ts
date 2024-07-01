@@ -31,9 +31,9 @@ export class CompanyLevelLeavePackageV1Controller {
     context: CompanyLevelLeavePackageV1Controller.name 
   });
   /**
-  * Add Leave Package(s) to a Company Level
+  * Add LeavePackage(s) to a Company Level
   * @param createData Request body
-  * @returns CompanyLevelLeavePackage[]
+  * @returns list of CompanyLevelLeavePackage
   */
   @Post()
   @SuccessResponse(201, 'Created')
@@ -45,12 +45,13 @@ export class CompanyLevelLeavePackageV1Controller {
       createCompanyLevelLeavePackage(createData, req.user!);
     return { data: companyLevelLeavePackage };
   }
+
   /**
-    * Get a list of company-level-leave-packages matching query
-    * companyLevelId can be ordered by createdAt sort fields,
-    * leavePackageId can be ordered by createdAt sort fields
+    * Get a list of CompanyLevelLeavePackages matching query
+    * CompanyLevelId can be ordered by createdAt sort fields,
+    * LeavePackageId can be ordered by createdAt sort fields
     * @param query Query parameters, including pagination and ordering details
-    * @returns List of matching company-level-leave-package
+    * @returns List of matching cCompanyLevelLeavePackage(s)
     */
 
   @Get()
@@ -68,8 +69,8 @@ export class CompanyLevelLeavePackageV1Controller {
   }
 
   /**
-      * Get a company-level-leave-package by ID
-      * @param id company-level-leave-package ID
+      * Get a CompanyLevelLeavePackage by ID
+      * @param id CompanyLevelLeavePackage ID
       * @returns CompanyLevelLeavePackage
       */
   @Get('{id}')
@@ -90,10 +91,10 @@ export class CompanyLevelLeavePackageV1Controller {
 
 
   /**
-      * Delete a company-level-leave-package by ID
-      * @param id company-level-leave-package ID
-      * @returns empty body
-      */
+  * Delete a CompanyLevelLeavePackage by ID
+  * @param id CompanyLevelLeavePackage ID
+  * @returns empty body
+  */
   @Delete('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
     error: errors.NOT_FOUND,

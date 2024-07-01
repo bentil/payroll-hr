@@ -83,6 +83,7 @@ import * as employeeWorkTimeV1Controller from '../controllers/employee-work-time
 import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-entry-v1.api.controller';
 import * as compDocTypeV1Controller from '../controllers/company-document-type-v1.api.controller';
 import * as employeeDocumentV1Controller from '../controllers/employee-document-v1.api.controller';
+import * as announcementV1Controller from '../controllers/announcement-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -119,6 +120,14 @@ import {
   UPDATE_EMPLOYEE_DOCUMENT_SCHEMA,
 } from '../domain/request-schema/employee-document.schema';
 import { UserCategory } from '../domain/user.domain';
+import { 
+  CREATE_ANNOUNCEMENT_SCHEMA, 
+  QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
+  QUERY_ANNOUNCEMENT_SCHEMA, 
+  SEARCH_ANNOUNCEMENT_SCHEMA, 
+  UPDATE_ANNOUNCEMENT_SCHEMA,
+  UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
+} from '../domain/request-schema/announcement.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -177,7 +186,7 @@ router.get(
 router.get(
   '/grievance-reports/search',
   validateRequestQuery(SEARCH_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.searchGrievanceReport
+  grievnceReportV1Controller.searchGrievanceReports
 );
 
 router.get(
@@ -226,7 +235,7 @@ router.get(
 router.get(
   '/disciplinary-action-types/search',
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
-  disciplinaryActionTypeV1Controller.searchDisciplinaryActionType
+  disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
@@ -548,7 +557,7 @@ router.get(
   '/reimbursement-requests/search',
   authenticateUser(),
   validateRequestQuery(SEARCH_REIMBURSEMENT_REQUEST_SCHEMA),
-  reimbReqV1Controller.searchReimbursementRequest
+  reimbReqV1Controller.searchReimbursementRequests
 );
 
 router.get(
@@ -727,6 +736,69 @@ router.delete(
   '/employee-documents/:id',
   authenticateUser({ category: [UserCategory.HR] }),
   employeeDocumentV1Controller.deleteEmployeeDocument
+);
+
+// ### ANNOUNCEMENT ROUTES
+
+router.post(
+  '/announcements',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(CREATE_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.addNewAnnouncement
+);
+
+router.get(
+  '/announcements',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestQuery(QUERY_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.getAnnouncements
+);
+
+router.get(
+  '/announcements/me',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.getMyAnnouncements
+);
+
+router.get(
+  '/announcements/search',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.searchAnnouncements
+);
+
+router.get(
+  '/announcements/me/search',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.searchMyAnnouncements
+);
+
+router.get(
+  '/announcements/:id',
+  authenticateUser({ isEmployee: true }),
+  announcementV1Controller.getAnnouncement
+);
+
+router.patch(
+  '/announcements/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(UPDATE_ANNOUNCEMENT_SCHEMA),
+  announcementV1Controller.updateAnnouncement
+);
+
+router.patch(
+  '/announcements/:id/resources/:resourceId',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA),
+  announcementV1Controller.updateAnnouncementResource
+);
+
+router.delete(
+  '/announcements/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  announcementV1Controller.deleteAnnouncement
 );
 
 export default router;

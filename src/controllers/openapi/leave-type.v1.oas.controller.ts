@@ -33,7 +33,7 @@ export class LeaveTypeV1Controller {
   private readonly logger = rootLogger.child({ context: LeaveTypeV1Controller.name });
 
   /**
-* Add a leave type
+* Add a leaveType
 * 
 * @param createData Request body
 * @returns LeaveType
@@ -49,7 +49,7 @@ export class LeaveTypeV1Controller {
   }
 
   /**
-   * Update an existing leave type
+   * Update an existing leaveType
    *
    * @param id leaveType ID
    * @param updateDto Request body with details to update
@@ -84,10 +84,10 @@ export class LeaveTypeV1Controller {
   }
 
   /**
-    * Get a list of leave types matching query
+    * Get a list of leaveType(s) matching query
     * 
     * @param query Query parameters, including pagination and ordering details
-    * @returns List of matching leave type
+    * @returns List of matching leaveType(s)
     */
 
   @Get()
@@ -101,10 +101,10 @@ export class LeaveTypeV1Controller {
   }
 
   /**
-    * Get a list of leave types applicable to employee or company level
+    * Get a list of leaveType(s) applicable to employee or company level
     * 
     * @param query Query parameters, including pagination and ordering details
-    * @returns List of applicable leave type
+    * @returns List of applicable leaveType
     */
 
   @Get('/applicable')
@@ -118,7 +118,7 @@ export class LeaveTypeV1Controller {
   }
 
   /**
-      * Get a leave type by ID
+      * Get a leaveType by ID
       * 
       * @param id leaveType ID
       * @returns LeaveType
@@ -138,26 +138,26 @@ export class LeaveTypeV1Controller {
   }
 
   /**
-     * Search an leave type by name,code or description
+     * Search for leaveType(s) by name,code or description
      * 
      * @param s code/name/description
-     * @returns LeaveType
+     * @returns LeaveType(s)
      */
   @Get('search')
-  public async searchLeaveType(
+  public async searchLeaveTypes(
     @Queries() query: SearchLeaveTypeDto,
   ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
-    this.logger.info('Received request to get leave-type matching search query', { query });
+    this.logger.debug('Received request to get leave-type matching search query', { query });
     const { data, pagination } = await leaveTypeService.searchLeaveTypes(query);
     return { data, pagination };
   }
 
 
   /**
-      * Delete a leave type by ID
+      * Delete a leaveType by ID
       * 
-      * @param id leave type ID
-      * @returns empty body
+      * @param id leaveType ID
+      * @returns nothing
       */
   @Delete('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {

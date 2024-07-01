@@ -6,7 +6,11 @@ import { QueryCompanyLevelLeavePackageDto } from '../domain/dto/company-level-le
 
 const controller = new CompanyLevelLeavePackageV1Controller();
 
-export async function addCompanyLevelLeavePackage(req: Request, res: Response, next: NextFunction) {
+export async function addCompanyLevelLeavePackage(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addCompanyLevelLeavePackage(req.body, req);
     res.status(201).json(response);
@@ -16,8 +20,10 @@ export async function addCompanyLevelLeavePackage(req: Request, res: Response, n
 }
 
 export async function listCompanyLevelLeavePackages(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { query } = req;
   try {
     const response = await controller.getCompanyLevelLeavePackages(
@@ -29,8 +35,10 @@ export async function listCompanyLevelLeavePackages(
 }
 
 export async function getCompanyLevelLeavePackageById(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getCompanyLevelLeavePackageById(Number(id)/*, req*/);
@@ -41,8 +49,10 @@ export async function getCompanyLevelLeavePackageById(
 }
 
 export async function deleteCompanyLevelLeavePackage(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.deleteCompanyLevelLeavePackage(Number(id)/*, req*/);
