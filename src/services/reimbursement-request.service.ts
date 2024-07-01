@@ -443,7 +443,7 @@ export async function completeRequest(
   return updatedReimbursementRequest;
 }
 
-export async function searchReimbursementRequest(
+export async function searchReimbursementRequests(
   query: SearchReimbursementRequestDto,
   authUser: AuthorizedUser
 ): Promise<ListWithPagination<ReimbursementRequestDto>> {

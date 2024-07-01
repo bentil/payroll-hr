@@ -9,7 +9,11 @@ import {
 
 const controller = new ReimbursementRequestV1Controller();
 
-export async function addNewReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+export async function addNewReimbursementRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addReimbursementRequest(req.body);
     res.status(201).json(response);
@@ -18,7 +22,11 @@ export async function addNewReimbursementRequest(req: Request, res: Response, ne
   }
 }
 
-export async function getReimbursementRequests(req: Request, res: Response, next: NextFunction) {
+export async function getReimbursementRequests(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getReimbursementRequests(
       req.query as unknown as QueryReimbursementRequestDto, req
@@ -29,7 +37,11 @@ export async function getReimbursementRequests(req: Request, res: Response, next
   }
 }
 
-export async function getReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+export async function getReimbursementRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getReimbursementRequest(+id, req);
@@ -39,7 +51,11 @@ export async function getReimbursementRequest(req: Request, res: Response, next:
   }
 }
 
-export async function updateReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+export async function updateReimbursementRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateReimbursementRequest(+id, req.body);
@@ -49,7 +65,11 @@ export async function updateReimbursementRequest(req: Request, res: Response, ne
   }
 }
 
-export async function addResponse(req: Request, res: Response, next: NextFunction) {
+export async function addResponse(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.addResponse(+id, req.body, req);
@@ -59,7 +79,11 @@ export async function addResponse(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export async function postUpdate(req: Request, res: Response, next: NextFunction) {
+export async function postUpdate(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.postUpdate(+id, req.body, req);
@@ -69,7 +93,11 @@ export async function postUpdate(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function completeRequest(req: Request, res: Response, next: NextFunction) {
+export async function completeRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.completeReimbursementRequest(+id, req.body, req);
@@ -79,9 +107,13 @@ export async function completeRequest(req: Request, res: Response, next: NextFun
   }
 }
 
-export async function searchReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+export async function searchReimbursementRequests(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchReimbursementRequest(
+    const response = await controller.searchReimbursementRequests(
       req.query as unknown as SearchReimbursementRequestDto, req
     );
     res.json(response);
@@ -90,7 +122,11 @@ export async function searchReimbursementRequest(req: Request, res: Response, ne
   }
 }
 
-export async function deleteReimbursementRequest(req: Request, res: Response, next: NextFunction) {
+export async function deleteReimbursementRequest(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteReimbursementRequest(+id, req);

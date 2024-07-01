@@ -9,7 +9,7 @@ import {
 } from '../domain/dto/announcement.dto';
 
 export async function create(
-  { companyId, resources, targetGradeLevels, ...dtoData }: CreateAnnouncementDto,
+  { companyId, resources, targetGradeLevelIds, ...dtoData }: CreateAnnouncementDto,
   include?: Prisma.AnnouncementInclude
 ): Promise<AnnouncementDto> {
   const data: Prisma.AnnouncementCreateInput = {
@@ -20,8 +20,8 @@ export async function create(
         data: resources
       }
     },
-    targetGradeLevels: targetGradeLevels && {
-      connect:  targetGradeLevels.map(id => ({ id }))
+    targetGradeLevels: targetGradeLevelIds && {
+      connect:  targetGradeLevelIds.map(id => ({ id }))
     }
   };
 
@@ -67,12 +67,12 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export const findFirst = async (
+export async function findFirst (
   where: Prisma.AnnouncementWhereInput,
   include?: Prisma.AnnouncementInclude
-): Promise<AnnouncementDto | null> => {
+): Promise<AnnouncementDto | null> {
   return prisma.announcement.findFirst({ where, include });
-};
+}
 
 export async function update(params: {
   where: Prisma.AnnouncementWhereUniqueInput,
@@ -101,6 +101,7 @@ export async function update(params: {
       disconnect: unassignedTargetGradeLevelIds && unassignedTargetGradeLevelIds.map(id => ({ id }))
     },
   };
+  
   try {
     return await prisma.announcement.update({ where, data: _data, include });
   } catch (err) {
@@ -133,7 +134,7 @@ export async function search(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteAnnouncement(where: Prisma.AnnouncementWhereUniqueInput) {
+export async function deleteOne(where: Prisma.AnnouncementWhereUniqueInput) {
   try {
     return await prisma.announcement.delete({ where });
   } catch (err) {

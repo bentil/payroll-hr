@@ -4,6 +4,7 @@ import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/grade-level';
 import { ListWithPagination } from '../repositories/types';
 import { NotFoundError, ServerError } from '../errors/http-errors';
+import { errors } from '../utils/constants';
 
 const logger = rootLogger.child({ context: 'GradeLevelService' });
 
@@ -69,4 +70,46 @@ export async function getGradeLevelById(id: number): Promise<GradeLevel> {
   }
   logger.info('GradeLevel[%s] details retrieved!', id);
   return gradeLevel;
+}
+
+export async function validateGradeLevels(
+  gradeLevelIds: number[],
+  options?: {
+    companyId?: number,
+    companyIds?: number[]
+  }
+): Promise<void> {
+
+  const distinctCompanyIds = new Set<number>(options?.companyIds);
+  let companyIdQuery: {
+    companyId?: number | { in: number[] };
+  };
+  if (options?.companyId) {
+    companyIdQuery = {
+      companyId: options?.companyId
+    };
+  } else {
+    companyIdQuery = {
+      companyId: { in: [...distinctCompanyIds] }
+    };
+  }
+
+  const distinctIds = new Set<number>(gradeLevelIds);
+  const gradeLevels = await repository.find({
+    where: {
+      id: { in: [...distinctIds] },
+      ...companyIdQuery,
+    }
+  });
+
+  if (gradeLevels.data.length !== distinctIds.size) {
+    logger.warn(
+      'Received %d companyLevelIds id(s), but found %d',
+      distinctIds.size, gradeLevels.data.length
+    );
+    throw new NotFoundError({
+      name: errors.GRADE_LEVEL_NOT_FOUND,
+      message: 'At least one grade level ID passed does not exist for company'
+    });
+  }
 }

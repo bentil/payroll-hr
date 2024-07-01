@@ -30,7 +30,7 @@ export class EmployeeWorkTimeV1Controller {
   private readonly logger = rootLogger.child({ context: EmployeeWorkTimeV1Controller.name, });
 
   /**
-   * Create a employee work time
+   * Create a EmployeeWorkTime
    *
    * @param createData Request body
    * @returns API response
@@ -46,10 +46,10 @@ export class EmployeeWorkTimeV1Controller {
   }
 
   /**
-   * Get a list of employeeWorkTime matching query
+   * Get a list of EmployeeWorkTime matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching employeeWorkTimes
+   * @returns List of matching EmployeeWorkTime(s)
    */
   @Get()
   public async getEmployeeWorkTimes(
@@ -65,9 +65,9 @@ export class EmployeeWorkTimeV1Controller {
   }
 
   /**
-   * Get a employeeWorkTime by ID
-   * @param id employeeWorkTime ID
-   * @returns employeeWorkTime
+   * Get a EmployeeWorkTime by ID
+   * @param id EmployeeWorkTime ID
+   * @returns EmployeeWorkTime
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -84,10 +84,10 @@ export class EmployeeWorkTimeV1Controller {
   }
 
   /**
-   * Change the details of an existing employeeWorkTime
-   * @param id employeeWorkTime ID
-   * @param body Request body with employeeWorkTime to update to
-   * @returns Updated employeeWorkTime
+   * Change the details of an existing EmployeeWorkTime
+   * @param id EmployeeWorkTime ID
+   * @param body Request body with details to update to
+   * @returns Updated EmployeeWorkTime
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -111,8 +111,8 @@ export class EmployeeWorkTimeV1Controller {
   }
 
   /**
-   * Remove an existing employeeWorkTime
-   * @param id employeeWorkTime ID
+   * Remove an xisting EmployeeWorkTime
+   * @param id EmployeeWorkTime ID
    * @returns nothing
    */
   @SuccessResponse(204)

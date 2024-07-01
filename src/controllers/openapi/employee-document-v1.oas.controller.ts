@@ -32,7 +32,7 @@ export class EmployeeDocumentV1Controller {
   private readonly logger = rootLogger.child({ context: EmployeeDocumentV1Controller.name, });
 
   /**
-   * Create a employeeDocument
+   * Create a EmployeeDocument
    *
    * @param createData Request body
    * @returns API response
@@ -49,10 +49,10 @@ export class EmployeeDocumentV1Controller {
   }
 
   /**
-   * Get a list of employeeDocument matching query
+   * Get a list of EmployeeDocument(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching employeeDocument
+   * @returns List of matching EmployeeDocument(s)
    */
   @Get()
   public async getEmployeeDocuments(
@@ -66,9 +66,9 @@ export class EmployeeDocumentV1Controller {
   }
 
   /**
-   * Get a employeeDocument by ID
-   * @param id employeeDocument ID
-   * @returns employeeDocument
+   * Get a EmployeeDocument by ID
+   * @param id EmployeeDocument ID
+   * @returns EmployeeDocument
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -86,10 +86,10 @@ export class EmployeeDocumentV1Controller {
   }
 
   /**
-   * Change the details of an existing employeeDocument
-   * @param id employeeDocument ID
-   * @param body Request body with employeeDocument to update to
-   * @returns Updated employeeDocument
+   * Change the details of an existing EmployeeDocument
+   * @param id EmployeeDocument ID
+   * @param body Request body with details to update
+   * @returns Updated EmployeeDocument
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -114,8 +114,8 @@ export class EmployeeDocumentV1Controller {
   }
 
   /**
-   * Remove an existing employeeDocument
-   * @param id employeeDocument ID
+   * Remove an existing EmployeeDocument
+   * @param id EmployeeDocument ID
    * @returns nothing
    */
   @Delete('{id}')

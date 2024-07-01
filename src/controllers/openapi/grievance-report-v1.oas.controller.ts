@@ -31,7 +31,7 @@ export class GrievanceReportV1Controller {
   private readonly logger = rootLogger.child({ context: GrievanceReportV1Controller.name, });
 
   /**
-   * Create a grievance reports
+   * Create a GrievanceReport
    *
    * @param createData Request body
    * @returns API response
@@ -47,10 +47,10 @@ export class GrievanceReportV1Controller {
   }
 
   /**
-   * Get a list of grievance report matching query
+   * Get a list of GrievanceReport(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Grievance reports
+   * @returns List of matching GrievanceReport(s)
    */
   @Get()
   public async getGrievanceReports(
@@ -63,9 +63,9 @@ export class GrievanceReportV1Controller {
   }
 
   /**
-   * Get a grievanceReport by ID
-   * @param id grievanceReport ID
-   * @returns grievanceReport
+   * Get a GrievanceReport by ID
+   * @param id GrievanceReport ID
+   * @returns GrievanceReport
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -82,10 +82,10 @@ export class GrievanceReportV1Controller {
   }
 
   /**
-   * Change the details of an existing grievanceReport
-   * @param id grievanceReport ID
-   * @param body Request body with grievanceReport to update to
-   * @returns Updated grievanceReport
+   * Change the details of an existing GrievanceReport
+   * @param id GrievanceReport ID
+   * @param body Request body with details to update to
+   * @returns Updated GrievanceReport
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -109,27 +109,27 @@ export class GrievanceReportV1Controller {
   }
 
   /**
-   * Search a grievanceReport by name and description
+   * Search for GrievanceReport(s) by reportNumber and note
    * 
-   * @param searchParam search parameters including name and description
-   * @returns grievanceReport that match search
+   * @param searchParam search parameters including reportNumber and note
+   * @returns GrievanceReport(s) that match search
    */
   @Get('search')
-  public async searchGrievanceReport(
+  public async searchGrievanceReports(
     @Queries() searchParam: SearchGrievanceReportDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<GrievanceReport[]>> {
     this.logger.info(
       'Received request to get GrievanceReport(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await grievanceReportService.searchGrievanceReport(searchParam, req.user!);
+      await grievanceReportService.searchGrievanceReports(searchParam, req.user!);
     this.logger.info('Returning %d GrievanceReport(s) that matched search query', data.length);
     return { data, pagination };
   }
 
   /**
-   * Remove an existing GgievanceReport
-   * @param id grievanceReport ID
+   * Remove an existing GrievanceReport
+   * @param id GrievanceReport ID
    * @returns nothing
    */
   @SuccessResponse(204)

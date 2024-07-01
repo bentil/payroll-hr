@@ -5,7 +5,11 @@ import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
 
 const controller = new LeavePackageV1Controller();
 
-export async function addLeavePackage(req: Request, res: Response, next: NextFunction) {
+export async function addLeavePackage(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addLeavePackage(req.body, req);
     res.status(201).json(response);
@@ -14,7 +18,11 @@ export async function addLeavePackage(req: Request, res: Response, next: NextFun
   }
 }
 
-export async function updateLeavePackage(req: Request, res: Response, next: NextFunction) {
+export async function updateLeavePackage(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateLeavePackage(Number(id), req.body/*, req*/);
@@ -24,7 +32,11 @@ export async function updateLeavePackage(req: Request, res: Response, next: Next
   }
 }
 
-export async function listLeavePackages(req: Request, res: Response, next: NextFunction) {
+export async function listLeavePackages(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { query } = req;
   try {
     const response = await controller.getLeavePackages(query as unknown as QueryLeavePackageDto);
@@ -34,17 +46,26 @@ export async function listLeavePackages(req: Request, res: Response, next: NextF
   }
 }
 
-export async function searchLeavePackages(req: Request, res: Response, next: NextFunction) {
+export async function searchLeavePackages(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { query } = req;
   try {
-    const response = await controller.searchLeavePackage(query as unknown as SearchLeavePackageDto);
+    const response = 
+      await controller.searchLeavePackages(query as unknown as SearchLeavePackageDto);
     res.json(response);
   } catch (err) {
     next(err);
   }
 }
 
-export async function getLeavePackageById(req: Request, res: Response, next: NextFunction) {
+export async function getLeavePackageById(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   const { query } = req;
 
@@ -57,7 +78,11 @@ export async function getLeavePackageById(req: Request, res: Response, next: Nex
   }
 }
 
-export async function deleteLeavePackage(req: Request, res: Response, next: NextFunction) {
+export async function deleteLeavePackage(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.deleteLeavePackage(Number(id));

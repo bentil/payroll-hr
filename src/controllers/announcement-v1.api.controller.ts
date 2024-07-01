@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { AnnouncementV1Controller } from './openapi/announcement-v1.oas.controller';
 import { 
   QueryAnnouncementDto,
@@ -8,7 +7,11 @@ import {
 
 const controller = new AnnouncementV1Controller();
 
-export async function addNewAnnouncement(req: Request, res: Response, next: NextFunction) {
+export async function addNewAnnouncement(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addAnnouncement(req.body);
     res.status(201).json(response);
@@ -17,7 +20,11 @@ export async function addNewAnnouncement(req: Request, res: Response, next: Next
   }
 }
 
-export async function getAnnouncements(req: Request, res: Response, next: NextFunction) {
+export async function getAnnouncements(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getAnnouncements(
       req.query as unknown as QueryAnnouncementDto, req
@@ -28,7 +35,11 @@ export async function getAnnouncements(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function getMyAnnouncements(req: Request, res: Response, next: NextFunction) {
+export async function getMyAnnouncements(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getMyAnnouncements(
       req.query as unknown as QueryAnnouncementDto, req
@@ -39,7 +50,11 @@ export async function getMyAnnouncements(req: Request, res: Response, next: Next
   }
 }
 
-export async function getAnnouncement(req: Request, res: Response, next: NextFunction) {
+export async function getAnnouncement(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getAnnouncement(+id, req);
@@ -49,17 +64,25 @@ export async function getAnnouncement(req: Request, res: Response, next: NextFun
   }
 }
 
-export async function updateAnnouncement(req: Request, res: Response, next: NextFunction) {
+export async function updateAnnouncement(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.updateAnnouncement(+id, req.body);
+    const response = await controller.updateAnnouncement(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);
   }
 }
 
-export async function updateAnnouncementResource(req: Request, res: Response, next: NextFunction) {
+export async function updateAnnouncementResource(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id, resourceId } = req.params;
   try {
     const response = await controller.updateAnnouncementResource(+id, +resourceId, req.body);
@@ -69,9 +92,13 @@ export async function updateAnnouncementResource(req: Request, res: Response, ne
   }
 }
 
-export async function searchAnnouncements(req: Request, res: Response, next: NextFunction) {
+export async function searchAnnouncements(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchAnnouncement(
+    const response = await controller.searchAnnouncements(
       req.query as unknown as SearchAnnouncementDto, req
     );
     res.json(response);
@@ -80,9 +107,13 @@ export async function searchAnnouncements(req: Request, res: Response, next: Nex
   }
 }
 
-export async function searchMyAnnouncements(req: Request, res: Response, next: NextFunction) {
+export async function searchMyAnnouncements(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchMyAnnouncement(
+    const response = await controller.searchMyAnnouncements(
       req.query as unknown as SearchAnnouncementDto, req
     );
     res.json(response);
@@ -91,10 +122,14 @@ export async function searchMyAnnouncements(req: Request, res: Response, next: N
   }
 }
 
-export async function deleteAnnouncement( req: Request, res: Response, next: NextFunction ) {
+export async function deleteAnnouncement(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
-    await controller.deleteAnnouncement(+id);
+    await controller.deleteAnnouncement(+id, req);
     res.status(204).send();
   } catch (err) {
     next(err);

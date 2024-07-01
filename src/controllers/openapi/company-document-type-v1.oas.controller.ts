@@ -32,7 +32,7 @@ export class CompanyDocumentTypeV1Controller {
   private readonly logger = rootLogger.child({ context: CompanyDocumentTypeV1Controller.name, });
 
   /**
-   * Create a companyDocumentType
+   * Create a CompanyDocumentType
    *
    * @param createData Request body
    * @returns API response
@@ -48,10 +48,10 @@ export class CompanyDocumentTypeV1Controller {
   }
 
   /**
-   * Get a list of companyDocumentType matching query
+   * Get a list of CompanyDocumentType(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching CompanyDocumentType
+   * @returns List of matching CompanyDocumentType(s)
    */
   @Get()
   public async getCompanyDocumentTypes(
@@ -65,9 +65,9 @@ export class CompanyDocumentTypeV1Controller {
   }
 
   /**
-   * Get a companyDocumentType by ID
-   * @param id companyDocumentType ID
-   * @returns companyDocumentType
+   * Get a CompanyDocumentType by ID
+   * @param id CompanyDocumentType ID
+   * @returns CompanyDocumentType
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -85,10 +85,10 @@ export class CompanyDocumentTypeV1Controller {
   }
 
   /**
-   * Change the details of an existing companyDocumentType
-   * @param id companyDocumentType ID
-   * @param body Request body with companyDocumentType to update to
-   * @returns Updated companyDocumentType
+   * Change the details of an existing CompanyDocumentType
+   * @param id CompanyDocumentType ID
+   * @param body Request body with details to update
+   * @returns Updated CompanyDocumentType
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -114,27 +114,27 @@ export class CompanyDocumentTypeV1Controller {
   }
 
   /**
-   * Search a companyDocumentType by name and description
+   * Search a CompanyDocumentType by name and description
    * 
    * @param searchParam search parameters including name and description
-   * @returns companyDocumentType that match search
+   * @returns CompanyDocumentType that match search
    */
   @Get('search')
-  public async searchCompanyDocumentType(
+  public async searchCompanyDocumentTypes(
     @Queries() searchParam: SearchCompanyDocumentTypeDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType[]>> {
     this.logger.info(
       'Received request to get CompanyDocumentType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
-      await service.searchCompanyDocumentType(searchParam, req.user!);
+      await service.searchCompanyDocumentTypes(searchParam, req.user!);
     this.logger.info('Returning %d CompanyDocumentType(s) that matched search query', data.length);
     return { data, pagination };
   }
 
   /**
-   * Remove an existing companyDocumentType
-   * @param id companyDocumentType ID
+   * Remove an existing CompanyDocumentType
+   * @param id CompanyDocumentType ID
    * @returns nothing
    */
   @Delete('{id}')

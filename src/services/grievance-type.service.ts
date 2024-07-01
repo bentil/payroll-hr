@@ -121,7 +121,7 @@ export async function getGrievanceType(id: number): Promise<GrievanceType> {
   return grievanceType;
 }
 
-export async function searchGrievanceType(
+export async function searchGrievanceTypes(
   query: SearchGrievanceTypeDto
 ): Promise<ListWithPagination<GrievanceType>> {
   const {

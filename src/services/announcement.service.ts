@@ -1,20 +1,20 @@
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementDto,
+  AnnouncementResourceDto,
   CreateAnnouncementDto,
   QueryAnnouncementDto,
   SearchAnnouncementDto,
   UpdateAnnouncementDto,
+  UpdateAnnouncementResourceDto,
 } from '../domain/dto/announcement.dto';
 import * as repository from '../repositories/announcement.repository';
 import * as payrollCompanyService from '../services/payroll-company.service';
-import * as gradeLevelRepository from '../repositories/grade-level';
 import * as employeeService from '../services/employee.service';
+import * as resourceRepository from '../repositories/announcement-resource.repository';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { 
-  FailedDependencyError, 
-  HttpError, 
+import {
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
@@ -23,6 +23,8 @@ import { errors } from '../utils/constants';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import * as dateutil from '../utils/date.util';
 import { Announcement } from '@prisma/client';
+import { validateGradeLevels } from './grade-level.service';
+
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementService' });
@@ -30,32 +32,31 @@ const logger = rootLogger.child({ context: 'AnnouncementService' });
 const events = {
   created: 'event.Announcement.created',
   modified: 'event.Announcement.modified',
+  resourceModified: 'event.AnnouncementResource.modified',
   deleted: 'event.Announcement.deleted'
 };
 
 export async function addAnnouncement(
   creatData: CreateAnnouncementDto,
 ): Promise<AnnouncementDto> {
-  const { companyId, targetGradeLevels } = creatData;
+  const { companyId, public: _public } = creatData;
 
   // VALIDATION
+  await Promise.all([
+    payrollCompanyService.getPayrollCompany(companyId),
+    creatData.targetGradeLevelIds 
+      ? validateGradeLevels(creatData.targetGradeLevelIds, { companyId }) 
+      : []
+  ])
 
-  try {
-    await payrollCompanyService.getPayrollCompany(companyId);
-  } catch (err) {
-    logger.warn('Getting PayrollCompany[%s] fialed', companyId);
-    if (err instanceof HttpError) throw err;
-    throw new FailedDependencyError({
-      message: 'Dependency check failed',
-      cause: err
-    });
-  }
+  ;
+  
 
-  if (targetGradeLevels) {
-    await validateGradeLevels(targetGradeLevels, { companyId });
+  if (_public) {
+    creatData.targetGradeLevelIds = [];
   }
   
-  logger.info('All the TargetGradeLevels[%s] passed exists', targetGradeLevels);
+  logger.info('All the TargetGradeLevels[%s] passed exists', creatData.targetGradeLevelIds);
  
   logger.debug('Adding new GrievanceType to the database...');
 
@@ -99,7 +100,7 @@ export async function getAnnouncements(
     orderBy,
     companyId,
     active: queryActive,
-    public: queryPublic,
+    public: _public,
     targetGradeLevelId, 
     'publishDate.gte': publishDateGte,
     'publishDate.lte': publishDateLte,
@@ -107,15 +108,13 @@ export async function getAnnouncements(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { employeeId, category } = authUser;
-  let gradeLevelId: number | undefined, _public: boolean | undefined, active: boolean | undefined;
+  let gradeLevelId: number | undefined, active: boolean | undefined;
   if (category === UserCategory.HR) {
     gradeLevelId = targetGradeLevelId;
-    _public = queryPublic;
     active = queryActive;
   } else {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
-    _public = true;
     active = true;
   }
   
@@ -168,11 +167,10 @@ export async function getAnnouncement(
   let announcement: AnnouncementDto | null;
 
   const { employeeId, category } = authUser;
-  let gradeLevelId: number | undefined, _public: boolean | undefined, active: boolean | undefined;
+  let gradeLevelId: number | undefined, active: boolean | undefined;
   if (category !== UserCategory.HR) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
-    _public = true;
     active = true;
   }
   
@@ -183,7 +181,6 @@ export async function getAnnouncement(
       id,
       ...scopedQuery,
       targetGradeLevels: { every: { id: gradeLevelId } },
-      public: _public,
       active,
     }, 
     { 
@@ -202,7 +199,7 @@ export async function getAnnouncement(
 
   if (!announcement) {
     throw new NotFoundError({
-      name: errors.ANNOUNCE_NOT_FOUND,
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
       message: 'Announcement does not exist'
     });
   }
@@ -211,7 +208,7 @@ export async function getAnnouncement(
   return announcement;
 }
 
-export async function searchAnnouncement(
+export async function searchAnnouncements(
   query: SearchAnnouncementDto,
   authUser: AuthorizedUser
 ): Promise<ListWithPagination<AnnouncementDto>> {
@@ -225,11 +222,10 @@ export async function searchAnnouncement(
   const orderByInput = helpers.getOrderByInput(orderBy); 
 
   const { employeeId, category } = authUser;
-  let gradeLevelId: number | undefined, _public: boolean | undefined, active: boolean | undefined;
+  let gradeLevelId: number | undefined, active: boolean | undefined;
   if (category !== UserCategory.HR) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
-    _public = true;
     active = true;
   }
 
@@ -246,7 +242,6 @@ export async function searchAnnouncement(
       where: {
         ...scopedQuery,
         targetGradeLevels: { every: { id: gradeLevelId } },
-        public: _public,
         active,
         title: {
           search: searchParam,
@@ -279,29 +274,33 @@ export async function searchAnnouncement(
 
 export async function updateAnnouncement(
   id: number, 
-  updateData: UpdateAnnouncementDto
+  updateData: UpdateAnnouncementDto,
+  authUser: AuthorizedUser
 ): Promise<AnnouncementDto> {
-  const announcement = await repository.findOne({ id }, { targetGradeLevels: true });
+  const { companyIds } = authUser;
+  const companyId = companyIds[0];
+  const announcement = await repository.findOne({ id, companyId }, { targetGradeLevels: true });
   if (!announcement) {
     logger.warn('Announcement[%s] to update does not exist', id);
     throw new NotFoundError({
-      name: errors.ANNOUNCE_NOT_FOUND,
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
       message: 'Announcement to update does not exist'
     });
   }
   const { 
-    assignedTargetGradeLevelIds = [], 
     unassignedTargetGradeLevelIds = [],
     public: _public
   } = updateData;
 
-  if (assignedTargetGradeLevelIds.length !== 0) {
-    await validateGradeLevels(assignedTargetGradeLevelIds, { companyId: announcement.companyId });
+  if (updateData.assignedTargetGradeLevelIds?.length !== 0) {
+    await validateGradeLevels(
+      updateData.assignedTargetGradeLevelIds!, { companyId: announcement.companyId }
+    );
   }
 
   if (_public) {
-    const gradeLevels = announcement.targetGradeLevels;
-    gradeLevels?.forEach((x) => { unassignedTargetGradeLevelIds.push(x.id); });
+    updateData.assignedTargetGradeLevelIds = [];
+    announcement.targetGradeLevels?.forEach((x) => { unassignedTargetGradeLevelIds.push(x.id); });
   }
 
   logger.debug('Persisting update(s) to Announcement[%s]', id);
@@ -326,20 +325,25 @@ export async function updateAnnouncement(
   return updatedAnnouncement;
 }
 
-export async function deleteAnnouncement(id: number): Promise<void> {
+export async function deleteAnnouncement(
+  id: number,
+  authUser: AuthorizedUser
+): Promise<void> {
   let deletedAnnouncement: Announcement;
-  const announcement = await repository.findOne({ id });
+  const { companyIds } = authUser;
+  const companyId = companyIds[0];
+  const announcement = await repository.findOne({ id, companyId });
   if (!announcement) {
     logger.warn('Announcement[%s] to delete does not exist', id);
     throw new NotFoundError({
-      name: errors.ANNOUNCE_NOT_FOUND,
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
       message: 'Announcement to delete does not exisit'
     });
   }
 
   logger.debug('Deleting Announcement[%s] from database...', id);
   try {
-    deletedAnnouncement = await repository.deleteAnnouncement({ id });
+    deletedAnnouncement = await repository.deleteOne({ id });
     logger.info('Announcement[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting Announcement[%] failed', id);
@@ -352,44 +356,32 @@ export async function deleteAnnouncement(id: number): Promise<void> {
   logger.info(`${events.modified} event emitted successfully!`);
 }
 
-export async function validateGradeLevels(
-  gradeLevelIds: number[],
-  options?: {
-    companyId?: number,
-    companyIds?: number[]
-  }
-): Promise<void> {
+export async function updateAnnouncementResource(
+  id: number, 
+  resourceId: number,
+  updateData: UpdateAnnouncementResourceDto
+): Promise<AnnouncementResourceDto> {
 
-  const distinctCompanyIds = new Set<number>(options?.companyIds);
-  let companyIdQuery: {
-    companyId?: number | { in: number[] };
-  };
-  if (options?.companyId) {
-    companyIdQuery = {
-      companyId: options?.companyId
-    };
-  } else {
-    companyIdQuery = {
-      companyId: { in: [...distinctCompanyIds] }
-    };
-  }
-
-  const distinctIds = new Set<number>(gradeLevelIds);
-  const gradeLevels = await gradeLevelRepository.find({
-    where: {
-      id: { in: [...distinctIds] },
-      ...companyIdQuery,
-    }
-  });
-
-  if (gradeLevels.data.length !== distinctIds.size) {
-    logger.warn(
-      'Received %d companyLevelIds id(s), but found %d',
-      distinctIds.size, gradeLevels.data.length
-    );
+  const announcementResource = 
+    await resourceRepository.findOne({ announcementId: id, id: resourceId });
+  if (!announcementResource) {
+    logger.warn('AnnouncementResource[%s] to update does not exist', id);
     throw new NotFoundError({
-      name: errors.GRADE_LEVEL_NOT_FOUND,
-      message: 'At least one grade level ID passed does not exist for company'
+      name: errors.ANNOUNCEMENT_RESOURCE_NOT_FOUND,
+      message: 'Announcement resource to update does not exisit'
     });
   }
+
+  logger.debug('Persisting update(s) to AnnouncementResource[%s]', resourceId);
+  const updatedAnnouncementResource = await resourceRepository.update({
+    where: { id: resourceId, announcementId: id }, data: updateData, include: { announcement: true }
+  });
+  logger.info('Update(s) to AnnouncementResource[%s] persisted successfully!', id);
+
+  // Emit event.AnnouncementResource.modified event
+  logger.debug(`Emitting ${events.resourceModified}`);
+  kafkaService.send(events.resourceModified, updatedAnnouncementResource);
+  logger.info(`${events.resourceModified} event emitted successfully!`);
+
+  return updatedAnnouncementResource;
 }

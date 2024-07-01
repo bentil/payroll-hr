@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { 
   EmployeeWorkTimeV1Controller 
 } from './openapi/employee-work-time-v1.oas.controller';
@@ -10,8 +9,10 @@ import {
 const controller = new EmployeeWorkTimeV1Controller();
 
 export async function addNewEmployeeWorkTime(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addEmployeeWorkTime(req.body);
     res.status(201).json(response);
@@ -20,7 +21,11 @@ export async function addNewEmployeeWorkTime(
   }
 }
 
-export async function getEmployeeWorkTimes(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeWorkTimes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getEmployeeWorkTimes(
       req.query as unknown as QueryEmployeeWorkTimeDto, req
@@ -31,7 +36,11 @@ export async function getEmployeeWorkTimes(req: Request, res: Response, next: Ne
   }
 }
 
-export async function getEmployeeWorkTime(req: Request, res: Response, next: NextFunction) {
+export async function getEmployeeWorkTime(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getEmployeeWorkTime(+id);
@@ -41,8 +50,10 @@ export async function getEmployeeWorkTime(req: Request, res: Response, next: Nex
   }
 }
 export async function updateEmployeeWorkTime(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateEmployeeWorkTime(+id, req.body);
@@ -53,8 +64,10 @@ export async function updateEmployeeWorkTime(
 }
 
 export async function deleteEmployeeWorkTime(
-  req: Request, res: Response, next: NextFunction
-) {
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteEmployeeWorkTime(+id);

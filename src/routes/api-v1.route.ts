@@ -122,14 +122,12 @@ import {
 import { UserCategory } from '../domain/user.domain';
 import { 
   CREATE_ANNOUNCEMENT_SCHEMA, 
-  EMPLOYEE_QUERY_ANNOUNCEMENT_SCHEMA, 
+  QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
   QUERY_ANNOUNCEMENT_SCHEMA, 
   SEARCH_ANNOUNCEMENT_SCHEMA, 
-  UPDATE_ANNOUNCEMENT_SCHEMA
-} from '../domain/request-schema/announcement.scheman';
-import { 
-  UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA 
-} from '../domain/request-schema/announcement-resource.scheman';
+  UPDATE_ANNOUNCEMENT_SCHEMA,
+  UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
+} from '../domain/request-schema/announcement.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -188,7 +186,7 @@ router.get(
 router.get(
   '/grievance-reports/search',
   validateRequestQuery(SEARCH_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.searchGrievanceReport
+  grievnceReportV1Controller.searchGrievanceReports
 );
 
 router.get(
@@ -237,7 +235,7 @@ router.get(
 router.get(
   '/disciplinary-action-types/search',
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
-  disciplinaryActionTypeV1Controller.searchDisciplinaryActionType
+  disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
@@ -559,7 +557,7 @@ router.get(
   '/reimbursement-requests/search',
   authenticateUser(),
   validateRequestQuery(SEARCH_REIMBURSEMENT_REQUEST_SCHEMA),
-  reimbReqV1Controller.searchReimbursementRequest
+  reimbReqV1Controller.searchReimbursementRequests
 );
 
 router.get(
@@ -759,7 +757,7 @@ router.get(
 router.get(
   '/announcements/me',
   authenticateUser({ isEmployee: true }),
-  validateRequestQuery(EMPLOYEE_QUERY_ANNOUNCEMENT_SCHEMA),
+  validateRequestQuery(QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.getMyAnnouncements
 );
 

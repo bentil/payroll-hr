@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { GrievanceTypeV1Controller } from './openapi/grievance-type-v1.oas.controller';
 import { QueryGrievanceTypeDto, SearchGrievanceTypeDto } from '../domain/dto/grievance-type.dto';
 
 const controller = new GrievanceTypeV1Controller();
 
-export async function addNewGrievanceType(req: Request, res: Response, next: NextFunction) {
+export async function addNewGrievanceType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addGrievanceType(req.body);
     res.status(201).json(response);
@@ -14,7 +17,11 @@ export async function addNewGrievanceType(req: Request, res: Response, next: Nex
   }
 }
 
-export async function getGrievanceTypes(req: Request, res: Response, next: NextFunction) {
+export async function getGrievanceTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getGrievanceTypes(
       req.query as unknown as QueryGrievanceTypeDto,
@@ -25,7 +32,11 @@ export async function getGrievanceTypes(req: Request, res: Response, next: NextF
   }
 }
 
-export async function getGrievanceType(req: Request, res: Response, next: NextFunction) {
+export async function getGrievanceType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getGrievanceType(+id);
@@ -35,7 +46,11 @@ export async function getGrievanceType(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function updateGrievanceType(req: Request, res: Response, next: NextFunction) {
+export async function updateGrievanceType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateGrievanceType(+id, req.body);
@@ -45,9 +60,13 @@ export async function updateGrievanceType(req: Request, res: Response, next: Nex
   }
 }
 
-export async function searchGrievanceTypes(req: Request, res: Response, next: NextFunction) {
+export async function searchGrievanceTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchGrievanceType(
+    const response = await controller.searchGrievanceTypes(
       req.query as unknown as SearchGrievanceTypeDto
     );
     res.json(response);
@@ -56,7 +75,11 @@ export async function searchGrievanceTypes(req: Request, res: Response, next: Ne
   }
 }
 
-export async function deleteGrievanceType( req: Request, res: Response, next: NextFunction ) {
+export async function deleteGrievanceType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteGrievanceType(+id);

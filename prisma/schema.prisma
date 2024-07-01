@@ -37,8 +37,8 @@ model PayrollCompany {
   companyCurrencies       CompanyCurrency[]
   employees               Employee[]
   companyTreeNodes        CompanyTreeNode[]
-  companyDocumentTypes     CompanyDocumentType[]
-  announcements            Announcement[]
+  companyDocumentTypes    CompanyDocumentType[]
+  announcements           Announcement[]
 
   @@map("payroll_company")
 }
@@ -98,9 +98,9 @@ model Employee {
   majorGradeLevel                 GradeLevel?                      @relation(fields: [majorGradeLevelId], references: [id])
   company                         PayrollCompany                   @relation(fields: [companyId], references: [id])
   companyTreeNodes                CompanyTreeNode[]
-  employeeWorkTimes EmployeeWorkTime[]
-  employeeOvertimeEntries EmployeeOvertimeEntry[]
-  employeeDocuments EmployeeDocument[]
+  employeeWorkTimes               EmployeeWorkTime[]
+  employeeOvertimeEntries         EmployeeOvertimeEntry[]
+  employeeDocuments               EmployeeDocument[]
 
   @@map("employee")
 }
@@ -232,8 +232,8 @@ model GradeLevel {
   createdAt      DateTime         @default(now()) @map("created_at")
   modifiedAt     DateTime?        @updatedAt @map("modified_at")
 
-  companyLevel CompanyLevel @relation(fields: [companyLevelId], references: [id])
-  employees    Employee[]
+  companyLevel  CompanyLevel   @relation(fields: [companyLevelId], references: [id])
+  employees     Employee[]
   announcements Announcement[]
 
   @@map("grade_level")
@@ -398,7 +398,7 @@ model CompanyCurrency {
   currency              Currency               @relation(fields: [currencyId], references: [id], name: "currency")
   company               PayrollCompany         @relation(fields: [companyId], references: [id])
   reimbursementRequests ReimbursementRequest[]
-  overtimePaymentTiers OvertimePaymentTier[]
+  overtimePaymentTiers  OvertimePaymentTier[]
 
   @@map("company_currency")
 }
@@ -522,11 +522,11 @@ model CompanyTreeNode {
   createdAt  DateTime  @default(now()) @map("created_at")
   modifiedAt DateTime? @updatedAt @map("modified_at")
 
-  employee         Employee?         @relation(fields: [employeeId], references: [id])
-  company          PayrollCompany    @relation(fields: [companyId], references: [id])
-  jobTitle         JobTitle          @relation(fields: [jobTitleId], references: [id])
-  parent           CompanyTreeNode?  @relation(fields: [parentId], references: [id], name: "parent_child")
-  children         CompanyTreeNode[] @relation(name: "parent_child")
+  employee Employee?         @relation(fields: [employeeId], references: [id])
+  company  PayrollCompany    @relation(fields: [companyId], references: [id])
+  jobTitle JobTitle          @relation(fields: [jobTitleId], references: [id])
+  parent   CompanyTreeNode?  @relation(fields: [parentId], references: [id], name: "parent_child")
+  children CompanyTreeNode[] @relation(name: "parent_child")
 
   @@map("company_tree_node")
 }
@@ -542,20 +542,20 @@ enum PayPeriodTimeType {
 }
 
 model PayPeriod {
-  id                Int                  @id @db.UnsignedInt()
-  organizationId    String               @map("organization_id") @db.VarChar(100)
-  companyId         Int?                 @map("company_Id") @db.UnsignedInt()
-  code              String               @map("code")
-  year              Int                  @map("year") @db.Year
-  taxCodeId         Int                  @map("tax_code_id") @db.UnsignedInt()
-  startDate         DateTime?            @map("start_date") @db.Date
-  endDate           DateTime?            @map("end_date") @db.Date
-  sequenceNumber    Int                  @map("sequence_number") @db.UnsignedInt()
-  timePeriod        PayPeriodTimeType @map("time_period")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  modifiedAt        DateTime?            @updatedAt @map("modified_at")
+  id             Int               @id @db.UnsignedInt()
+  organizationId String            @map("organization_id") @db.VarChar(100)
+  companyId      Int?              @map("company_Id") @db.UnsignedInt()
+  code           String            @map("code")
+  year           Int               @map("year") @db.Year
+  taxCodeId      Int               @map("tax_code_id") @db.UnsignedInt()
+  startDate      DateTime?         @map("start_date") @db.Date
+  endDate        DateTime?         @map("end_date") @db.Date
+  sequenceNumber Int               @map("sequence_number") @db.UnsignedInt()
+  timePeriod     PayPeriodTimeType @map("time_period")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  modifiedAt     DateTime?         @updatedAt @map("modified_at")
 
-  employeeWorkTimes EmployeeWorkTime[]
+  employeeWorkTimes       EmployeeWorkTime[]
   employeeOvertimeEntries EmployeeOvertimeEntry[]
 
   @@map("pay_period")
@@ -567,52 +567,53 @@ enum WorkTimeUnit {
 }
 
 model EmployeeWorkTime {
-  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId  Int                    @map("employee_id") @db.UnsignedInt()
-  payPeriodId Int                    @map("pay_period_id") @db.UnsignedInt()
-  timeUnit    WorkTimeUnit           @map("time_unit")
-  timeValue   Int                    @map("time_value")
-  createdAt   DateTime               @default(now()) @map("created_at")
-  modifiedAt  DateTime?              @updatedAt @map("modified_at")
+  id          Int          @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId  Int          @map("employee_id") @db.UnsignedInt()
+  payPeriodId Int          @map("pay_period_id") @db.UnsignedInt()
+  timeUnit    WorkTimeUnit @map("time_unit")
+  timeValue   Int          @map("time_value")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  modifiedAt  DateTime?    @updatedAt @map("modified_at")
 
-  employee    Employee               @relation(fields: [employeeId], references: [id])
-  payPeriod   PayPeriod              @relation(fields: [payPeriodId], references: [id])
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
 
   @@map("employee_work_time")
 }
 
 model Overtime {
-  id                   Int                   @id @db.UnsignedInt()
-  companyId            Int                   @map("company_id") @db.UnsignedInt()
-  employeeBandId       Int                   @map("employee_band_id") @db.UnsignedInt()
-  code                 String                @db.VarChar(30)
-  name                 String                @db.VarChar(100)
-  description          String                @map("description")
-  minHoursRequired     Int                   @map("min_hours_required")
-  maxHoursPermitted    Int                   @map("max_hours_permitted")
-  taxable              Boolean               @map("taxable")
-  active               Boolean               @map("active")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  modifiedAt           DateTime?             @updatedAt @map("modified_at")
+  id                Int       @id @db.UnsignedInt()
+  companyId         Int       @map("company_id") @db.UnsignedInt()
+  employeeBandId    Int       @map("employee_band_id") @db.UnsignedInt()
+  code              String    @db.VarChar(30)
+  name              String    @db.VarChar(100)
+  description       String    @map("description")
+  minHoursRequired  Int       @map("min_hours_required")
+  maxHoursPermitted Int       @map("max_hours_permitted")
+  taxable           Boolean   @map("taxable")
+  active            Boolean   @map("active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  modifiedAt        DateTime? @updatedAt @map("modified_at")
 
   employeeOvertimeEntries EmployeeOvertimeEntry[]
-  overtimePaymentTiers OvertimePaymentTier[]
+  overtimePaymentTiers    OvertimePaymentTier[]
 
   @@map("overtime")
 }
 
 model EmployeeOvertimeEntry {
-  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId  Int                    @map("employee_id") @db.UnsignedInt()
-  payPeriodId Int                    @map("pay_period_id") @db.UnsignedInt()
-  overtimeId   Int                    @map("overtime_id") @db.UnsignedInt()
-  numberOfHours Int            @map("number_of_hours")
-  createdAt   DateTime               @default(now()) @map("created_at")
-  modifiedAt  DateTime?              @updatedAt @map("modified_at")
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId    Int       @map("employee_id") @db.UnsignedInt()
+  payPeriodId   Int       @map("pay_period_id") @db.UnsignedInt()
+  overtimeId    Int       @map("overtime_id") @db.UnsignedInt()
+  numberOfHours Int       @map("number_of_hours")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  modifiedAt    DateTime? @updatedAt @map("modified_at")
 
-  employee    Employee               @relation(fields: [employeeId], references: [id])
-  payPeriod   PayPeriod              @relation(fields: [payPeriodId], references: [id])
-  overtime   Overtime                 @relation(fields: [overtimeId], references: [id])
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  overtime  Overtime  @relation(fields: [overtimeId], references: [id])
+
   @@map("employee_overtime_entry")
 }
 
@@ -623,68 +624,68 @@ enum OvertimePaymentTierType {
 }
 
 model OvertimePaymentTier {
-  id              Int                        @id @db.UnsignedInt()
-  overtimeId      Int                        @map("overtime_id") @db.UnsignedInt()
+  id              Int                     @id @db.UnsignedInt()
+  overtimeId      Int                     @map("overtime_id") @db.UnsignedInt()
   type            OvertimePaymentTierType @map("type")
-  fixedComponent  Decimal                    @default(0.0) @map("fixed_component") @db.Decimal(20, 4)
-  factorComponent Decimal                    @default(0.0) @map("factor_component") @db.Decimal(20, 4)
-  minHours        Int                        @map("min_hours")
-  maxHours        Int                        @map("max_hours")
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  modifiedAt      DateTime?                  @updatedAt @map("modified_at")
-  currencyId      Int?                       @map("currency_id") @db.UnsignedInt()
+  fixedComponent  Decimal                 @default(0.0) @map("fixed_component") @db.Decimal(20, 4)
+  factorComponent Decimal                 @default(0.0) @map("factor_component") @db.Decimal(20, 4)
+  minHours        Int                     @map("min_hours")
+  maxHours        Int                     @map("max_hours")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  modifiedAt      DateTime?               @updatedAt @map("modified_at")
+  currencyId      Int?                    @map("currency_id") @db.UnsignedInt()
 
-  companyCurrency CompanyCurrency?           @relation(fields: [currencyId], references: [id])
-  overtime        Overtime?                  @relation(fields: [overtimeId], references: [id])
+  companyCurrency CompanyCurrency? @relation(fields: [currencyId], references: [id])
+  overtime        Overtime?        @relation(fields: [overtimeId], references: [id])
 
   @@map("overtime_payment_tier")
 }
 
 model CompanyDocumentType {
-  id                   Int                   @id @default(autoincrement()) @db.UnsignedInt()
-  companyId            Int                   @map("company_id") @db.UnsignedInt()
-  description          String                @db.Text()
-  name                 String                @db.VarChar(100)  
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int       @map("company_id") @db.UnsignedInt()
+  description String    @db.Text()
+  name        String    @db.VarChar(100)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  modifiedAt  DateTime? @updatedAt @map("modified_at")
 
-  company         PayrollCompany         @relation(fields: [companyId], references: [id]) 
+  company           PayrollCompany     @relation(fields: [companyId], references: [id])
   employeeDocuments EmployeeDocument[]
 
-  @@fulltext([name, description])
   @@unique([companyId, name])
+  @@fulltext([name, description])
   @@map("company_document_type")
 }
 
 model EmployeeDocument {
-  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  employeeId  Int                    @map("employee_id") @db.UnsignedInt()
-  typeId      Int                    @map("type_id") @db.UnsignedInt()
-  url          String                @db.Text()
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId Int       @map("employee_id") @db.UnsignedInt()
+  typeId     Int       @map("type_id") @db.UnsignedInt()
+  url        String    @db.Text()
+  createdAt  DateTime  @default(now()) @map("created_at")
+  modifiedAt DateTime? @updatedAt @map("modified_at")
 
-  employee    Employee               @relation(fields: [employeeId], references: [id])
-  documentType CompanyDocumentType   @relation(fields: [typeId], references: [id])
+  employee     Employee            @relation(fields: [employeeId], references: [id])
+  documentType CompanyDocumentType @relation(fields: [typeId], references: [id])
 
   @@map("employee_document")
 }
 
 model Announcement {
-  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  companyId   Int                    @map("company_id") @db.UnsignedInt()
-  title       String                @db.VarChar(100) 
-  body        String                @db.Text()
-  active      Boolean               @default(true)
-  public      Boolean?               @default(false)
-  publishDate DateTime               @map("publish_date")  
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  modifiedAt      DateTime?                  @updatedAt @map("modified_at") 
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt()
+  companyId   Int       @map("company_id") @db.UnsignedInt()
+  title       String    @db.VarChar(100)
+  body        String    @db.Text()
+  active      Boolean   @default(true)
+  public      Boolean   @default(false)
+  publishDate DateTime  @map("publish_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  modifiedAt  DateTime? @updatedAt @map("modified_at")
 
-  company         PayrollCompany         @relation(fields: [companyId], references: [id])
+  company PayrollCompany @relation(fields: [companyId], references: [id])
 
-  resources   AnnouncementResource[]
-  targetGradeLevels GradeLevel[]   
+  resources         AnnouncementResource[]
+  targetGradeLevels GradeLevel[]
 
   @@fulltext([title, body])
   @@map("announcement")
@@ -693,17 +694,17 @@ model Announcement {
 enum ResourceType {
   IMAGE
   OTHER
-} 
+}
 
 model AnnouncementResource {
-  id          Int                    @id @default(autoincrement()) @db.UnsignedInt()
-  announcementId Int                @map("announcement_id") @db.UnsignedInt()
-  resourceType  ResourceType            @map("resource_type")
-  url           String                @db.Text()
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  modifiedAt      DateTime?                  @updatedAt @map("modified_at")
+  id             Int          @id @default(autoincrement()) @db.UnsignedInt()
+  announcementId Int          @map("announcement_id") @db.UnsignedInt()
+  resourceType   ResourceType @map("resource_type")
+  url            String       @db.Text()
+  createdAt      DateTime     @default(now()) @map("created_at")
+  modifiedAt     DateTime?    @updatedAt @map("modified_at")
 
-  announcement    Announcement       @relation(fields: [announcementId], references: [id])
+  announcement Announcement @relation(fields: [announcementId], references: [id])
 
   @@map("announcement_resource")
 }

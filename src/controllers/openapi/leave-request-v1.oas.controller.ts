@@ -32,7 +32,7 @@ export class LeaveRequestV1Controller {
   private readonly logger = rootLogger.child({ context: LeaveRequestV1Controller.name, });
 
   /**
-   * Create a leave request
+   * Create a LeaveRequest
    *
    * @param createData Request body
    * @returns API response
@@ -48,10 +48,10 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Get a list of leave request matching query
+   * Get a list of LeaveRequest(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching leave request
+   * @returns List of matching LeaveRequest(s)
    */
   @Get()
   public async getLeaveRequests(
@@ -64,9 +64,9 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Get a leaveRequest by ID
-   * @param id leaveRequest ID
-   * @returns leaveRequest
+   * Get a LeaveRequest by ID
+   * @param id LeaveRequest ID
+   * @returns LeaveRequest
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -83,10 +83,10 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Change the details of an existing leaveRequest
-   * @param id leaveRequest ID
-   * @param body Request body with leaveRequest to update to
-   * @returns Updated leaveRequest
+   * Change the details of an existing LeaveRequest
+   * @param id LeaveRequest ID
+   * @param body Request body with LeaveRequest to update to
+   * @returns Updated LeaveRequest
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -112,7 +112,7 @@ export class LeaveRequestV1Controller {
 
   /**
    * Remove an existing LeaveRequest
-   * @param id leaveRequest ID
+   * @param id LeaveRequest ID
    * @returns nothing
    */
   @SuccessResponse(204)
@@ -130,10 +130,10 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Change the details of an existing leaveRequest while adding leaveResponse
-   * @param id leaveRequest ID
-   * @param body Request body with leaveRequest to update to and leaveResponse to be added
-   * @returns Updated leaveRequest
+   * Change the details of an existing LeaveRequest while adding leaveResponse
+   * @param id LeaveRequest ID
+   * @param body Request body with details to update to and LeaveResponse to be added
+   * @returns Updated LeaveRequest
    */
   @Post('{id}/response')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -158,9 +158,9 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Cancel a pending or approved leaveRequest
-   * @param id leaveRequest ID
-   * @returns Updated leaveRequest
+   * Cancel a pending or approved LeaveRequest
+   * @param id LeaveRequest ID
+   * @returns Updated LeaveRequest
    */
   @Post('{id}/cancel')
   public async cancelLeaveRequest(
@@ -174,10 +174,10 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Change the number of days of an existing leaveRequest
-   * @param id leaveRequest ID
+   * Change the number of days of an existing LeaveRequest
+   * @param id LeaveRequest ID
    * @param body Request body with adjustment details
-   * @returns Updated leaveRequest
+   * @returns Updated LeaveRequest
    */
   @Patch('{id}/number-of-days')
   @Response<ApiErrorResponse>(400, 'Bad Request', {

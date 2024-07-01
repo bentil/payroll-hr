@@ -7,12 +7,20 @@ import {
 } from '@prisma/client';
 import config from '../../config';
 
+export class UpdateAnnouncementResourceDto {
+  resourceType?: ResourceType;
+  url?: string;
+}
+
+export interface AnnouncementResourceDto extends AnnouncementResource {
+  announcement?: Announcement;
+}
 export class AnnouncementResourceObject {
   resourceType!: ResourceType;
   url!: string;
 }
 
-export class CreateAnnouncementDto{
+export class CreateAnnouncementDto {
   companyId!: number;
   title!: string;
   body!: string;
@@ -20,10 +28,10 @@ export class CreateAnnouncementDto{
   public?: boolean;
   publishDate!: Date;
   resources?: AnnouncementResourceObject[];
-  targetGradeLevels?: number[];
+  targetGradeLevelIds?: number[];
 }
 
-export class UpdateAnnouncementDto{
+export class UpdateAnnouncementDto {
   title?: string;
   body?: string;
   active?: boolean;

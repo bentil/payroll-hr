@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { CompanyDocumentTypeV1Controller } from './openapi/company-document-type-v1.oas.controller';
 import { 
   QueryCompanyDocumentTypeDto, 
@@ -8,7 +7,11 @@ import {
 
 const controller = new CompanyDocumentTypeV1Controller();
 
-export async function addCompanyDocumentType(req: Request, res: Response, next: NextFunction) {
+export async function addCompanyDocumentType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.addCompanyDocumentType(req.body);
     res.status(201).json(response);
@@ -17,7 +20,11 @@ export async function addCompanyDocumentType(req: Request, res: Response, next: 
   }
 }
 
-export async function getCompanyDocumentTypes(req: Request, res: Response, next: NextFunction) {
+export async function getCompanyDocumentTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
     const response = await controller.getCompanyDocumentTypes(
       req.query as unknown as QueryCompanyDocumentTypeDto,
@@ -29,7 +36,11 @@ export async function getCompanyDocumentTypes(req: Request, res: Response, next:
   }
 }
 
-export async function getCompanyDocumentType(req: Request, res: Response, next: NextFunction) {
+export async function getCompanyDocumentType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.getCompanyDocumentType(+id, req);
@@ -39,7 +50,11 @@ export async function getCompanyDocumentType(req: Request, res: Response, next: 
   }
 }
 
-export async function updateCompanyDocumentType(req: Request, res: Response, next: NextFunction) {
+export async function updateCompanyDocumentType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     const response = await controller.updateCompanyDocumentType(+id, req.body, req);
@@ -49,9 +64,13 @@ export async function updateCompanyDocumentType(req: Request, res: Response, nex
   }
 }
 
-export async function searchCompanyDocumentTypes(req: Request, res: Response, next: NextFunction) {
+export async function searchCompanyDocumentTypes(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const response = await controller.searchCompanyDocumentType(
+    const response = await controller.searchCompanyDocumentTypes(
       req.query as unknown as SearchCompanyDocumentTypeDto, req
     );
     res.json(response);
@@ -60,7 +79,11 @@ export async function searchCompanyDocumentTypes(req: Request, res: Response, ne
   }
 }
 
-export async function deleteCompanyDocumentType( req: Request, res: Response, next: NextFunction ) {
+export async function deleteCompanyDocumentType(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   const { id } = req.params;
   try {
     await controller.deleteCompanyDocumentType(+id, req);

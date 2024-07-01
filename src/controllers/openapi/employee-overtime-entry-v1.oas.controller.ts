@@ -30,7 +30,7 @@ export class EmployeeOvertimeEntryV1Controller {
   private readonly logger = rootLogger.child({ context: EmployeeOvertimeEntryV1Controller.name, });
 
   /**
-   * Create a employeeOvertimeEntry
+   * Create a EmployeeOvertimeEntry
    *
    * @param createData Request body
    * @returns API response
@@ -46,10 +46,10 @@ export class EmployeeOvertimeEntryV1Controller {
   }
 
   /**
-   * Get a list of employeeOvertimeEntry matching query
+   * Get a list of EmployeeOvertimeEntry(ies) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching employeeOvertimeEntries
+   * @returns List of matching EmployeeOvertimeEntry(ies)
    */
   @Get()
   public async getEmployeeOvertimeEntries(
@@ -65,9 +65,9 @@ export class EmployeeOvertimeEntryV1Controller {
   }
 
   /**
-   * Get a employeeOvertimeEntry by ID
-   * @param id employeeOvertimeEntry ID
-   * @returns employeeOvertimeEntry
+   * Get a EmployeeOvertimeEntry by ID
+   * @param id EmployeeOvertimeEntry ID
+   * @returns EmployeeOvertimeEntry
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -84,10 +84,10 @@ export class EmployeeOvertimeEntryV1Controller {
   }
 
   /**
-   * Change the details of an existing employeeOvertimeEntry
-   * @param id employeeOvertimeEntry ID
-   * @param body Request body with employeeOvertimeEntry to update to
-   * @returns Updated employeeOvertimeEntry
+   * Change the details of an existing EmployeeOvertimeEntry
+   * @param id EmployeeOvertimeEntry ID
+   * @param body Request body with details to update to
+   * @returns Updated EmployeeOvertimeEntry
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -111,8 +111,8 @@ export class EmployeeOvertimeEntryV1Controller {
   }
 
   /**
-   * Remove an existing employeeOvertimeEntry
-   * @param id employeeOvertimeEntry ID
+   * Remove an existing EmployeeOvertimeEntry
+   * @param id EmployeeOvertimeEntry ID
    * @returns nothing
    */
   @SuccessResponse(204)

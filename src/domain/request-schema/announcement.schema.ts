@@ -7,6 +7,11 @@ import coreJoi from 'joi';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
+export const UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA = Joi.object({
+  resourceType: Joi.string().optional().valid(...Object.values(ResourceType)),
+  url: Joi.string().uri().optional(),
+}).or('resourceType', 'url');
+
 export const ANNOUNCEMENT_RESOURCE_OBJECT_SCHEMA = Joi.object({
   resourceType: Joi.string().valid(...Object.values(ResourceType)),
   url: Joi.string().uri().required()
@@ -32,19 +37,21 @@ export const CREATE_ANNOUNCEMENT_SCHEMA = Joi.object({
     }),
   active: Joi.boolean()
     .optional()
-    .valid(true, false),
+    .valid(true, false)
+    .default(true),
   public: Joi.boolean()
     .optional()
-    .valid(true, false),
+    .valid(true, false)
+    .default(false),
   publishDate: joi.date()
     .format(['YYYY-MM-DD'])
     .required(),
   resources: Joi.array().items(ANNOUNCEMENT_RESOURCE_OBJECT_SCHEMA).optional(),
-  targetGradeLevels: Joi.array()
+  targetGradeLevelIds: Joi.array()
     .when('public', {
       is: false, then: Joi.array().required().items(Joi.number()).messages({
-        'any.required': 'Target grade levels is required when public is false',
-      }), otherwise: Joi.array().optional().default([])
+        'any.required': 'Target grade level is required when public is false',
+      }), otherwise: Joi.array().optional().default([null])
     }),
 });
 
@@ -59,9 +66,9 @@ export const UPDATE_ANNOUNCEMENT_SCHEMA = Joi.object({
   unassignedTargetGradeLevelIds: Joi.array().optional().items(Joi.number()),
   assignedTargetGradeLevelIds: Joi.array()
     .when('public', {
-      is: false, then: Joi.array().optional().items(Joi.number()).messages({
+      is: false, then: Joi.array().required().items(Joi.number()).messages({
         'any.required': 'Target grade levels is required when public is false',
-      }), otherwise: Joi.array().optional().default([])
+      }), otherwise: Joi.array().optional()
     }),
 }).or(
   'title', 'body', 'active', 'public', 'publishDate', 'addResources', 
@@ -97,7 +104,7 @@ export const QUERY_ANNOUNCEMENT_SCHEMA = Joi.object({
     })
 });
 
-export const EMPLOYEE_QUERY_ANNOUNCEMENT_SCHEMA = Joi.object({
+export const QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA = Joi.object({
   'publishDate.gte': joi.date().optional()
     .format(['YYYY-MM-DD']).utc().raw(),
   'publishDate.lte': joi.date().optional()

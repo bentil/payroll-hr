@@ -30,7 +30,7 @@ export class LeavePlanV1Controller {
   private readonly logger = rootLogger.child({ context: LeavePlanV1Controller.name, });
 
   /**
-   * Create a leave plan
+   * Create a LeavePlan
    *
    * @param createData Request body
    * @returns API response
@@ -46,10 +46,10 @@ export class LeavePlanV1Controller {
   }
 
   /**
-   * Get a list of leave plan matching query
+   * Get a list of LeavePlan(s) matching query
    *
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching leave plans
+   * @returns List of matching LeavePlan(s)
    */
   @Get()
   public async getLeavePlans(
@@ -62,9 +62,9 @@ export class LeavePlanV1Controller {
   }
 
   /**
-   * Get a leavePlan by ID
-   * @param id leavePlan ID
-   * @returns leavePlan
+   * Get a LeavePlan by ID
+   * @param id LeavePlan ID
+   * @returns LeavePlan
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -81,10 +81,10 @@ export class LeavePlanV1Controller {
   }
 
   /**
-   * Change the details of an existing leavePlan
-   * @param id leavePlan ID
-   * @param body Request body with leavePlan to update to
-   * @returns Updated leavePlan
+   * Change the details of an existing LeavePlan
+   * @param id LeavePlan ID
+   * @param body Request body with details to update to
+   * @returns Updated LeavePlan
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
@@ -110,7 +110,7 @@ export class LeavePlanV1Controller {
 
   /**
    * Remove an existing LeavePlan
-   * @param id leavePlan ID
+   * @param id LeavePlan ID
    * @returns nothing
    */
   @SuccessResponse(204)
