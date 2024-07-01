@@ -277,9 +277,7 @@ export async function updateAnnouncement(
   updateData: UpdateAnnouncementDto,
   authUser: AuthorizedUser
 ): Promise<AnnouncementDto> {
-  const { companyIds } = authUser;
-  const companyId = companyIds[0];
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
   const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to update does not exist', id);
@@ -331,9 +329,7 @@ export async function deleteAnnouncement(
   authUser: AuthorizedUser
 ): Promise<void> {
   let deletedAnnouncement: Announcement;
-  const { companyIds } = authUser;
-  const companyId = companyIds[0];
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
   const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to delete does not exist', id);
