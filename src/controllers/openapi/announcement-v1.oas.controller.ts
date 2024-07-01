@@ -24,7 +24,8 @@ import {
   SearchAnnouncementDto,
   AnnouncementDto,
   UpdateAnnouncementResourceDto,
-  AnnouncementResourceDto
+  AnnouncementResourceDto,
+  QueryEmployeeAnnouncementDto
 } from '../../domain/dto/announcement.dto';
 import { Announcement } from '@prisma/client';
 
@@ -75,7 +76,7 @@ export class AnnouncementV1Controller {
    */
   @Get('/me')
   public async getMyAnnouncements(
-    @Queries() query: QueryAnnouncementDto,
+    @Queries() query: QueryEmployeeAnnouncementDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<AnnouncementDto[]>> {
     this.logger.debug('Received request to get Announcement(s) matching query', { query });

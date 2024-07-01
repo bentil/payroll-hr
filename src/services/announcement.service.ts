@@ -43,14 +43,11 @@ export async function addAnnouncement(
 
   // VALIDATION
   await Promise.all([
-    payrollCompanyService.getPayrollCompany(companyId),
+    payrollCompanyService.validatePayrollCompany(companyId, { throwOnNotActive: true }),
     creatData.targetGradeLevelIds 
       ? validateGradeLevels(creatData.targetGradeLevelIds, { companyId }) 
-      : []
-  ])
-
-  ;
-  
+      : Promise.resolve(undefined)
+  ]);
 
   if (_public) {
     creatData.targetGradeLevelIds = [];
@@ -58,7 +55,7 @@ export async function addAnnouncement(
   
   logger.info('All the TargetGradeLevels[%s] passed exists', creatData.targetGradeLevelIds);
  
-  logger.debug('Adding new GrievanceType to the database...');
+  logger.debug('Adding new Announcement to the database...');
 
   let newAnnouncement: AnnouncementDto;
   try {
@@ -122,13 +119,13 @@ export async function getAnnouncements(
 
   let result: ListWithPagination<AnnouncementDto>;
   try {
-    logger.debug('Finding GrievanceType(s) that matched query', { query });
+    logger.debug('Finding Announcement(s) that matched query', { query });
     result = await repository.find({
       skip,
       take,
       where: { 
         ...scopedQuery,
-        targetGradeLevels: { every: { id: gradeLevelId } },
+        targetGradeLevels: { some: { id: gradeLevelId } },
         public: _public,
         active,
         publishDate: {
@@ -180,7 +177,7 @@ export async function getAnnouncement(
     announcement = await repository.findFirst({
       id,
       ...scopedQuery,
-      targetGradeLevels: { every: { id: gradeLevelId } },
+      targetGradeLevels: { some: { id: gradeLevelId } },
       active,
     }, 
     { 
@@ -241,7 +238,7 @@ export async function searchAnnouncements(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        targetGradeLevels: { every: { id: gradeLevelId } },
+        targetGradeLevels: { some: { id: gradeLevelId } },
         active,
         title: {
           search: searchParam,

@@ -54,16 +54,19 @@ export enum AnnouncementOrderBy {
   MODIFIED_AT_DESC = 'modifiedAt:desc',
 }
 
-export class QueryAnnouncementDto {
-  companyId?: number;
-  active?: boolean;
-  public?: boolean;
-  targetGradeLevelId?: number; 
+export class QueryEmployeeAnnouncementDto {
   'publishDate.gte'?: string;
   'publishDate.lte'?: string;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: AnnouncementOrderBy = AnnouncementOrderBy.CREATED_AT_DESC;
+}
+
+export class QueryAnnouncementDto extends QueryEmployeeAnnouncementDto {
+  companyId?: number;
+  active?: boolean;
+  public?: boolean;
+  targetGradeLevelId?: number; 
 }
 
 export interface AnnouncementDto extends Announcement {

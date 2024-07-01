@@ -51,7 +51,7 @@ export const CREATE_ANNOUNCEMENT_SCHEMA = Joi.object({
     .when('public', {
       is: false, then: Joi.array().required().items(Joi.number()).messages({
         'any.required': 'Target grade level is required when public is false',
-      }), otherwise: Joi.array().optional().default([null])
+      }), otherwise: Joi.array().optional()
     }),
 });
 
