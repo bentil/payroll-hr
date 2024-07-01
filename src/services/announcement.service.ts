@@ -279,7 +279,8 @@ export async function updateAnnouncement(
 ): Promise<AnnouncementDto> {
   const { companyIds } = authUser;
   const companyId = companyIds[0];
-  const announcement = await repository.findOne({ id, companyId }, { targetGradeLevels: true });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+  const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to update does not exist', id);
     throw new NotFoundError({
@@ -332,7 +333,8 @@ export async function deleteAnnouncement(
   let deletedAnnouncement: Announcement;
   const { companyIds } = authUser;
   const companyId = companyIds[0];
-  const announcement = await repository.findOne({ id, companyId });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+  const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to delete does not exist', id);
     throw new NotFoundError({

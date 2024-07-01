@@ -174,7 +174,7 @@ export class AnnouncementV1Controller {
     @Queries() searchParam: SearchAnnouncementDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<AnnouncementDto[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get Announcement(s) matching search query', { searchParam }
     );
     const { data, pagination } =

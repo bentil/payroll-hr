@@ -123,7 +123,7 @@ export class CompanyDocumentTypeV1Controller {
   public async searchCompanyDocumentTypes(
     @Queries() searchParam: SearchCompanyDocumentTypeDto, @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<CompanyDocumentType[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get CompanyDocumentType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 

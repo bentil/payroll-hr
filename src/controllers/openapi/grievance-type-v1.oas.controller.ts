@@ -117,7 +117,7 @@ export class GrievanceTypeV1Controller {
   public async searchGrievanceTypes(
     @Queries() searchParam: SearchGrievanceTypeDto,
   ): Promise<ApiSuccessResponse<GrievanceType[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get GrievanceType(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 

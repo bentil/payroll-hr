@@ -147,7 +147,7 @@ export class LeaveTypeV1Controller {
   public async searchLeaveTypes(
     @Queries() query: SearchLeaveTypeDto,
   ): Promise<ApiSuccessResponse<LeaveTypeDto[]>> {
-    this.logger.info('Received request to get leave-type matching search query', { query });
+    this.logger.debug('Received request to get leave-type matching search query', { query });
     const { data, pagination } = await leaveTypeService.searchLeaveTypes(query);
     return { data, pagination };
   }

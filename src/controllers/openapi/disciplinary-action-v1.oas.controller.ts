@@ -120,7 +120,7 @@ export class DisciplinaryActionV1Controller {
   public async searchDisciplinaryActions(
     @Queries() searchParam: SearchDisciplinaryActionDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get DisciplinaryAction(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 

@@ -140,7 +140,7 @@ export class LeavePackageV1Controller {
   public async searchLeavePackages(
     @Queries() query: SearchLeavePackageDto
   ): Promise<ApiSuccessResponse<LeavePackageDto[]>> {
-    this.logger.info('Received request to get leave-package matching search query', { query });
+    this.logger.debug('Received request to get leave-package matching search query', { query });
     const { data, pagination } =
       await leavePackageservice.searchLeavePackages(query);
     return { data, pagination };

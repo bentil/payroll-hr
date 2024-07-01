@@ -216,7 +216,7 @@ export class ReimbursementRequestV1Controller {
   public async searchReimbursementRequests(
     @Queries() searchParam: SearchReimbursementRequestDto,  @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<ReimbursementRequest[]>> {
-    this.logger.info(
+    this.logger.debug(
       'Received request to get ReimbursementRequest(s) matching search query', { searchParam }
     );   
     const { data, pagination } = 
