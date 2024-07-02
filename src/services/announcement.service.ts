@@ -125,7 +125,11 @@ export async function getAnnouncements(
       take,
       where: { 
         ...scopedQuery,
-        targetGradeLevels: { some: { id: gradeLevelId } },
+        OR: 
+        [
+          { targetGradeLevels: { some: { id: gradeLevelId } } },
+          { targetGradeLevels: { none: { } } }
+        ],
         public: _public,
         active,
         publishDate: {
@@ -238,7 +242,11 @@ export async function searchAnnouncements(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        targetGradeLevels: { some: { id: gradeLevelId } },
+        OR: 
+        [
+          { targetGradeLevels: { some: { id: gradeLevelId } } },
+          { targetGradeLevels: { none: { } } }
+        ],
         active,
         title: {
           search: searchParam,
