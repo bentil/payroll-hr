@@ -36,11 +36,15 @@ export async function addAnnouncement(
   creatData: CreateAnnouncementDto,
   authUser: AuthorizedUser,
 ): Promise<AnnouncementDto> {
+  const { organizationId } = authUser;
   const { companyId, public: _public, targetGradeLevelIds = [] } = creatData;
 
   logger.debug('Validating Company[%s] & GradeLevels[%s]', companyId, targetGradeLevelIds);
   await Promise.all([
-    payrollCompanyService.validatePayrollCompany(companyId, { throwOnNotActive: true }),
+    payrollCompanyService.validatePayrollCompany(
+      companyId,
+      { organizationId, throwOnNotActive: true }
+    ),
     (!_public && targetGradeLevelIds.length > 0)
       ? validateGradeLevels(targetGradeLevelIds, { companyId }) 
       : Promise.resolve(undefined)
@@ -236,9 +240,9 @@ export async function searchAnnouncements(
     active = true;
   }
 
+  logger.debug('Finding Announcement(s) that matched search query', { query });
   let result: ListWithPagination<AnnouncementDto>;
   try {
-    logger.debug('Finding Announcement(s) that matched search query', { query });
     result = await repository.search({
       skip,
       take,
@@ -289,7 +293,8 @@ export async function updateAnnouncement(
     public: _public
   } = updateData;
 
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
+  logger.debug('Finding Announcement[%s] to update', id);
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
   const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to update does not exist', id);
@@ -298,6 +303,7 @@ export async function updateAnnouncement(
       message: 'Announcement to update does not exist'
     });
   }
+  logger.info('Announcement[%s] to update exists', id);
 
   // If updating announcement to public,
   // clear target grade level ids to assign
@@ -314,10 +320,12 @@ export async function updateAnnouncement(
   // Check if all target grade level ids to assign,
   // belong to same company as announcement
   if (assignedTargetGradeLevelIds.length > 0) {
+    logger.debug('Validating GradeLevel(s)[%s] to assign', assignedTargetGradeLevelIds);
     await validateGradeLevels(
       assignedTargetGradeLevelIds,
       { companyId: announcement.companyId }
     );
+    logger.info('GradeLevel(s)[%s] validated', assignedTargetGradeLevelIds);
   }
 
   logger.debug('Persisting update(s) to Announcement[%s]', id);
@@ -348,8 +356,8 @@ export async function deleteAnnouncement(
   id: number,
   authUser: AuthorizedUser
 ): Promise<void> {
-  let deletedAnnouncement: Announcement;
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
+  logger.debug('Finding Announcement[%s] to remove', id);
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
   const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
     logger.warn('Announcement[%s] to delete does not exist', id);
@@ -358,8 +366,10 @@ export async function deleteAnnouncement(
       message: 'Announcement to delete does not exisit'
     });
   }
+  logger.info('Announcement[%s] to remove exists', id);
 
   logger.debug('Deleting Announcement[%s] from database...', id);
+  let deletedAnnouncement: Announcement;
   try {
     deletedAnnouncement = await repository.deleteOne({ id });
     logger.info('Announcement[%s] successfully deleted', id);
@@ -384,8 +394,12 @@ export async function updateAnnouncementResource(
     'Finding Announcement[%s] Resource[%s] to update',
     announcementId, id
   );
-  const announcementResource = 
-    await resourceRepository.findOne({ announcementId, id });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
+  const announcementResource = await resourceRepository.findFirst({
+    announcementId,
+    id,
+    announcement: scopedQuery,
+  });
   if (!announcementResource) {
     logger.warn(
       'Announcement[%s] Resource[%s] to update does not exist',

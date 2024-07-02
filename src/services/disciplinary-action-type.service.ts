@@ -6,27 +6,27 @@ import {
   UpdateDisciplinaryActionTypeDto,
   SearchDisciplinaryActionTypeDto,
 } from '../domain/dto/disciplinary-action-type.dto';
-import * as repository from '../repositories/disciplinary-action-type.repository';
-import * as payrollCompanyService from '../services/payroll-company.service';
-import * as helpers from '../utils/helpers';
-import { rootLogger } from '../utils/logger';
+import { AuthorizedUser } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
   HttpError, 
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
+import * as repository from '../repositories/disciplinary-action-type.repository';
 import { ListWithPagination } from '../repositories/types';
+import * as payrollCompanyService from '../services/payroll-company.service';
 import { errors } from '../utils/constants';
-import { AuthorizedUser } from '../domain/user.domain';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
+
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'DisciplinaryActionType' });
-
+const logger = rootLogger.child({ context: 'DisciplinaryActionTypeService' });
 const events = {
   created: 'event.DisciplinaryActionType.created',
   modified: 'event.DisciplinaryActionType.modified',
-};
+} as const;
 
 export async function addDisciplinaryActionType(
   creatData: CreateDisciplinaryActionTypeDto
@@ -46,11 +46,13 @@ export async function addDisciplinaryActionType(
   logger.info('PayrollCompany[%s] exists', companyId);
  
   logger.debug('Adding new DisciplinaryAction type to the database...');
-
   let newDisciplinaryActionType: DisciplinaryActionType;
   try {
     newDisciplinaryActionType = await repository.create(creatData);
-    logger.info('DisciplinaryActionType[%s] added successfully!', newDisciplinaryActionType.id);
+    logger.info(
+      'DisciplinaryActionType[%s] added successfully!',
+      newDisciplinaryActionType.id
+    );
   } catch (err) {
     logger.error('Adding DisciplinaryActionType failed', { error: err });
     throw new ServerError({
@@ -139,7 +141,7 @@ export async function searchDisciplinaryActionTypes(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   let result: ListWithPagination<DisciplinaryActionType>;
   try {
@@ -164,7 +166,7 @@ export async function searchDisciplinaryActionTypes(
     logger.info('Found %d DisciplinaryActionType(s) that matched query', { query });
   } catch (err) {
     logger.warn(
-      'Searching DisciplinaryActionType with query failed', { query }, { error: err as Error }
+      'Searching DisciplinaryActionTypes with query failed', { query }, { error: err as Error }
     );
     throw new ServerError({
       message: (err as Error).message,

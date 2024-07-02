@@ -2,7 +2,8 @@ import { LeavePackage, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { CreateLeavePackageDto } from '../domain/dto/leave-package.dto';
-import { getListWithPagination } from './types';
+import { ListWithPagination, getListWithPagination } from './types';
+
 
 export async function create(
   createLeavePackageDto: CreateLeavePackageDto,
@@ -11,18 +12,17 @@ export async function create(
   const { companyLevelIds, ...createLeavePackageData } = createLeavePackageDto;
 
   try {
-    return await prisma.leavePackage.create({ data: {
-      ...createLeavePackageData,
-      companyLevelLeavePackages: companyLevelIds && {
-        createMany: {
-          data: companyLevelIds.map(
-            (companyLevelId) => { return { companyLevelId }; }
-          ),
-          skipDuplicates: true
+    return await prisma.leavePackage.create({
+      data: {
+        ...createLeavePackageData,
+        companyLevelLeavePackages: companyLevelIds && {
+          createMany: {
+            data: companyLevelIds.map(id => ({ companyLevelId: id })),
+            skipDuplicates: true
+          }
         }
-      }
-    }, 
-    include 
+      }, 
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -37,30 +37,29 @@ export async function create(
   }
 }
 
-
-export const findOne = async (
+export async function findOne(
   whereUniqueInput: Prisma.LeavePackageWhereUniqueInput,
   include?: Prisma.LeavePackageInclude
-): Promise<LeavePackage | null> => {
+): Promise<LeavePackage | null> {
   return prisma.leavePackage.findUnique({
     where: whereUniqueInput,
     include
   });
-};
+}
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.LeavePackageWhereInput,
-): Promise<LeavePackage | null> => {
+): Promise<LeavePackage | null> {
   return prisma.leavePackage.findFirst({ where });
-};
+}
 
-export const find = async (params: {
+export async function find(params: {
   skip?: number,
   take?: number,
   include?: Prisma.LeavePackageInclude,
   where?: Prisma.LeavePackageWhereInput,
   orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput
-}) => {
+}): Promise<ListWithPagination<LeavePackage>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
@@ -69,18 +68,19 @@ export const find = async (params: {
       ? prisma.leavePackage.count({ where: params.where })
       : Promise.resolve(undefined),
   ]);
-  return getListWithPagination(data, { skip, take, totalCount });
-};
 
-export const search = async (params: {
-  skip?: number,
-  take?: number,
-  orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput,
-  include?: Prisma.LeavePackageInclude,
-}, searchParam?: string, scopedQuery?: {
-  companyId?: number | { in: number[] }
+  return getListWithPagination(data, { skip, take, totalCount });
 }
-) => {
+
+export async function search(
+  params: {
+    skip?: number,
+    take?: number,
+    orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput,
+    include?: Prisma.LeavePackageInclude,
+  },
+  searchParam?: string
+): Promise<ListWithPagination<LeavePackage>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const where = {
@@ -93,7 +93,6 @@ export const search = async (params: {
     description: {
       search: searchParam,
     },
-    ...scopedQuery
   };
   const [data, totalCount] = await Promise.all([
     prisma.leavePackage.findMany({
@@ -103,15 +102,15 @@ export const search = async (params: {
       ? prisma.leavePackage.count({ where })
       : Promise.resolve(undefined),
   ]);
-  return getListWithPagination(data, { skip, take, totalCount });
-};
 
-export const update = async (params: {
+  return getListWithPagination(data, { skip, take, totalCount });
+}
+
+export async function update(params: {
   where: Prisma.LeavePackageWhereUniqueInput,
   data: Prisma.LeavePackageUpdateInput,
   include?: Prisma.LeavePackageInclude,
-
-}) => {
+}): Promise<LeavePackage> {
   const { where, data, include } = params;
   try {
     return await prisma.leavePackage.update({
@@ -119,8 +118,7 @@ export const update = async (params: {
       data,
       include
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -131,26 +129,24 @@ export const update = async (params: {
     }
     throw err;
   }
-};
+}
 
-
-export const deleteOne = async (
+export async function deleteOne(
   whereUniqueInput: Prisma.LeavePackageWhereUniqueInput
-): Promise<LeavePackage> => {
+): Promise<LeavePackage> {
   try {
     return await prisma.leavePackage.delete({
       where: whereUniqueInput
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Leave package is currently in use by another model',
+          message: 'Leave package is currently in use',
           cause: err
         });
       }
     }
     throw err;
   }
-};
+}

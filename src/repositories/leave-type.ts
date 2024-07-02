@@ -1,13 +1,15 @@
 import { LeaveType, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { getListWithPagination } from './types';
+import { ListWithPagination, getListWithPagination } from './types';
 
-export const create = async (data: Prisma.LeaveTypeCreateInput): Promise<LeaveType> => {
+
+export async function create(
+  data: Prisma.LeaveTypeCreateInput
+): Promise<LeaveType> {
   try {
     return await prisma.leaveType.create({ data });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -18,29 +20,29 @@ export const create = async (data: Prisma.LeaveTypeCreateInput): Promise<LeaveTy
     }
     throw err;
   }
-};
+}
 
-export const findOne = async (
+export async function findOne(
   whereUniqueInput: Prisma.LeaveTypeWhereUniqueInput
-): Promise<LeaveType | null> => {
+): Promise<LeaveType | null> {
   return prisma.leaveType.findUnique({
     where: whereUniqueInput
   });
-};
+}
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.LeaveTypeWhereInput,
-): Promise<LeaveType | null> => {
+): Promise<LeaveType | null> {
   return prisma.leaveType.findFirst({ where });
-};
+}
 
-export const find = async (params: {
+export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.LeaveTypeWhereInput,
   orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput,
   includeRelations?: boolean
-}) => {
+}): Promise<ListWithPagination<LeaveType>> {
   const { skip, take, } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
@@ -57,15 +59,18 @@ export const find = async (params: {
       ? prisma.leaveType.count({ where: params.where })
       : Promise.resolve(undefined),
   ]);
-  return getListWithPagination(data, { skip, take, totalCount });
-};
 
-export const search = async (params: {
-  skip?: number,
-  take?: number,
-  orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput
-}, searchParam?: string
-) => {
+  return getListWithPagination(data, { skip, take, totalCount });
+}
+
+export async function search(
+  params: {
+    skip?: number,
+    take?: number,
+    orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput
+  },
+  searchParam?: string
+): Promise<ListWithPagination<LeaveType>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const where = {
@@ -87,21 +92,21 @@ export const search = async (params: {
       ? prisma.leaveType.count({ where })
       : Promise.resolve(undefined),
   ]);
-  return getListWithPagination(data, { skip, take, totalCount });
-};
 
-export const update = async (params: {
+  return getListWithPagination(data, { skip, take, totalCount });
+}
+
+export async function update(params: {
   where: Prisma.LeaveTypeWhereUniqueInput,
   data: Prisma.LeaveTypeUpdateInput
-}) => {
+}): Promise<LeaveType> {
   const { where, data } = params;
   try {
     return await prisma.leaveType.update({
       where,
       data
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -112,26 +117,24 @@ export const update = async (params: {
     }
     throw err;
   }
-};
+}
 
-
-export const deleteOne = async (
+export async function deleteOne(
   whereUniqueInput: Prisma.LeaveTypeWhereUniqueInput
-): Promise<LeaveType> => {
+): Promise<LeaveType> {
   try {
     return await prisma.leaveType.delete({
       where: whereUniqueInput
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Leave type is currently in use by another model',
+          message: 'Leave type is currently in use',
           cause: err
         });
       }
     }
     throw err;
   }
-};
+}

@@ -1,11 +1,11 @@
 import { PayPeriod, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { PayPeriodEvent } from '../domain/events/pay-period.event';
- 
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
+
+
 export async function createOrUpdate(
   data:  Omit<PayPeriodEvent, 'createdAt' | 'modifiedAt'>
-  
 ): Promise<PayPeriod> {
   const { id, ...dataWithoutId } = data;
   return prisma.payPeriod.upsert({
@@ -15,12 +15,12 @@ export async function createOrUpdate(
   });
 }
 
-
-export async function create(data: Prisma.PayPeriodCreateInput): Promise<PayPeriod> {
+export async function create(
+  data: Prisma.PayPeriodCreateInput
+): Promise<PayPeriod> {
   try {
     return await prisma.payPeriod.create({ data });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -41,7 +41,9 @@ export async function findOne(
   });
 }
 
-export async function deletePayPeriod(where: Prisma.PayPeriodWhereUniqueInput) {
+export async function deleteOne(
+  where: Prisma.PayPeriodWhereUniqueInput
+): Promise<PayPeriod> {
   try {
     return await prisma.payPeriod.delete({ where });
   } catch (err) {

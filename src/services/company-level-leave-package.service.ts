@@ -1,26 +1,26 @@
 import { CompanyLevelLeavePackage } from '@prisma/client';
+import { KafkaService } from '../components/kafka.component';
 import {
+  CompanyLevelLeavePackageDto,
   CreateCompanyLevelLeavePackageDto,
   QueryCompanyLevelLeavePackageDto,
-  CompanyLevelLeavePackageDto
 } from '../domain/dto/company-level-leave-package.dto';
-import * as repository from '../repositories/company-level-leave-package.repository';
+import { AuthorizedUser } from '../domain/user.domain';
 import { HttpError, NotFoundError, ServerError } from '../errors/http-errors';
+import * as repository from '../repositories/company-level-leave-package.repository';
+import { ListWithPagination } from '../repositories/types';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import * as leavePackageService from './leave-package.service';
 import * as companyLevelService from './company-level.service';
-import { ListWithPagination } from '../repositories/types';
-import { KafkaService } from '../components/kafka.component';
-import { AuthorizedUser } from '../domain/user.domain';
+import * as leavePackageService from './leave-package.service';
+
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'CompanyLevelLeavePackageService' });
-
 const events = {
-  created: 'event.DisciplinaryActionType.created',
-  modified: 'event.DisciplinaryActionType.modified',
-};
+  created: 'event.CompanyLevelLeavePackage.created',
+  modified: 'event.CompanyLevelLeavePackage.modified',
+} as const;
 
 export async function createCompanyLevelLeavePackage(
   createCompanyLevelLeavePackageDto: CreateCompanyLevelLeavePackageDto,
@@ -34,11 +34,17 @@ export async function createCompanyLevelLeavePackage(
     companyLevelId, leavePackageIds
   );
   try {
-    await Promise.all(
-      [
-        companyLevelService.validateCompanyLevel(companyLevelId, authorizedUser, { companyIds }),
-        leavePackageService.validateLeavePackageIds(leavePackageIds, { companyIds })
-      ]);
+    await Promise.all([
+      companyLevelService.validateCompanyLevel(
+        companyLevelId,
+        authorizedUser,
+        { companyIds }
+      ),
+      leavePackageService.validateLeavePackageIds(
+        leavePackageIds,
+        { companyIds }
+      )
+    ]);
     logger.info(
       'Validating CompanyLevelId[%s] and LeavePackageIds[%s] was successful',
       companyLevelId, leavePackageIds
@@ -55,8 +61,8 @@ export async function createCompanyLevelLeavePackage(
 
   logger.debug('Persisting new CompanyLevelLeavePackage for CompanyLevelId[%s]', companyLevelId);
   let companyLevelLeavePackages: CompanyLevelLeavePackageDto[];
-  const companyLevelLeavePackageInputArray = helpers.generateLeavePackageRecordsForACompanyLevel(
-    leavePackageIds, companyLevelId);
+  const companyLevelLeavePackageInputArray = helpers
+    .generateLeavePackageRecordsForACompanyLevel(leavePackageIds, companyLevelId);
   try {
     companyLevelLeavePackages = await repository.createMany(
       companyLevelLeavePackageInputArray,
@@ -105,7 +111,7 @@ export async function getCompanyLevelLeavePackages(
         ...queryParam,
       },
       include: {
-        leavePackage: true,
+        leavePackage: { include: { leaveType: true } },
         companyLevel: true
       },
       orderBy: orderByInput
@@ -123,9 +129,9 @@ export async function getCompanyLevelLeavePackages(
   return companyLevelLeavePackage;
 }
 
-export const getCompanyLevelLeavePackageById = async (
+export async function getCompanyLevelLeavePackageById(
   id: number, /*authorizedUser: AuthorizedUser*/
-): Promise<CompanyLevelLeavePackageDto> => {
+): Promise<CompanyLevelLeavePackageDto> {
   logger.debug('Getting details for CompanyLevelLeavePackage[%s]', id);
 
   let companyLevelLeavePackage: CompanyLevelLeavePackageDto | null;
@@ -146,13 +152,12 @@ export const getCompanyLevelLeavePackageById = async (
   }
   logger.info('CompanyLevelLeavePackage[%s] details retrieved!', id);
   return companyLevelLeavePackage;
-};
+}
 
-
-export const deleteCompanyLevelLeavePackage = async (
+export async function deleteCompanyLevelLeavePackage(
   id: number,
   // authorizedUser: AuthorizedUser
-): Promise<CompanyLevelLeavePackageDto> => {
+): Promise<CompanyLevelLeavePackageDto> {
   logger.debug('Getting details for CompanyLevelLeavePackage[%s]', id);
   let deletedCompanyLevelLeavePackage: CompanyLevelLeavePackage | null;
   let companyLevelLeavePackage: CompanyLevelLeavePackageDto | null;
@@ -174,9 +179,9 @@ export const deleteCompanyLevelLeavePackage = async (
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.warn(
-      'Deleting CompanyLevelLeavePackage[%s] failed', id, { error: (err as Error).stack }
+      'Deleting CompanyLevelLeavePackage[%s] failed',
+      id, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-
-};
+}

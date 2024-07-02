@@ -1,13 +1,15 @@
 import { CompanyLevel, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError } from '../errors/http-errors';
-import { getListWithPagination } from './types';
+import { ListWithPagination, getListWithPagination } from './types';
 
-export async function create(data: Prisma.CompanyLevelCreateInput): Promise<CompanyLevel> {
+
+export async function create(
+  data: Prisma.CompanyLevelCreateInput
+): Promise<CompanyLevel> {
   try {
     return await prisma.companyLevel.create({ data });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -52,7 +54,7 @@ export async function find(params: {
   take?: number,
   where?: Prisma.CompanyLevelWhereInput,
   orderBy?: Prisma.CompanyLevelOrderByWithRelationAndSearchRelevanceInput
-}) {
+}): Promise<ListWithPagination<CompanyLevel>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
@@ -61,13 +63,14 @@ export async function find(params: {
       ? prisma.companyLevel.count({ where: params.where })
       : Promise.resolve(undefined),
   ]);
+
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
 export async function update(params: {
   where: Prisma.CompanyLevelWhereUniqueInput,
   data: Prisma.CompanyLevelUpdateInput
-}) {
+}): Promise<CompanyLevel> {
   const { where, data } = params;
   return await prisma.companyLevel.update({
     where,

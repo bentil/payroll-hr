@@ -1,16 +1,17 @@
 import { EmployeeDocument, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { ListWithPagination, getListWithPagination } from './types';
 import { 
   CreateEmployeeDocumentDto,
   UpdateEmployeeDocumentDto
 } from '../domain/dto/employee-document.dto';
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
+import { ListWithPagination, getListWithPagination } from './types';
 
-export const create = async (
+
+export async function create(
   { employeeId, typeId, ...dtoData }: CreateEmployeeDocumentDto,
   include?: Prisma.EmployeeDocumentInclude,
-): Promise<EmployeeDocument> => {
+): Promise<EmployeeDocument> {
   const data: Prisma.EmployeeDocumentCreateInput = {
     ...dtoData,
     employee: { connect: { id: employeeId } },
@@ -18,8 +19,7 @@ export const create = async (
   };
   try {
     return await prisma.employeeDocument.create({ data, include });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -30,24 +30,24 @@ export const create = async (
     }
     throw err;
   }
-};
+}
 
-export const findOne = async (
+export async function findOne(
   whereUniqueInput: Prisma.EmployeeDocumentWhereUniqueInput,
   include?: Prisma.EmployeeDocumentInclude,
-): Promise<EmployeeDocument | null> => {
+): Promise<EmployeeDocument | null> {
   return prisma.employeeDocument.findUnique({
     where: whereUniqueInput,
     include
   });
-};
+}
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.EmployeeDocumentWhereInput,
   include?: Prisma.EmployeeDocumentInclude,
-): Promise<EmployeeDocument | null> => {
+): Promise<EmployeeDocument | null> {
   return prisma.employeeDocument.findFirst({ where, include });
-};
+}
 
 export async function find(params: {
   skip?: number,
@@ -68,11 +68,11 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export const update = async (params: {
+export async function update(params: {
   where: Prisma.EmployeeDocumentWhereUniqueInput,
   data: UpdateEmployeeDocumentDto,
   include?: Prisma.EmployeeDocumentInclude,
-}) => {
+}): Promise<EmployeeDocument> {
   const { where, data, include } = params;
   const { employeeId, typeId } = data;
   const data_: Prisma.EmployeeDocumentUpdateInput = {
@@ -86,8 +86,7 @@ export const update = async (params: {
       data: data_,
       include
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -98,26 +97,24 @@ export const update = async (params: {
     }
     throw err;
   }
-};
+}
 
-
-export const deleteOne = async (
+export async function deleteOne(
   whereUniqueInput: Prisma.EmployeeDocumentWhereUniqueInput
-): Promise<EmployeeDocument> => {
+): Promise<EmployeeDocument> {
   try {
     return await prisma.employeeDocument.delete({
       where: whereUniqueInput
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Employee document is currently in use by another model',
+          message: 'Employee document is currently in use',
           cause: err
         });
       }
     }
     throw err;
   }
-};
+}
