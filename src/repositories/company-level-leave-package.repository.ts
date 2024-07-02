@@ -1,20 +1,20 @@
 import { CompanyLevelLeavePackage, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError } from '../errors/http-errors';
 import { 
   CreateCompanyLevelLeavePackageRecord, 
   CompanyLevelLeavePackageDto 
 } from '../domain/dto/company-level-leave-package.dto';
-import { getListWithPagination } from './types';
+import { AlreadyExistsError } from '../errors/http-errors';
+import { ListWithPagination, getListWithPagination } from './types';
 
-export const create = async (
+
+export async function create(
   data: Prisma.CompanyLevelLeavePackageCreateInput,
   include?: Prisma.CompanyLevelLeavePackageInclude
-): Promise<CompanyLevelLeavePackage> => {
+): Promise<CompanyLevelLeavePackage> {
   try {
     return await prisma.companyLevelLeavePackage.create({ data, include });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -25,16 +25,18 @@ export const create = async (
     }
     throw err;
   }
-};
+}
 
-export const createMany = async (
+export async function createMany(
   data: CreateCompanyLevelLeavePackageRecord[],
-  include?: Prisma.CompanyLevelLeavePackageInclude) => {
+  include?: Prisma.CompanyLevelLeavePackageInclude
+): Promise<CompanyLevelLeavePackageDto[]> {
   const companyLevelLeavePackages: CompanyLevelLeavePackageDto[] = [];
-  await prisma.$transaction(async (prismatxn) => {
+  await prisma.$transaction(async txn => {
     for (const companyLevelLeavePackagesToCreate of data) {
       try {
-        const createdCompanyLevelLeavePackage = await prismatxn.companyLevelLeavePackage
+        const createdCompanyLevelLeavePackage = await txn
+          .companyLevelLeavePackage
           .create({ data: companyLevelLeavePackagesToCreate, include });
         companyLevelLeavePackages.push(createdCompanyLevelLeavePackage);
       } catch (err) {
@@ -50,56 +52,49 @@ export const createMany = async (
       }
     }
   });
-  return companyLevelLeavePackages;
-};
 
-export const findOne = async (
+  return companyLevelLeavePackages;
+}
+
+export async function findOne(
   whereUniqueInput: Prisma.CompanyLevelLeavePackageWhereUniqueInput,
   include?: Prisma.CompanyLevelLeavePackageInclude
-): Promise<CompanyLevelLeavePackage | null> => {
+): Promise<CompanyLevelLeavePackage | null> {
   return prisma.companyLevelLeavePackage.findUnique({
     where: whereUniqueInput,
     include
   });
-};
+}
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.CompanyLevelLeavePackageWhereInput,
-): Promise<CompanyLevelLeavePackage | null> => {
+): Promise<CompanyLevelLeavePackage | null> {
   return prisma.companyLevelLeavePackage.findFirst({ where });
-};
+}
 
-export const find = async (params: {
+export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.CompanyLevelLeavePackageWhereInput,
   include?: Prisma.CompanyLevelLeavePackageInclude
   orderBy?: Prisma.CompanyLevelLeavePackageOrderByWithRelationAndSearchRelevanceInput
-}) => {
+}): Promise<ListWithPagination<CompanyLevelLeavePackage>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.companyLevelLeavePackage.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.include ? { leavePackage: {
-        include: { leaveType: true }
-      } } : undefined
-    }),
+    prisma.companyLevelLeavePackage.findMany(params),
     paginate
       ? prisma.companyLevelLeavePackage.count({ where: params.where })
       : Promise.resolve(undefined),
   ]);
+
   return getListWithPagination(data, { skip, take, totalCount });
-};
+}
 
-
-export const deleteOne = async (
+export async function deleteOne(
   whereUniqueInput: Prisma.CompanyLevelLeavePackageWhereUniqueInput
-): Promise<CompanyLevelLeavePackage> => {
+): Promise<CompanyLevelLeavePackage> {
   return await prisma.companyLevelLeavePackage.delete({
     where: whereUniqueInput
   });
-};
+}

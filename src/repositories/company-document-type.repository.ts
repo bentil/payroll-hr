@@ -1,20 +1,20 @@
 import { CompanyDocumentType, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
+import { CreateCompanyDocumentTypeDto } from '../domain/dto/company-document-type.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
-import { CreateCompanyDocumentTypeDto } from '../domain/dto/company-document-type.dto';
 
-export const create = async (
+
+export async function create(
   { companyId, ...dtoData }: CreateCompanyDocumentTypeDto
-): Promise<CompanyDocumentType> => {
+): Promise<CompanyDocumentType> {
   const data: Prisma.CompanyDocumentTypeCreateInput = {
     ...dtoData,
     company: { connect: { id: companyId } },
   };
   try {
     return await prisma.companyDocumentType.create({ data });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -25,21 +25,21 @@ export const create = async (
     }
     throw err;
   }
-};
+}
 
-export const findOne = async (
+export async function findOne(
   whereUniqueInput: Prisma.CompanyDocumentTypeWhereUniqueInput
-): Promise<CompanyDocumentType | null> => {
+): Promise<CompanyDocumentType | null> {
   return prisma.companyDocumentType.findUnique({
     where: whereUniqueInput
   });
-};
+}
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.CompanyDocumentTypeWhereInput,
-): Promise<CompanyDocumentType | null> => {
+): Promise<CompanyDocumentType | null> {
   return prisma.companyDocumentType.findFirst({ where });
-};
+}
 
 export async function find(params: {
   skip?: number,
@@ -77,19 +77,17 @@ export async function search(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-
-export const update = async (params: {
+export async function update(params: {
   where: Prisma.CompanyDocumentTypeWhereUniqueInput,
   data: Prisma.CompanyDocumentTypeUpdateInput
-}) => {
+}): Promise<CompanyDocumentType> {
   const { where, data } = params;
   try {
     return await prisma.companyDocumentType.update({
       where,
       data
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -100,26 +98,24 @@ export const update = async (params: {
     }
     throw err;
   }
-};
+}
 
-
-export const deleteOne = async (
+export async function deleteOne(
   whereUniqueInput: Prisma.CompanyDocumentTypeWhereUniqueInput
-): Promise<CompanyDocumentType> => {
+): Promise<CompanyDocumentType> {
   try {
     return await prisma.companyDocumentType.delete({
       where: whereUniqueInput
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Company document type is currently in use by another model',
+          message: 'Company document type is currently in use',
           cause: err
         });
       }
     }
     throw err;
   }
-};
+}

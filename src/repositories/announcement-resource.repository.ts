@@ -1,6 +1,8 @@
 import { AnnouncementResource, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
+import { AnnouncementResourceDto } from '../domain/dto/announcement.dto';
 import { AlreadyExistsError } from '../errors/http-errors';
+
 
 export async function findOne(
   whereUniqueInput: Prisma.AnnouncementResourceWhereUniqueInput,
@@ -12,22 +14,21 @@ export async function findOne(
   });
 }
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.AnnouncementResourceWhereInput,
   include?: Prisma.AnnouncementResourceInclude
-): Promise<AnnouncementResource | null> => {
+): Promise<AnnouncementResource | null> {
   return prisma.announcementResource.findFirst({ where, include });
-};
+}
 
-export const update = async (params: {
+export async function update(params: {
   where: Prisma.AnnouncementResourceWhereUniqueInput,
   data: Prisma.AnnouncementResourceUpdateInput,
   include?: Prisma.AnnouncementResourceInclude
-}) => {
+}): Promise<AnnouncementResourceDto> {
   try {
     return await prisma.announcementResource.update(params);
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -38,4 +39,4 @@ export const update = async (params: {
     }
     throw err;
   }
-};
+}

@@ -15,6 +15,7 @@ import {
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
+
 const logger = rootLogger.child({ context: 'HelpersUtil' });
 
 export function getSkip(page: number, limit: number): number {
@@ -64,7 +65,10 @@ export function generateMultiGrievanceReportedEmployeesRecords(
   reportedEmployeeIds: number[], reportId: number
 ) {
   return reportedEmployeeIds.map(
-    reportedEmployeeId => new CreateGrievanceReportedEmployeeRecord(reportId, reportedEmployeeId)
+    reportedEmployeeId => new CreateGrievanceReportedEmployeeRecord(
+      reportId,
+      reportedEmployeeId
+    )
   );
 }
 
@@ -76,12 +80,11 @@ export function generateLeavePackageRecordsForACompanyLevel(
     new CreateCompanyLevelLeavePackageDto(companyLevelId, leavePackageId));
 }
 
-type ManagePermissionScopeQueryOptsType = {
-  [key: string]: string | number | boolean | undefined | null | Date | { [key: string]: any }
-}
-
 // calculate number of days between two given dates
-export async function calculateDaysBetweenDates(startDate: Date, endDate: Date): Promise<number> {
+export async function calculateDaysBetweenDates(
+  startDate: Date,
+  endDate: Date
+): Promise<number> {
   // To calculate the time difference of two dates 
   const differenceInTime = endDate.getTime() - startDate.getTime();
 
@@ -91,42 +94,15 @@ export async function calculateDaysBetweenDates(startDate: Date, endDate: Date):
   return differenceInDays;
 }
 
-type ScopedQuery = { scopedQuery: Record<string, any>; };
+type NumberOrInNumbers = number | { in: number[]; };
 
-/**
- * Function to check if user has permission to requests and return states
- * @param user AuthorizedUser
- * @param opts
- */
-export async function managePermissionScopeQuery(user: AuthorizedUser,
-  opts: {
-    queryParam: ManagePermissionScopeQueryOptsType,
-    queryCompanyId?: number
-  }) {
-  const { platformUser, companyIds } = user;
-  const { queryParam, queryCompanyId } = opts;
-
-  const scopeQuery = {
-    companyId: { in: companyIds || [] }
-  } as { [key: string]: any, companyId?: { in: number[] } | number };
-
-  const checks = { authorized: false };
-
-  if (platformUser) {
-    scopeQuery.companyId = queryCompanyId || undefined;
-    checks.authorized = true;
-  } else if (queryCompanyId && companyIds.includes(queryCompanyId)) {
-    scopeQuery.companyId = queryCompanyId;
-    checks.authorized = true;
-  } else if (!queryCompanyId && companyIds.length) {
-    scopeQuery.companyId = { in: companyIds };
-    checks.authorized = true;
-  }
-  if (checks.authorized === false) {
-    throw new ForbiddenError({ message: 'User not allowed to perform action' });
-  }
-  return { scopedQuery: { ...queryParam, ...scopeQuery }, query: queryParam, ...checks };
-}
+type ScopedQuery = {
+  scopedQuery: {
+    companyId?: NumberOrInNumbers;
+    employeeId?: NumberOrInNumbers;
+    employee?: { companyId: NumberOrInNumbers; };
+  } & Record<string, any>;
+};
 
 export async function applyCompanyScopeToQuery(
   user: AuthorizedUser,

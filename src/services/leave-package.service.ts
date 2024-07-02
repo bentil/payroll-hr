@@ -1,24 +1,25 @@
+import { LeavePackage, Prisma } from '@prisma/client';
 import {
   CreateLeavePackageDto,
   LeavePackageDto,
   LeavePackageOrderBy,
   QueryLeavePackageDto,
   SearchLeavePackageDto,
-  UpdateLeavePackageDto
+  UpdateLeavePackageDto,
 } from '../domain/dto/leave-package.dto';
-import * as repository from '../repositories/leave-package';
+import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
+import { AuthorizedUser } from '../domain/user.domain';
 import { HttpError, NotFoundError, ServerError } from '../errors/http-errors';
+import * as employeeRepository from '../repositories/employee.repository';
+import * as repository from '../repositories/leave-package';
+import { ListWithPagination } from '../repositories/types';
+import * as payrollCompanyService from '../services/payroll-company.service';
+import { errors } from '../utils/constants';
 import { rootLogger } from '../utils/logger';
 import * as helpers from '../utils/helpers';
-import { LeavePackage, Prisma } from '@prisma/client';
-import * as payrollCompanyService from '../services/payroll-company.service';
-import * as leaveTypeservice from './leave-type.service';
 import * as companyLevelService from './company-level.service';
-import * as employeeRepository from '../repositories/employee.repository';
-import { errors } from '../utils/constants';
-import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
-import { ListWithPagination } from '../repositories/types';
-import { AuthorizedUser } from '../domain/user.domain';
+import * as leaveTypeservice from './leave-type.service';
+
 
 const logger = rootLogger.child({ context: 'LeavePackageService' });
 
@@ -181,7 +182,13 @@ export async function getApplicableLeavePackage(
 
   let leavePackage: LeavePackageDto | null;
   try {
-    const employee = await employeeRepository.findOne({ id: employeeId }, true);
+    const employee = await employeeRepository.findOne(
+      { id: employeeId },
+      {
+        majorGradeLevel: { include: { companyLevel: true } },
+        company: true,
+      },
+    );
     if (employee?.majorGradeLevel?.companyLevelId) {
       const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
       leavePackage = await repository.findFirst({

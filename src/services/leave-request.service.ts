@@ -1,50 +1,52 @@
-import { 
+import {
   LEAVE_REQUEST_STATUS,
-  LeaveRequest, 
-  Prisma
+  LeaveRequest,
+  Prisma,
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   AdjustDaysDto,
   CreateLeaveRequestDto,
   LeaveRequestDto,
-  QueryLeaveRequestDto,
   LeaveResponseInputDto,
-  UpdateLeaveRequestDto,
+  QueryLeaveRequestDto,
   RequestQueryMode,
+  UpdateLeaveRequestDto,
 } from '../domain/dto/leave-request.dto';
 import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
-import { UnauthorizedError } from '../errors/unauthorized-errors';
-import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import { 
-  FailedDependencyError, 
-  ForbiddenError, 
-  HttpError, 
-  InvalidStateError, 
-  NotFoundError, 
-  RequirementNotMetError, 
-  ServerError 
+  FailedDependencyError,
+  ForbiddenError,
+  HttpError,
+  InvalidStateError,
+  NotFoundError,
+  RequirementNotMetError,
+  ServerError,
 } from '../errors/http-errors';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
+import {
+  findFirst as findFirstCompanyTreeNode
+} from '../repositories/company-tree-node.repository';
+import * as employeeRepository from '../repositories/employee.repository';
+import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
+import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
-import { countWorkingDays } from './holiday.service';
-import * as employeeRepository from '../repositories/employee.repository';
-import { findFirst as findCompanyTreeNode } from '../repositories/company-tree-node.repository';
+
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'GrievanceType' });
-
+const logger = rootLogger.child({ context: 'LeaveRequestService' });
 const events = {
   created: 'event.LeaveRequest.created',
   modified: 'event.LeaveRequest.modified',
   deleted: 'event.LeaveRequest.deleted',
-};
+} as const;
 
 export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
@@ -54,7 +56,7 @@ export async function addLeaveRequest(
   // VALIDATION
   try {
     [nodeExist, validateData, leaveSummary] = await Promise.all([
-      findCompanyTreeNode({ employeeId }),
+      findFirstCompanyTreeNode({ employeeId }),
       validate(leaveTypeId, employeeId),
       getEmployeeLeaveTypeSummary(employeeId, leaveTypeId)
     ]);
@@ -290,7 +292,13 @@ export async function updateLeaveRequest(
       });
     }
   } else {
-    const employee = await employeeRepository.findOne({ id: employeeId }, true);
+    const employee = await employeeRepository.findOne(
+      { id: employeeId },
+      {
+        majorGradeLevel: { include: { companyLevel: true } },
+        company: true,
+      },
+    );
     considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
     considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
   }
