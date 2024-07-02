@@ -1,3 +1,4 @@
+import { Announcement } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementDto,
@@ -8,55 +9,50 @@ import {
   UpdateAnnouncementDto,
   UpdateAnnouncementResourceDto,
 } from '../domain/dto/announcement.dto';
-import * as repository from '../repositories/announcement.repository';
-import * as payrollCompanyService from '../services/payroll-company.service';
-import * as employeeService from '../services/employee.service';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
+import { NotFoundError, ServerError } from '../errors/http-errors';
 import * as resourceRepository from '../repositories/announcement-resource.repository';
+import * as repository from '../repositories/announcement.repository';
+import { ListWithPagination } from '../repositories/types';
+import * as employeeService from '../services/employee.service';
+import * as payrollCompanyService from '../services/payroll-company.service';
+import { errors } from '../utils/constants';
+import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import {
-  NotFoundError, 
-  ServerError 
-} from '../errors/http-errors';
-import { ListWithPagination } from '../repositories/types';
-import { errors } from '../utils/constants';
-import { AuthorizedUser, UserCategory } from '../domain/user.domain';
-import * as dateutil from '../utils/date.util';
-import { Announcement } from '@prisma/client';
 import { validateGradeLevels } from './grade-level.service';
 
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementService' });
-
 const events = {
   created: 'event.Announcement.created',
   modified: 'event.Announcement.modified',
   resourceModified: 'event.AnnouncementResource.modified',
   deleted: 'event.Announcement.deleted'
-};
+} as const;
 
 export async function addAnnouncement(
   creatData: CreateAnnouncementDto,
+  authUser: AuthorizedUser,
 ): Promise<AnnouncementDto> {
-  const { companyId, public: _public } = creatData;
+  const { companyId, public: _public, targetGradeLevelIds = [] } = creatData;
 
-  // VALIDATION
+  logger.debug('Validating Company[%s] & GradeLevels[%s]', companyId, targetGradeLevelIds);
   await Promise.all([
     payrollCompanyService.validatePayrollCompany(companyId, { throwOnNotActive: true }),
-    creatData.targetGradeLevelIds 
-      ? validateGradeLevels(creatData.targetGradeLevelIds, { companyId }) 
+    (!_public && targetGradeLevelIds.length > 0)
+      ? validateGradeLevels(targetGradeLevelIds, { companyId }) 
       : Promise.resolve(undefined)
   ]);
+  logger.info('Company[%s] and GradeLevels[%s] validated', companyId, targetGradeLevelIds);
 
+  // Clear targetGradeLevelIds if creating public announcement
   if (_public) {
     creatData.targetGradeLevelIds = [];
   }
-  
-  logger.info('All the TargetGradeLevels[%s] passed exists', creatData.targetGradeLevelIds);
  
   logger.debug('Adding new Announcement to the database...');
-
   let newAnnouncement: AnnouncementDto;
   try {
     newAnnouncement = await repository.create(
@@ -104,32 +100,35 @@ export async function getAnnouncements(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+
   const { employeeId, category } = authUser;
+  const adminUser = category === UserCategory.HR;
   let gradeLevelId: number | undefined, active: boolean | undefined;
-  if (category === UserCategory.HR) {
+  if (adminUser) {
     gradeLevelId = targetGradeLevelId;
     active = queryActive;
   } else {
     const employee = await employeeService.getEmployee(employeeId!);
-    gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
+    gradeLevelId = employee.majorGradeLevelId ?? undefined;
     active = true;
   }
-  
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
 
+  logger.debug('Finding Announcement(s) that matched query', { query });
   let result: ListWithPagination<AnnouncementDto>;
   try {
-    logger.debug('Finding Announcement(s) that matched query', { query });
     result = await repository.find({
       skip,
       take,
       where: { 
         ...scopedQuery,
-        OR: 
-        [
+        OR: (_public === undefined && gradeLevelId) ? [
           { targetGradeLevels: { some: { id: gradeLevelId } } },
-          { targetGradeLevels: { none: { } } }
-        ],
+          { public: true },
+        ] : (gradeLevelId !== undefined) ? [
+          { targetGradeLevels: { some: { id: gradeLevelId } } }
+        ] : undefined,
         public: _public,
         active,
         publishDate: {
@@ -167,21 +166,25 @@ export async function getAnnouncement(
   logger.debug('Getting details for Announcement[%s]', id);
   let announcement: AnnouncementDto | null;
 
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
+
   const { employeeId, category } = authUser;
+  const adminUser = category === UserCategory.HR;
   let gradeLevelId: number | undefined, active: boolean | undefined;
-  if (category !== UserCategory.HR) {
+  if (adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
     active = true;
   }
-  
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
 
   try {
     announcement = await repository.findFirst({
       id,
       ...scopedQuery,
-      targetGradeLevels: { some: { id: gradeLevelId } },
+      OR: (!adminUser) ? [
+        { targetGradeLevels: { some: { id: gradeLevelId } } },
+        { public: true },
+      ] : undefined,
       active,
     }, 
     { 
@@ -220,18 +223,18 @@ export async function searchAnnouncements(
     orderBy,
   } = query;
   const skip = helpers.getSkip(page, take);
-  const orderByInput = helpers.getOrderByInput(orderBy); 
+  const orderByInput = helpers.getOrderByInput(orderBy);
+
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   const { employeeId, category } = authUser;
+  const adminUser = category === UserCategory.HR;
   let gradeLevelId: number | undefined, active: boolean | undefined;
-  if (category !== UserCategory.HR) {
+  if (!adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
     active = true;
   }
-
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
-
 
   let result: ListWithPagination<AnnouncementDto>;
   try {
@@ -242,11 +245,10 @@ export async function searchAnnouncements(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        OR: 
-        [
+        OR: (!adminUser) ? [
           { targetGradeLevels: { some: { id: gradeLevelId } } },
-          { targetGradeLevels: { none: { } } }
-        ],
+          { public: true },
+        ] : undefined,
         active,
         title: {
           search: searchParam,
@@ -282,6 +284,11 @@ export async function updateAnnouncement(
   updateData: UpdateAnnouncementDto,
   authUser: AuthorizedUser
 ): Promise<AnnouncementDto> {
+  const {
+    unassignedTargetGradeLevelIds = [],
+    public: _public
+  } = updateData;
+
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { });
   const announcement = await repository.findFirst({ id, ...scopedQuery });
   if (!announcement) {
@@ -291,28 +298,36 @@ export async function updateAnnouncement(
       message: 'Announcement to update does not exist'
     });
   }
-  const { 
-    unassignedTargetGradeLevelIds = [],
-    public: _public
-  } = updateData;
 
-  if (updateData.assignedTargetGradeLevelIds?.length !== 0) {
-    await validateGradeLevels(
-      updateData.assignedTargetGradeLevelIds!, { companyId: announcement.companyId }
+  // If updating announcement to public,
+  // clear target grade level ids to assign
+  // and set all existing target grade level ids to be unassigned
+  if (_public) {
+    updateData.assignedTargetGradeLevelIds = [];
+    announcement.targetGradeLevels?.forEach(
+      x => { unassignedTargetGradeLevelIds.push(x.id); }
     );
   }
 
-  if (_public) {
-    updateData.assignedTargetGradeLevelIds = [];
-    announcement.targetGradeLevels?.forEach((x) => { unassignedTargetGradeLevelIds.push(x.id); });
+  const { assignedTargetGradeLevelIds = [] } = updateData;
+
+  // Check if all target grade level ids to assign,
+  // belong to same company as announcement
+  if (assignedTargetGradeLevelIds.length > 0) {
+    await validateGradeLevels(
+      assignedTargetGradeLevelIds,
+      { companyId: announcement.companyId }
+    );
   }
 
   logger.debug('Persisting update(s) to Announcement[%s]', id);
   const updatedAnnouncement = await repository.update({
-    where: { id }, data: updateData, include: { 
+    where: { id },
+    data: updateData,
+    include: {
       company: true,
       resources: true,
-      targetGradeLevels: { 
+      targetGradeLevels: {
         include: {
           companyLevel: true
         }
@@ -360,26 +375,38 @@ export async function deleteAnnouncement(
 }
 
 export async function updateAnnouncementResource(
-  id: number, 
-  resourceId: number,
-  updateData: UpdateAnnouncementResourceDto
+  announcementId: number, 
+  id: number,
+  updateData: UpdateAnnouncementResourceDto,
+  authUser: AuthorizedUser,
 ): Promise<AnnouncementResourceDto> {
-
+  logger.debug(
+    'Finding Announcement[%s] Resource[%s] to update',
+    announcementId, id
+  );
   const announcementResource = 
-    await resourceRepository.findOne({ announcementId: id, id: resourceId });
+    await resourceRepository.findOne({ announcementId, id });
   if (!announcementResource) {
-    logger.warn('AnnouncementResource[%s] to update does not exist', id);
+    logger.warn(
+      'Announcement[%s] Resource[%s] to update does not exist',
+      announcementId, id
+    );
     throw new NotFoundError({
       name: errors.ANNOUNCEMENT_RESOURCE_NOT_FOUND,
       message: 'Announcement resource to update does not exisit'
     });
   }
 
-  logger.debug('Persisting update(s) to AnnouncementResource[%s]', resourceId);
+  logger.debug('Persisting update(s) to AnnouncementResource[%s]', id);
   const updatedAnnouncementResource = await resourceRepository.update({
-    where: { id: resourceId, announcementId: id }, data: updateData, include: { announcement: true }
+    where: { id, announcementId },
+    data: updateData,
+    include: { announcement: true },
   });
-  logger.info('Update(s) to AnnouncementResource[%s] persisted successfully!', id);
+  logger.info(
+    'Update(s) to AnnouncementResource[%s] persisted successfully!',
+    id
+  );
 
   // Emit event.AnnouncementResource.modified event
   logger.debug(`Emitting ${events.resourceModified}`);

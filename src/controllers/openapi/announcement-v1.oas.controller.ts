@@ -1,3 +1,4 @@
+import { Announcement } from '@prisma/client';
 import {
   Body,
   Get,
@@ -13,10 +14,10 @@ import {
   Tags,
   Delete,
 } from 'tsoa';
-import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
-import * as service from '../../services/announcement.service';
-import { rootLogger } from '../../utils/logger';
-import { errors } from '../../utils/constants';
+import {
+  ApiErrorResponse,
+  ApiSuccessResponse
+} from '../../domain/api-responses';
 import {
   CreateAnnouncementDto,
   QueryAnnouncementDto,
@@ -27,34 +28,42 @@ import {
   AnnouncementResourceDto,
   QueryEmployeeAnnouncementDto
 } from '../../domain/dto/announcement.dto';
-import { Announcement } from '@prisma/client';
+import * as service from '../../services/announcement.service';
+import { errors } from '../../utils/constants';
+import { rootLogger } from '../../utils/logger';
+
 
 @Tags('announcements')
 @Route('/api/v1/announcements')
 @Security('api_key')
 export class AnnouncementV1Controller {
-  private readonly logger = rootLogger.child({ context: AnnouncementV1Controller.name });
+  private readonly logger = rootLogger.child({
+    context: AnnouncementV1Controller.name
+  });
 
   /**
    * Create an Announcement
-   *
+   * 
    * @param createData Request body
-   * @returns API response
+   * @param req Request object
+   * @returns Announcement
    */
   @Post()
   @SuccessResponse(201, 'Created')
   public async addAnnouncement(
-    @Body() createData: CreateAnnouncementDto
+    @Body() createData: CreateAnnouncementDto,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<Announcement>> {
     this.logger.debug('Received request to add Announcement', { data: createData, });
-    const announcement = await service.addAnnouncement(createData);
+    const announcement = await service.addAnnouncement(createData, req.user!);
     return { data: announcement };
   }
 
   /**
    * Get a list of Announcement(s) matching query
-   *
+   * 
    * @param query Request query parameters, including pagination and ordering details
+   * @param req Request object
    * @returns List of matching Announcement(s)
    */
   @Get()
@@ -67,12 +76,13 @@ export class AnnouncementV1Controller {
     this.logger.info('Returning %d Announcement(s) that matched the query', data.length);
     return { data, pagination };
   }
-
+  
   /**
-   * Get a list of Announcement(S) for specific employee matching query
-   *
+   * Get a list of Announcement(s) for an employee
+   * 
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching Announcement(s) for employee
+   * @param req Request object
+   * @returns List of matching Announcement(s)
    */
   @Get('/me')
   public async getMyAnnouncements(
@@ -86,13 +96,15 @@ export class AnnouncementV1Controller {
   }
 
   /**
-   * Get a Announcement by ID
-   * @param id Announcement ID
-   * @returns an Announcement
+   * Get an Announcement
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns Announcement
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
-    error: 'NOT_FOUND',
+    error: errors.NOT_FOUND,
     message: 'Announcement does not exist',
     details: [],
   })
@@ -104,21 +116,23 @@ export class AnnouncementV1Controller {
     const announcement = await service.getAnnouncement(id, req.user!);
     return { data: announcement };
   }
-
+  
   /**
-   * Change some details of an existing Announcement
-   * @param id Announcement ID
-   * @param body Request body with details to update
+   * Update an Announcement
+   * 
+   * @param id Announcement id
+   * @param updateDto Request body with details to update
+   * @param req Request object
    * @returns Updated Announcement
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
-    error: 'REQUEST_VALIDATION_FAILED',
+    error: errors.REQUEST_VALIDATION_FAILED,
     message: 'Request validation failed',
     details: ['fieldA is required', 'fieldB must not be blank'],
   })
   @Response<ApiErrorResponse>(409, 'Conflict', {
-    error: 'INVALID_STATE',
+    error: errors.INVALID_STATE,
     message: 'Resource of interest is in an invalid state',
     details: [],
   })
@@ -134,41 +148,44 @@ export class AnnouncementV1Controller {
   }
 
   /**
-   * Change some details of an existing AnnouncementResource
-   * @param id Announcement ID
-   * @param announcementResourceId AnnouncementResource ID
-   * @param body Request body with details to update
+   * Update an AnnouncementResource
+   * 
+   * @param announcementId Announcement id
+   * @param id Resource id
+   * @param updateDto Request body with details to update
+   * @param req Request object
    * @returns Updated Announcement
    */
-  @Patch('{id}/resources/{resourceId}')
+  @Patch('{announcementId}/resources/{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
-    error: 'REQUEST_VALIDATION_FAILED',
+    error: errors.REQUEST_VALIDATION_FAILED,
     message: 'Request validation failed',
     details: ['fieldA is required', 'fieldB must not be blank'],
   })
   @Response<ApiErrorResponse>(409, 'Conflict', {
-    error: 'INVALID_STATE',
+    error: errors.INVALID_STATE,
     message: 'Resource of interest is in an invalid state',
     details: [],
   })
   public async updateAnnouncementResource(
+    @Path('announcementId') announcementId: number,
     @Path('id') id: number,
-    @Path('resourceId') resourceId: number,
     @Body() updateDto: UpdateAnnouncementResourceDto,
-
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<AnnouncementResourceDto>> {
-    this.logger.debug('Received request to update AnnouncementResource[%s]', resourceId);
-    const updatedAnnouncementResource =
-      await service.updateAnnouncementResource(id, resourceId, updateDto);
-    this.logger.info('AnnouncementResource[%s] updated successfully!', resourceId);
+    this.logger.debug('Received request to update AnnouncementResource[%s]', id);
+    const updatedAnnouncementResource = await service
+      .updateAnnouncementResource(announcementId, id, updateDto, req.user!);
+    this.logger.info('AnnouncementResource[%s] updated successfully!', id);
     return { data: updatedAnnouncementResource };
   }
-
+  
   /**
    * Search Announcement(s) by title and body
    * 
-   * @param searchParam search parameters including name and description
-   * @returns Announcement(s) that match search
+   * @param searchParam Search keywords
+   * @param req Request object
+   * @returns List of matching Announcement(s)
    */
   @Get('search')
   public async searchAnnouncements(
@@ -176,19 +193,23 @@ export class AnnouncementV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<AnnouncementDto[]>> {
     this.logger.debug(
-      'Received request to get Announcement(s) matching search query', { searchParam }
+      'Received request to get Announcement(s) matching search query',
+      { searchParam }
     );
     const { data, pagination } =
       await service.searchAnnouncements(searchParam, req.user!);
-    this.logger.info('Returning %d Announcement(s) that matched search query', data.length);
+    this.logger.info(
+      'Returning %d Announcement(s) that matched search query', data.length
+    );
     return { data, pagination };
   }
-
+  
   /**
-   * Search Announcement(s) for specific employee by title and body 
+   * Search Announcement(s) for employee by title and body
    * 
-   * @param searchParam search parameters including name and description
-   * @returns Announcement(s) that match search for the employee
+   * @param searchParam Search keyword(s)
+   * @param req Request object
+   * @returns List of matching Announcement(s)
    */
   @Get('me/search')
   public async searchMyAnnouncements(
@@ -196,18 +217,22 @@ export class AnnouncementV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<AnnouncementDto[]>> {
     this.logger.info(
-      'Received request to get Announcement(s) matching search query', { searchParam }
+      'Received request to get Announcement(s) matching search query',
+      { searchParam }
     );
     const { data, pagination } =
       await service.searchAnnouncements(searchParam, req.user!);
-    this.logger.info('Returning %d Announcement(s) that matched search query', data.length);
+    this.logger.info(
+      'Returning %d Announcement(s) that matched search query', data.length
+    );
     return { data, pagination };
   }
-
+  
   /**
-   * Remove an existing Announcement
-   * @param id Announcement ID
-   * @returns nothing
+   * Remove an Announcement
+   * 
+   * @param id Announcement id
+   * @param req Request body
    */
   @Delete('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
@@ -224,5 +249,4 @@ export class AnnouncementV1Controller {
     await service.deleteAnnouncement(id, req.user!);
     this.logger.debug('Announcement[%s] deleted successfully', id);
   }
-
 }

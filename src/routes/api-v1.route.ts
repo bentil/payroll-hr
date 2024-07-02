@@ -789,7 +789,7 @@ router.patch(
 );
 
 router.patch(
-  '/announcements/:id/resources/:resourceId',
+  '/announcements/:announcementId/resources/:id',
   authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA),
   announcementV1Controller.updateAnnouncementResource

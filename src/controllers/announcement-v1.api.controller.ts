@@ -1,9 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-import { AnnouncementV1Controller } from './openapi/announcement-v1.oas.controller';
 import { 
   QueryAnnouncementDto,
   SearchAnnouncementDto
 } from '../domain/dto/announcement.dto';
+import {
+  AnnouncementV1Controller
+} from './openapi/announcement-v1.oas.controller';
+
 
 const controller = new AnnouncementV1Controller();
 
@@ -13,7 +16,7 @@ export async function addNewAnnouncement(
   next: NextFunction
 ): Promise<void> {
   try {
-    const response = await controller.addAnnouncement(req.body);
+    const response = await controller.addAnnouncement(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -27,7 +30,8 @@ export async function getAnnouncements(
 ): Promise<void> {
   try {
     const response = await controller.getAnnouncements(
-      req.query as unknown as QueryAnnouncementDto, req
+      req.query as unknown as QueryAnnouncementDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -42,7 +46,8 @@ export async function getMyAnnouncements(
 ): Promise<void> {
   try {
     const response = await controller.getMyAnnouncements(
-      req.query as unknown as QueryAnnouncementDto, req
+      req.query as unknown as QueryAnnouncementDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -83,9 +88,14 @@ export async function updateAnnouncementResource(
   res: Response, 
   next: NextFunction
 ): Promise<void> {
-  const { id, resourceId } = req.params;
+  const { announcementId, id } = req.params;
   try {
-    const response = await controller.updateAnnouncementResource(+id, +resourceId, req.body);
+    const response = await controller.updateAnnouncementResource(
+      +announcementId,
+      +id,
+      req.body,
+      req
+    );
     res.json(response);
   } catch (err) {
     next(err);
@@ -99,7 +109,8 @@ export async function searchAnnouncements(
 ): Promise<void> {
   try {
     const response = await controller.searchAnnouncements(
-      req.query as unknown as SearchAnnouncementDto, req
+      req.query as unknown as SearchAnnouncementDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -114,7 +125,8 @@ export async function searchMyAnnouncements(
 ): Promise<void> {
   try {
     const response = await controller.searchMyAnnouncements(
-      req.query as unknown as SearchAnnouncementDto, req
+      req.query as unknown as SearchAnnouncementDto,
+      req
     );
     res.json(response);
   } catch (err) {
