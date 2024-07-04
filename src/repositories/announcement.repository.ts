@@ -84,9 +84,11 @@ export async function update(params: {
     addResources,
     removeResourcesIds,
     unassignedTargetGradeLevelIds,
-    assignedTargetGradeLevelIds
+    assignedTargetGradeLevelIds,
+    ...updateData
   } = data;
   const _data: Prisma.AnnouncementUpdateInput = {
+    ...updateData,
     resources: {
       createMany: addResources && { 
         data: addResources
