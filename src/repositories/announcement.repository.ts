@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Announcement, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
@@ -9,7 +9,12 @@ import {
 } from '../domain/dto/announcement.dto';
 
 export async function create(
-  { companyId, resources, targetGradeLevelIds, ...dtoData }: CreateAnnouncementDto,
+  {
+    companyId,
+    resources,
+    targetGradeLevelIds,
+    ...dtoData
+  }: CreateAnnouncementDto,
   include?: Prisma.AnnouncementInclude
 ): Promise<AnnouncementDto> {
   const data: Prisma.AnnouncementCreateInput = {
@@ -21,7 +26,7 @@ export async function create(
       }
     },
     targetGradeLevels: targetGradeLevelIds && {
-      connect:  targetGradeLevelIds.map(id => ({ id }))
+      connect: targetGradeLevelIds.map(id => ({ id }))
     }
   };
 
@@ -61,7 +66,9 @@ export async function find(params: {
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
     prisma.announcement.findMany(params),
-    paginate ? prisma.announcement.count({ where: params.where }) : Promise.resolve(undefined),
+    paginate
+      ? prisma.announcement.count({ where: params.where })
+      : Promise.resolve(undefined),
   ]);
 
   return getListWithPagination(data, { skip, take, totalCount });
@@ -99,8 +106,8 @@ export async function update(params: {
       },
     },
     targetGradeLevels: {
-      connect: assignedTargetGradeLevelIds && assignedTargetGradeLevelIds.map(id => ({ id })),
-      disconnect: unassignedTargetGradeLevelIds && unassignedTargetGradeLevelIds.map(id => ({ id }))
+      connect: assignedTargetGradeLevelIds?.map(id => ({ id })),
+      disconnect: unassignedTargetGradeLevelIds?.map(id => ({ id }))
     },
   };
   
@@ -130,13 +137,17 @@ export async function search(params: {
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
     prisma.announcement.findMany(params),
-    paginate ? prisma.announcement.count({ where: params.where }) : Promise.resolve(undefined),
+    paginate
+      ? prisma.announcement.count({ where: params.where })
+      : Promise.resolve(undefined),
   ]);
 
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteOne(where: Prisma.AnnouncementWhereUniqueInput) {
+export async function deleteOne(
+  where: Prisma.AnnouncementWhereUniqueInput
+): Promise<Announcement> {
   try {
     return await prisma.announcement.delete({ where });
   } catch (err) {
