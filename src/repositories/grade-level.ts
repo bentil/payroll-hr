@@ -1,11 +1,15 @@
 import { GradeLevel, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { getListWithPagination } from './types';
 import { GradeLevelEvent } from '../domain/events/grade-level.event';
- 
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
+import { ListWithPagination, getListWithPagination } from './types';
+
+
 export async function createOrUpdate(
-  { companyLevelId, ...dtoData }:  Omit<GradeLevelEvent, 'createdAt' | 'modifiedAt'>
+  {
+    companyLevelId,
+    ...dtoData
+  }:  Omit<GradeLevelEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<GradeLevel> {
   const data: Prisma.GradeLevelCreateInput = {
     ...dtoData,
@@ -19,12 +23,12 @@ export async function createOrUpdate(
   });
 }
 
-
-export async function create(data: Prisma.GradeLevelCreateInput): Promise<GradeLevel> {
+export async function create(
+  data: Prisma.GradeLevelCreateInput
+): Promise<GradeLevel> {
   try {
     return await prisma.gradeLevel.create({ data });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -56,7 +60,7 @@ export async function find(params: {
   take?: number,
   where?: Prisma.GradeLevelWhereInput,
   orderBy?: Prisma.GradeLevelOrderByWithRelationAndSearchRelevanceInput
-}) {
+}): Promise<ListWithPagination<GradeLevel>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
@@ -65,54 +69,21 @@ export async function find(params: {
       ? prisma.gradeLevel.count({ where: params.where })
       : Promise.resolve(undefined),
   ]);
+
   return getListWithPagination(data, { skip, take, totalCount });
 }
-
-export async function search(params: {
-  skip?: number,
-  take?: number,
-  orderBy?: Prisma.GradeLevelOrderByWithRelationAndSearchRelevanceInput
-}, searchParam?: string, scopedQuery?: {
-  companyId?: number | { in: number[] }
-}) {
-  const { skip, take } = params;
-  const paginate = skip !== undefined && take !== undefined;
-  const where = {
-    code: {
-      search: searchParam,
-    },
-    name: {
-      search: searchParam,
-    },
-    description: {
-      search: searchParam,
-    },
-    ...scopedQuery
-  };
-  const [data, totalCount] = await Promise.all([
-    prisma.gradeLevel.findMany({
-      where, ...params
-    }),
-    paginate
-      ? prisma.gradeLevel.count({ where })
-      : Promise.resolve(undefined),
-  ]);
-  return getListWithPagination(data, { skip, take, totalCount });
-}
-
 
 export async function update(params: {
   where: Prisma.GradeLevelWhereUniqueInput,
   data: Prisma.GradeLevelUpdateInput
-}) {
+}): Promise<GradeLevel> {
   const { where, data } = params;
   try {
     return await prisma.gradeLevel.update({
       where,
       data
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
         throw new AlreadyExistsError({
@@ -125,15 +96,6 @@ export async function update(params: {
   }
 }
 
-export async function createMany(data: Prisma.GradeLevelCreateInput[]): Promise<GradeLevel[]> {
-  const records = [];
-  for (const record of data) {
-    const create = prisma.gradeLevel.create({ data: record });
-    records.push(create);
-  }
-  return prisma.$transaction(records);
-}
-
 export async function deleteOne(
   whereUniqueInput: Prisma.GradeLevelWhereUniqueInput
 ): Promise<GradeLevel> {
@@ -141,12 +103,11 @@ export async function deleteOne(
     return await prisma.gradeLevel.delete({
       where: whereUniqueInput
     });
-  }
-  catch (err) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
         throw new RecordInUse({
-          message: 'Grade level is currently in use by another model',
+          message: 'Grade level is currently in use',
           cause: err
         });
       }

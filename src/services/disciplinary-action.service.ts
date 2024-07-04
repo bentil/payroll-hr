@@ -7,32 +7,32 @@ import {
   SearchDisciplinaryActionDto,
   DisciplinaryActionDto,
 } from '../domain/dto/disciplinary-action.dto';
-import * as repository from '../repositories/disciplinary-action.repository';
-import * as payrollCompanyService from '../services/payroll-company.service';
-import * as employeeService from '../services/employee.service';
-import * as grievanceReportService from '../services/grievance-report.service';
-import * as actionTypeService from '../services/disciplinary-action-type.service';
-import * as helpers from '../utils/helpers';
-import { rootLogger } from '../utils/logger';
+import { AuthorizedUser } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
   HttpError, 
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
+import * as repository from '../repositories/disciplinary-action.repository';
 import { ListWithPagination } from '../repositories/types';
+import * as actionTypeService from '../services/disciplinary-action-type.service';
+import * as employeeService from '../services/employee.service';
+import * as grievanceReportService from '../services/grievance-report.service';
+import * as payrollCompanyService from '../services/payroll-company.service';
 import { errors } from '../utils/constants';
-import { generateDisciplinaryActionNumber } from '../utils/generator.util';
 import * as dateutil from '../utils/date.util';
-import { AuthorizedUser } from '../domain/user.domain';
+import { generateDisciplinaryActionNumber } from '../utils/generator.util';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
+
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'DisciplinaryAction' });
-
+const logger = rootLogger.child({ context: 'DisciplinaryActionService' });
 const events = {
   created: 'event.DisciplinaryAction.created',
   modified: 'event.DisciplinaryAction.modified',
-};
+} as const;
 
 export async function addDisciplinaryAction(
   creatData: CreateDisciplinaryActionDto
@@ -45,7 +45,9 @@ export async function addDisciplinaryAction(
     await Promise.all([
       payrollCompanyService.getPayrollCompany(companyId),
       employeeService.getEmployee(employeeId),
-      grievanceReportId ? grievanceReportService.getGrievanceReport(grievanceReportId) : undefined,
+      grievanceReportId
+        ? grievanceReportService.getGrievanceReport(grievanceReportId)
+        : undefined,
       actionTypeService.getDisciplinaryActionType(actionTypeId)
     ]);
   } catch (err) {
@@ -175,11 +177,14 @@ export async function searchDisciplinaryActions(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   let result: ListWithPagination<DisciplinaryAction>;
   try {
-    logger.debug('Finding DisciplinaryAction(s) that matched search query', { query });
+    logger.debug(
+      'Finding DisciplinaryAction(s) that matched search query',
+      { query }
+    );
     result = await repository.search({
       skip,
       take,
@@ -202,7 +207,8 @@ export async function searchDisciplinaryActions(
     logger.info('Found %d DisciplinaryAction(s) that matched query', { query });
   } catch (err) {
     logger.warn(
-      'Searching DisciplinaryAction with query failed', { query }, { error: err as Error }
+      'Searching DisciplinaryAction with query failed',
+      { query }, { error: err as Error }
     );
     throw new ServerError({
       message: (err as Error).message,

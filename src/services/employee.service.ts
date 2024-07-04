@@ -1,21 +1,24 @@
 import {  Employee } from '@prisma/client';
-import * as repository from '../repositories/employee.repository';
-import { rootLogger } from '../utils/logger';
 import { EmployeeEvent } from '../domain/events/employee.event';
-import { InvalidStateError, NotFoundError, ServerError } from '../errors/http-errors';
-import { errors } from '../utils/constants';
-import { managePermissionScopeQuery } from '../utils/helpers';
 import { AuthorizedUser } from '../domain/user.domain';
+import {
+  ForbiddenError,
+  InvalidStateError,
+  NotFoundError,
+  ServerError
+} from '../errors/http-errors';
+import * as repository from '../repositories/employee.repository';
+import { errors } from '../utils/constants';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
+
 
 const logger = rootLogger.child({ context: 'EmployeeService' });
 
 export async function createOrUpdateEmployee(
   data: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<Employee> {
-  logger.debug(
-    'Saving Employee[%s]',
-    data.id,
-  );
+  logger.debug('Saving Employee[%s]', data.id);
   const employee = await repository.createOrUpdate({
     id: data.id,
     address: data.address,
@@ -54,10 +57,7 @@ export async function createOrUpdateEmployee(
     unionMember: data.unionMember,
     statusLastModifiedAt: data.statusLastModifiedAt
   });
-  logger.info(
-    'Employee[%s] saved',
-    data.id
-  );
+  logger.info('Employee[%s] saved', data.id);
 
   return employee;
 }
@@ -69,7 +69,10 @@ export async function getEmployee(id: number): Promise<Employee> {
   try {
     employee = await repository.findOne({ id });
   } catch (err) {
-    logger.warn('Getting Employee[%s] failed', id, { error: (err as Error).stack });
+    logger.warn(
+      'Getting Employee[%s] failed',
+      id, { error: (err as Error).stack }
+    );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
@@ -85,19 +88,18 @@ export async function getEmployee(id: number): Promise<Employee> {
 }
 
 export async function validateEmployees(
-  id: number[],
+  ids: number[],
 ): Promise<void> {
-  const employeesList = new Set<number>(id);
-
-  //TO DO -> CHANGE FIND TO COUNT
-  const foundEmployees = await repository.find({
-    where: { id: { in: [...employeesList] } }
+  const distinctIds = new Set<number>(ids);
+  
+  const foundCount = await repository.count({
+    id: { in: [...distinctIds] }
   });
 
-  if (foundEmployees.data.length !== employeesList.size) {
+  if (foundCount !== distinctIds.size) {
     logger.warn(
       'Received %d Employees id(s), but found %d',
-      employeesList.size, foundEmployees.data.length
+      distinctIds.size, foundCount
     );
     throw new NotFoundError({
       name: errors.EMPLOYEE_NOT_FOUND,
@@ -105,36 +107,41 @@ export async function validateEmployees(
     });
   }
 }
+
 export async function validateEmployee(
   id: number, 
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
   options?: {
     throwOnNotActive?: boolean,
-    companyId?: number, companyIds?: number[]
+    companyId?: number,
+    companyIds?: number[]
   }
 ): Promise<Employee> {
-  const distinctIds = new Set<number>(options?.companyIds);
+  const { companyId: oCompanyId, companyIds: oCompanyIds } = options ?? {};
 
-  let companyIdQuery: {
-    companyId?: number | { in: number[] };
-  };
-  if (options?.companyId) {
-    companyIdQuery = {
-      companyId: options?.companyId
-    };
-  } else {
-    companyIdQuery = {
-      companyId: { in: [...distinctIds] }
-    };
+  const checkPassed = !oCompanyIds
+    || oCompanyIds.every(i => authUser.companyIds.includes(i));
+  if (!checkPassed) {
+    throw new ForbiddenError({
+      message: 'User does not have access to some companies'
+    });
+  }
+
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
+    authUser,
+    { companyId: oCompanyId }
+  );
+
+  if (oCompanyIds) {
+    const combinedIds = oCompanyIds;
+    if (oCompanyId) combinedIds.push(oCompanyId);
+    scopedQuery.companyId = { in: combinedIds };
   }
 
   logger.debug('Getting details for Employee[%s]', id);
   let employee: Employee | null;
   try {
-    employee = await repository.findFirst({
-      id,
-      ...companyIdQuery
-    });
+    employee = await repository.findFirst({ id, ...scopedQuery });
   } catch (err) {
     logger.warn('Getting Employee[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -153,10 +160,6 @@ export async function validateEmployee(
       });
     }
   }
-
-  await managePermissionScopeQuery(authorizedUser,
-    { queryCompanyId: employee.companyId, queryParam: {} }
-  );
 
   logger.info('Employee[%s] details retrieved!', id);
   return employee;

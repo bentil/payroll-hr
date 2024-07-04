@@ -1,19 +1,17 @@
 import { PayPeriod } from '@prisma/client';
 import { PayPeriodEvent } from '../domain/events/pay-period.event';
-import { rootLogger } from '../utils/logger';
-import * as repository from '../repositories/pay-period.repository';
 import { NotFoundError, ServerError } from '../errors/http-errors';
+import * as repository from '../repositories/pay-period.repository';
 import { errors } from '../utils/constants';
+import { rootLogger } from '../utils/logger';
+
 
 const logger = rootLogger.child({ context: 'PayPeriodService' });
 
 export async function createOrUpdatePayPeriod(
   data: Omit<PayPeriodEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<PayPeriod> {
-  logger.debug(
-    'Saving PayPeriod[%s]',
-    data.id,
-  );
+  logger.debug('Saving PayPeriod[%s]', data.id);
   const payPeriod = await repository.createOrUpdate({
     id: data.id,
     code: data.code,
@@ -26,10 +24,7 @@ export async function createOrUpdatePayPeriod(
     organizationId: data.organizationId,
     companyId: data.companyId
   });
-  logger.info(
-    'PayPeriod[%s] saved',
-    data.id
-  );
+  logger.info('PayPeriod[%s] saved', data.id);
 
   return payPeriod;
 }
@@ -41,7 +36,10 @@ export async function getPayPeriod(id: number): Promise<PayPeriod> {
   try {
     payPeriod = await repository.findOne({ id });
   } catch (err) {
-    logger.warn('Getting PayPeriod[%s] failed', id, { error: (err as Error).stack });
+    logger.warn(
+      'Getting PayPeriod[%s] failed',
+      id, { error: (err as Error).stack }
+    );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
@@ -68,10 +66,10 @@ export async function deletePayPeriod(id: number): Promise<void> {
 
   logger.debug('Deleting PayPeriod[%s] from database...', id);
   try {
-    await repository.deletePayPeriod({ id });
+    await repository.deleteOne({ id });
     logger.info('PayPeriod[%s] successfully deleted', id);
   } catch (err) {
-    logger.error('Deleting Payperiod[%] failed', id);
+    logger.error('Deleting PayPeriod[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 }

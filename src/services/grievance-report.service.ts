@@ -1,4 +1,9 @@
-import { Employee, GrievanceReport, GrievanceType, PayrollCompany } from '@prisma/client';
+import {
+  Employee,
+  GrievanceReport,
+  GrievanceType,
+  PayrollCompany,
+} from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   CreateGrievanceReportDto,
@@ -7,31 +12,31 @@ import {
   SearchGrievanceReportDto,
   GrievanceReportDto,
 } from '../domain/dto/grievance-report.dto';
-import * as grievanceReportRepository from '../repositories/grievance-report.repository';
-import * as payrollCompanyService from '../services/payroll-company.service';
-import * as grievanceTypeService from '../services/grievance-type.service';
-import * as employeeService from '../services/employee.service';
-import * as helpers from '../utils/helpers';
-import { rootLogger } from '../utils/logger';
+import { AuthorizedUser } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
   HttpError, 
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
-import { errors } from '../utils/constants';
+import * as grievanceReportRepository from '../repositories/grievance-report.repository';
 import { ListWithPagination } from '../repositories/types';
-import { generateGrievanceReportNumber } from '../utils/generator.util';
+import * as payrollCompanyService from '../services/payroll-company.service';
+import * as grievanceTypeService from '../services/grievance-type.service';
+import * as employeeService from '../services/employee.service';
+import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
-import { AuthorizedUser } from '../domain/user.domain';
+import { generateGrievanceReportNumber } from '../utils/generator.util';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
+
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'GrievanceReport' });
-
+const logger = rootLogger.child({ context: 'GrievanceReportService' });
 const events = {
   created: 'event.GrievanceReport.created',
-  modified: 'event.GrievanceRepor.modified',
-};
+  modified: 'event.GrievanceReport.modified',
+} as const;
 
 export async function addGrievanceReport(
   creatData: CreateGrievanceReportDto,
@@ -51,13 +56,15 @@ export async function addGrievanceReport(
           companyId, { throwOnNotActive: true, organizationId }
         ),
         employeeService.validateEmployee(
-          reportingEmployeeId, authorizedUser, { throwOnNotActive: true, companyId }
+          reportingEmployeeId,
+          authorizedUser,
+          { throwOnNotActive: true, companyId }
         ),
         grievanceTypeService.getGrievanceType(grievanceTypeId),
         employeeService.validateEmployees(reportedEmployeeId)
       ]);
     } catch (err) {
-      logger.warn('Getting PayrollCompany[%s] fialed', companyId);
+      logger.warn('Getting PayrollCompany[%s] failed', companyId);
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
         message: 'Dependency check failed',
@@ -191,8 +198,7 @@ export async function searchGrievanceReports(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.managePermissionScopeQuery(authUser, { queryParam: {} });
-
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {

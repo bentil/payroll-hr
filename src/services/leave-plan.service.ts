@@ -6,9 +6,7 @@ import {
   QueryLeavePlanDto,
   UpdateLeavePlanDto,
 } from '../domain/dto/leave-plan.dto';
-import * as leavePlanRepository from '../repositories/leave-plan.repository';
-import * as helpers from '../utils/helpers';
-import { rootLogger } from '../utils/logger';
+import { AuthorizedUser } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
   ForbiddenError, 
@@ -16,22 +14,23 @@ import {
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
+import * as employeeRepository from '../repositories/employee.repository';
+import * as leavePlanRepository from '../repositories/leave-plan.repository';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
-import { validate } from './leave-type.service';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
-import { AuthorizedUser } from '../domain/user.domain';
-import * as employeeRepository from '../repositories/employee.repository';
+import { validate } from './leave-type.service';
 
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'LeavePlan' });
-
+const logger = rootLogger.child({ context: 'LeavePlanService' });
 const events = {
   created: 'event.LeavePlan.created',
   modified: 'event.LeavePlan.modified',
-};
+} as const;
 
 export async function addLeavePlan(
   payload: CreateLeavePlanDto
@@ -171,7 +170,13 @@ export async function updateLeavePlan(
 
   const leavePlan = await leavePlanRepository.findOne({ id }, true);
 
-  const employee = await employeeRepository.findOne({ id: employeeId }, true);
+  const employee = await employeeRepository.findOne(
+    { id: employeeId },
+    {
+      majorGradeLevel: { include: { companyLevel: true } },
+      company: true,
+    },
+  );
   const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
   const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
 

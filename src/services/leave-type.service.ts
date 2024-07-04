@@ -1,33 +1,32 @@
+import { CompanyLevelLeavePackage, LeaveType } from '@prisma/client';
 import {
   CreateLeaveTypeDto,
   LeaveTypeDto,
-  LeaveTypeOrderBy,
   QueryApplicableLeaveTypeDto,
   QueryLeaveTypeDto,
   SearchLeaveTypeDto,
   UpdateLeaveTypeDto,
   ValidationReturnObject
 } from '../domain/dto/leave-type.dto';
-import * as repository from '../repositories/leave-type';
 import {
   HttpError,
   NotFoundError,
   ServerError
 } from '../errors/http-errors';
-import { rootLogger } from '../utils/logger';
-import * as helpers from '../utils/helpers';
-import { CompanyLevelLeavePackage, LeaveType } from '@prisma/client';
-import { ListWithPagination } from '../repositories/types';
 // eslint-disable-next-line max-len
 import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
 import * as employeeRepository from '../repositories/employee.repository';
-import * as leaveTypeRepository from '../repositories/leave-type';
+import * as repository from '../repositories/leave-type';
+import { ListWithPagination } from '../repositories/types';
+import { rootLogger } from '../utils/logger';
+import * as helpers from '../utils/helpers';
+
 
 const logger = rootLogger.child({ context: 'LeaveTypeService' });
 
-export const createLeaveType = async (
+export async function createLeaveType(
   createLeaveTypeDto: CreateLeaveTypeDto,
-): Promise<LeaveTypeDto> => {
+): Promise<LeaveTypeDto> {
   logger.debug('Persisting new LeaveType...');
   let leaveType: LeaveTypeDto;
   try {
@@ -39,7 +38,7 @@ export const createLeaveType = async (
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   return leaveType;
-};
+}
 
 export async function updateLeaveType(
   id: number,
@@ -57,7 +56,6 @@ export async function updateLeaveType(
 
   logger.info('Update(s) to LeaveType[%s] persisted successfully!', id);
   return updatedLeaveType;
-
 }
 
 export async function getLeaveTypes(
@@ -69,8 +67,8 @@ export async function getLeaveTypes(
     orderBy,
     ...queryParam
   } = query;
-  const skip = helpers.getSkip(page || 1, take);
-  const orderByInput = helpers.getOrderByInput(orderBy || LeaveTypeOrderBy.CREATED_AT_ASC);
+  const skip = helpers.getSkip(page, take);
+  const orderByInput = helpers.getOrderByInput(orderBy);
 
   let leaveType: ListWithPagination<LeaveType>;
   logger.debug('Finding LeaveType(s) that match query', { query });
@@ -84,7 +82,7 @@ export async function getLeaveTypes(
       orderBy: orderByInput
     });
     logger.info(
-      'Found %d LeaveType that matched query',
+      'Found %d LeaveType(s) that matched query',
       leaveType.data.length, { query }
     );
   } catch (err) {
@@ -94,6 +92,7 @@ export async function getLeaveTypes(
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
   return leaveType;
 }
 
@@ -107,37 +106,52 @@ export async function getApplicableLeaveTypes(
     employeeId,
     companyLevelId,
   } = query;
-  const skip = helpers.getSkip(page || 1, take);
-  const orderByInput = helpers.getOrderByInput(orderBy || LeaveTypeOrderBy.CREATED_AT_ASC);
+  const skip = helpers.getSkip(page, take);
+  const orderByInput = helpers.getOrderByInput(orderBy);
 
-  let leaveType: ListWithPagination<LeaveTypeDto>;
+  let result: ListWithPagination<LeaveTypeDto>;
   try {
     if (employeeId) {
-      const employee = await employeeRepository.findOne({ id: employeeId }, true);
+      const employee = await employeeRepository.findOne(
+        { id: employeeId },
+        {
+          majorGradeLevel: { include: { companyLevel: true } },
+          company: true,
+        },
+      );
       if (employee?.majorGradeLevel?.companyLevelId) {
         const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
-        leaveType = await leaveTypeRepository.find({
+        result = await repository.find({
           skip,
           take,
-          where: { leavePackages: { some: { 
-            companyLevelLeavePackages: { some: { companyLevelId } } } 
-          } },
+          where: {
+            leavePackages: {
+              some: { 
+                companyLevelLeavePackages: { some: { companyLevelId } }
+              }
+            }
+          },
           orderBy: orderByInput
         });
       } else {
-        leaveType = { data: [] };
+        result = { data: [] };
       }
     } else if (companyLevelId) {
-      leaveType = await leaveTypeRepository.find({
+      result = await repository.find({
         skip,
         take,
-        where:{ leavePackages: { some: { 
-          companyLevelLeavePackages: { some: { companyLevelId } } } 
-        } },
+        where:{
+          leavePackages: {
+            some: { 
+              companyLevelLeavePackages: { some: { companyLevelId } }
+            }
+          }
+        },
         orderBy: orderByInput
       });
     } else {
-      leaveType = { data: [] };    }
+      result = { data: [] };
+    }
   } catch (err) {
     logger.warn(
       'Querying LeaveTypes with query failed',
@@ -146,7 +160,7 @@ export async function getApplicableLeaveTypes(
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
-  return leaveType;
+  return result;
 }
 
 export async function getLeaveTypeById(id: number): Promise<LeaveType> {
@@ -181,18 +195,18 @@ export async function searchLeaveTypes(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
 
-  let leaveType: ListWithPagination<LeaveType>;
+  let result: ListWithPagination<LeaveType>;
   logger.debug('Finding LeaveType(s) that match search query', { query });
   try {
-    leaveType = await repository.search({
+    result = await repository.search({
       skip,
       take,
       orderBy: orderByInput
     }, searchParam);
 
     logger.info(
-      'Found %d LeaveType that matched search query',
-      leaveType.data.length, { query });
+      'Found %d LeaveType(s) that matched search query',
+      result.data.length, { query });
   } catch (err) {
     logger.warn(
       'Querying LeaveTypes with search query failed',
@@ -200,10 +214,10 @@ export async function searchLeaveTypes(
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-  return leaveType;
+  return result;
 }
 
-export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
+export async function deleteLeaveType(id: number): Promise<LeaveType> {
   logger.debug('Getting details for LeaveType[%s]', id);
   let deletedLeaveType: LeaveType | null, leaveType: LeaveType | null;
   try {
@@ -224,7 +238,7 @@ export const deleteLeaveType = async (id: number): Promise<LeaveType> => {
     logger.warn('Deleting LeaveType[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-};
+}
 
 export async function validate(
   leaveTypeId: number, 
@@ -232,7 +246,13 @@ export async function validate(
 ): Promise<ValidationReturnObject> {
   ///add a consumer for grade level, add the relation grade
   let leavePackage: CompanyLevelLeavePackage | null;
-  const employee = await employeeRepository.findOne({ id: employeeId }, true);
+  const employee = await employeeRepository.findOne(
+    { id: employeeId },
+    {
+      majorGradeLevel: { include: { companyLevel: true } },
+      company: true,
+    },
+  );
   if (employeeId) {
     if (employee?.majorGradeLevel?.companyLevelId) {
       try {
