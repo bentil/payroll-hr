@@ -119,7 +119,7 @@ export async function getAnnouncements(
     active = true;
   }
 
-  logger.debug('Finding Announcement(s) that matched query', { query });
+  logger.debug('Finding Announcement(s) that match query', { query });
   let result: ListWithPagination<AnnouncementDto>;
   try {
     result = await repository.find({
@@ -151,9 +151,15 @@ export async function getAnnouncements(
         }
       }
     });
-    logger.info('Found %d Announcement(s) that matched query', result.data.length, { query });
+    logger.info(
+      'Found %d Announcement(s) that matched query',
+      result.data.length, { query }
+    );
   } catch (err) {
-    logger.warn('Querying Announcement with query failed', { query }, { error: err as Error });
+    logger.warn(
+      'Querying Announcement with query failed',
+      { query }, { error: err as Error }
+    );
     throw new ServerError({
       message: (err as Error).message,
       cause: err
@@ -236,11 +242,11 @@ export async function searchAnnouncements(
   let gradeLevelId: number | undefined, active: boolean | undefined;
   if (!adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);
-    gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
+    gradeLevelId = employee.majorGradeLevelId ?? undefined;
     active = true;
   }
 
-  logger.debug('Finding Announcement(s) that matched search query', { query });
+  logger.debug('Finding Announcement(s) that match search query', { query });
   let result: ListWithPagination<AnnouncementDto>;
   try {
     result = await repository.search({
@@ -273,7 +279,10 @@ export async function searchAnnouncements(
     });
     logger.info('Found %d Announcement(s) that matched query', { query });
   } catch (err) {
-    logger.warn('Searching Announcement with query failed', { query }, { error: err as Error });
+    logger.warn(
+      'Searching Announcement with query failed',
+      { query }, { error: err as Error }
+    );
     throw new ServerError({
       message: (err as Error).message,
       cause: err
