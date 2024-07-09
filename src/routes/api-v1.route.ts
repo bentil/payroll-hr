@@ -129,6 +129,7 @@ import {
   UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
 } from '../domain/request-schema/announcement.schema';
 
+
 const router = Router();
 router.use(authenticateClient);
 
@@ -487,49 +488,49 @@ router.post(
 
 // ### Company Tree Node 
 router.post(
-  '/payroll-company/:id/tree/nodes',
-  authenticateUser(),
+  '/payroll-companies/:companyId/tree/nodes',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.addNewCompanyTreeNode
 );
 
 router.get(
-  '/payroll-company/:id/tree',
+  '/payroll-companies/:companyId/tree',
   authenticateUser(),
   treeNodeV1Controller.getCompanyTree
 );
 
 router.get(
-  '/payroll-company/:companyId/tree/nodes/:nodeId',
+  '/payroll-companies/:companyId/tree/nodes/:nodeId',
   authenticateUser(),
   treeNodeV1Controller.getCompanyTreeNode
 );
 
 router.patch(
-  '/payroll-company/:companyId/tree/nodes/:nodeId',
-  authenticateUser(),
+  '/payroll-companies/:companyId/tree/nodes/:nodeId',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.updateCompanyTreeNode
 );
 
 router.delete(
-  '/payroll-company/:companyId/tree/nodes/:nodeId/employee',
-  authenticateUser(),
+  '/payroll-companies/:companyId/tree/nodes/:nodeId/employee',
+  authenticateUser({ category: [UserCategory.HR] }),
   treeNodeV1Controller.unlinkEmployee
 );
 
 router.delete(
-  '/payroll-company/:companyId/tree/nodes/:nodeId',
-  authenticateUser(),
+  '/payroll-companies/:companyId/tree/nodes/:nodeId',
+  authenticateUser({ category: [UserCategory.HR] }),
   validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
   treeNodeV1Controller.deleteCompanyTreeNode
 );
 
 router.get(
-  '/payroll-company/:companyId/tree/nodes/employees/supervisees',
+  '/payroll-companies/:companyId/tree/nodes/employees/supervisees',
   authenticateUser(),
   validateRequestQuery(CHECK_IF_SUPERVISEE_SCHEMA),
-  treeNodeV1Controller.checkIfSupervisor
+  treeNodeV1Controller.getSupervisionInfo
 );
 
 // ### REIMBURSEMENT REQUEST ROUTES

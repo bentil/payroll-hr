@@ -1,5 +1,6 @@
 import { REIMBURESEMENT_REQUEST_STATUS, ReimbursementRequest } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
+import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { 
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
@@ -12,8 +13,6 @@ import {
   SearchReimbursementRequestDto
 } from '../domain/dto/reimbursement-request.dto';
 import { AuthorizedUser } from '../domain/user.domain';
-import { UnauthorizedError } from '../errors/unauthorized-errors';
-import * as repository from '../repositories/reimbursement-request.repository';
 import { 
   FailedDependencyError, 
   HttpError, 
@@ -21,41 +20,45 @@ import {
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
+import { UnauthorizedError } from '../errors/unauthorized-errors';
+import * as repository from '../repositories/reimbursement-request.repository';
 import { ListWithPagination } from '../repositories/types';
+import * as currencyService from '../services/company-currency.service';
+import * as employeeService from '../services/employee.service';
 import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import * as employeeService from '../services/employee.service';
-import * as currencyService from '../services/company-currency.service';
 import { getParentEmployee } from './company-tree-node.service';
-import { RequestQueryMode } from '../domain/dto/leave-request.dto';
+
 
 const kafkaService = KafkaService.getInstance();
-const logger = rootLogger.child({ context: 'ReimbursementRequest' });
-
+const logger = rootLogger.child({ context: 'ReimbursementRequestService' });
 const events = {
   created: 'event.ReimbursementRequest.created',
   modified: 'event.ReimbursementRequest.modified',
   deleted: 'event.ReimbursementRequest.deleted',
-};
+} as const;
 
 export async function addReimbursementRequest(
   payload: CreateReimbursementRequestDto,
 ): Promise<ReimbursementRequest> {
   const { employeeId, currencyId } = payload;
-  // add to promise
-  let parent, employee, currency;
-  // VALIDATION
+  
+  logger.debug(
+    'Validating Employee[%s], parent & CompanyCurrency[%s]',
+    employeeId, currencyId
+  );
   try {
-    [parent, employee, currency] = await Promise.all([
+    const [_parent, _employee, _currency] = await Promise.all([
       getParentEmployee(employeeId),
       employeeService.getEmployee(employeeId),
       currencyService.getCompanyCurrency(currencyId)
     ]);
   } catch (err) {
-    logger.warn('Validating Employee[%s] and/or Currency[%s] and/or Parent[%s] failed', 
-      employeeId, currencyId, parent?.id,
+    logger.warn(
+      'Validating Employee[%s], parent or CompanyCurrency[%s] failed', 
+      employeeId, currencyId,
     );
     if (err instanceof HttpError) throw err;
     throw new FailedDependencyError({
@@ -64,15 +67,18 @@ export async function addReimbursementRequest(
     });
   }
   logger.info(
-    'Employee[%s], Currency[%s] and Parent[%s] exists', employee.id, currency.id, parent?.id
+    'Employee[%s], parent & CompanyCurrency[%s] validated',
+    employeeId, currencyId
   );
  
   logger.debug('Adding new ReimbursementRequest to the database...');
-
   let newReimbursementRequest: ReimbursementRequest;
   try {
     newReimbursementRequest = await repository.create(payload);
-    logger.info('ReimbursementRequest[%s] added successfully!', newReimbursementRequest.id);
+    logger.info(
+      'ReimbursementRequest[%s] added successfully!',
+      newReimbursementRequest.id
+    );
   } catch (err) {
     logger.error('Adding ReimbursementRequest failed', { error: err });
     throw new ServerError({
@@ -80,7 +86,6 @@ export async function addReimbursementRequest(
       cause: err
     });
   }
-  
 
   // Emit event.ReimbursementRequest.created event
   logger.debug(`Emitting ${events.created} event`);
@@ -535,7 +540,7 @@ export async function deleteReimbursementRequest(
   let deletedReimbursementRequest: ReimbursementRequest;
   logger.debug('Deleting ReimbursementRequest[%s] from database...', id);
   try {
-    deletedReimbursementRequest = await repository.deleteReimbursementRequest({ id });
+    deletedReimbursementRequest = await repository.deleteOne({ id });
     logger.info('ReimbursementRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting ReimbursementRequest[%] failed', id);

@@ -7,173 +7,236 @@ import {
   Path,
   Post,
   Queries,
-  Response,
   Request,
+  Response,
   Route,
   Security,
   SuccessResponse,
   Tags,
 } from 'tsoa';
-import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
-import * as service from '../../services/company-tree-node.service';
-import { rootLogger } from '../../utils/logger';
-import { errors } from '../../utils/constants';
+import {
+  ApiErrorResponse,
+  ApiSuccessResponse
+} from '../../domain/api-responses';
 import { 
-  CheckIfSupervisorDto,
   CompanyTreeNodeDto,
-  CreateCompanyTreeNodeDto, 
-  DeleteCompanyTreeNodeQueryDto, 
-  UpdateCompanyTreeNodeDto 
+  CreateCompanyTreeNodeDto,
+  DeleteCompanyTreeNodeQueryDto,
+  SupervisorInfoQueryDto,
+  UpdateCompanyTreeNodeDto,
 } from '../../domain/dto/company-tree-node.dto';
+import * as service from '../../services/company-tree-node.service';
+import { errors } from '../../utils/constants';
+import { rootLogger } from '../../utils/logger';
+
 
 @Tags('company-tree-nodes')
-@Route('/api/v1/payroll-company')
+@Route('/api/v1/payroll-companies/{companyId}/tree')
 @Security('api_key')
 export class CompanyTreeNodeV1Controller {
-  private readonly logger = rootLogger.child({ context: CompanyTreeNodeV1Controller.name, });
+  private readonly logger = rootLogger.child({
+    context: CompanyTreeNodeV1Controller.name
+  });
 
   /**
-   * Create a CompanyTreeNode
-   *
+   * Add a Company tree node
+   * 
+   * @param companyId Company id
    * @param createData Request body
-   * @param id CompanyId
-   * @returns API response
-   */
-  @Post('/{id}/tree/nodes')
-  @SuccessResponse(201, 'Created')
-  public async addCompanyTreeNode(
-    @Body() createData: CreateCompanyTreeNodeDto, @Path('id') id: number
-  ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
-    this.logger.debug('Received request to add CompanyTreeNode', { data: createData, });
-    const companyTreeNode = await service.addCompanyTreeNode(createData, id);
-    return { data: companyTreeNode };
-  }
-
-  /**
-   * Get a CompanyTreeNode
-   *
-   * @param id CompanyId,
-   * @returns Get matching CompanyTreeNode
-   */
-  @Get('/{id}/tree')
-  public async getCompanyTree(
-    @Path() id: number
-  ): Promise<ApiSuccessResponse<CompanyTreeNodeDto>> {
-    this.logger.debug('Received request to get CompanyTree for company[%s] matching query', id);
-    const companyTree = await service.getCompanyTree(id);
-    this.logger.info('Returning CompanyTree for company[%s]', id);
-    return { data: companyTree };
-  }
-
-  /**
-   * Get a CompanyTreeNode by ID
-   * @param companyId Company ID
-   * @param nodeId  CompanyTreeNode ID
+   * @param req Request object
    * @returns CompanyTreeNode
    */
-  @Get('/{companyId}/tree/nodes/{nodeId}')
+  @Post('/nodes')
+  @SuccessResponse(201, 'Created')
+  public async addCompanyTreeNode(
+    @Path('companyId') companyId: number,
+    @Body() createData: CreateCompanyTreeNodeDto,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
+    this.logger.debug(
+      'Received request to add CompanyTreeNode',
+      { data: createData }
+    );
+    const companyTreeNode = await service.addCompanyTreeNode(
+      companyId,
+      createData,
+      req.user!
+    );
+    this.logger.info('CompanyTreeNode added successfully!');
+    return { data: companyTreeNode };
+  }
+  
+  /**
+   * Get company tree
+   * 
+   * @param companyId Company id
+   * @param req Request object
+   * @returns CompanyTree
+   */
+  @Get()
+  @Response<ApiErrorResponse>(404, 'Not Found', {
+    error: errors.COMPANY_TREE_NOT_FOUND,
+    message: 'Company tree does not exist',
+    details: [],
+  })
+  public async getCompanyTree(
+    @Path() companyId: number,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<CompanyTreeNodeDto>> {
+    this.logger.debug('Received request to get Company[%s] Tree', companyId);
+    const companyTree = await service.getCompanyTree(companyId, req.user!);
+    this.logger.info('Returning Company[%s] Tree', companyId);
+    return { data: companyTree };
+  }
+  
+  /**
+   * Get a company tree node
+   * 
+   * @param companyId Company id
+   * @param nodeId Node id
+   * @param req Request object
+   * @returns CompanyTreeNode
+   */
+  @Get('/nodes/{nodeId}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
     error: errors.COMPANY_TREE_NODE_NOT_FOUND,
-    message: 'CompanyTreeNode does not exist',
+    message: 'Company tree node does not exist',
     details: [],
   })
   public async getCompanyTreeNode(
     @Path('companyId') companyId: number,
     @Path('nodeId') nodeId: number,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
     this.logger.debug('Received request to get CompanyTreeNode[%s]', nodeId);
-    const companyTreeNode = await service.getCompanyTreeNode(nodeId, companyId);
+    const companyTreeNode = await service.getCompanyTreeNode(
+      nodeId,
+      companyId,
+      req.user!
+    );
+    this.logger.info('CompanyTreeNode[%s] retrieved', nodeId);
     return { data: companyTreeNode };
   }
-
+  
   /**
-   * Change the details of an existing CompanyTreeNode
-   * @param nodeId CompanyTreeNode ID
-   * @param companyId companyId
-   * @param body Request body with CompanyTreeNode to update to
+   * Update details of a Company tree node
+   * 
+   * @param companyId Company id
+   * @param nodeId Node id
+   * @param updateDto Request body with details to update
+   * @param req Request object
    * @returns Updated CompanyTreeNode
    */
-  @Patch('/{companyId}/tree/nodes/{nodeId}')
+  @Patch('/nodes/{nodeId}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
-    error: 'REQUEST_VALIDATION_FAILED',
+    error: errors.REQUEST_VALIDATION_FAILED,
     message: 'Request validation failed',
     details: ['fieldA is required', 'fieldB must not be blank'],
   })
   @Response<ApiErrorResponse>(409, 'Conflict', {
-    error: 'INVALID_STATE',
+    error: errors.INVALID_STATE,
     message: 'Resource of interest is in an invalid state',
     details: [],
   })
   public async updateCompanyTreeNode(
     @Path('companyId') companyId: number,
     @Path('nodeId') nodeId: number,
-    @Body() updateDto: UpdateCompanyTreeNodeDto
+    @Body() updateDto: UpdateCompanyTreeNodeDto,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
     this.logger.debug('Received request to update CompanyTreeNode[%s]', nodeId);
-    const updateCompanyTreeNode = await service.updateCompanyTreeNode(nodeId, companyId, updateDto);
+    const updateCompanyTreeNode = await service.updateCompanyTreeNode(
+      nodeId,
+      companyId,
+      updateDto,
+      req.user!
+    );
     this.logger.info('CompanyTreeNode[%s] updated successfully!', nodeId);
     return { data: updateCompanyTreeNode };
   }
 
   /**
-   * Unliks an employee from an existing CompanyTreeNode
-   * @param nodeId CompanyTreeNode ID
-   * @param companyId CompanyId
+   * Unlink an employee from a Company tree node
+   * 
+   * @param companyId Company id
+   * @param nodeId Node id
+   * @param req Request object
    * @returns Updated CompanyTreeNode
    */
-  @Delete('/{companyId}/tree/nodes/{nodeId}/employee')
+  @Delete('/nodes/{nodeId}/employee')
   public async unlinkEmployee(
     @Path('companyId') companyId: number,
     @Path('nodeId') nodeId: number,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<CompanyTreeNode>> {
-    this.logger.debug('Received request to unlink Employee from CompanyTreeNode[%s]', nodeId);
-    const unlinkEmployee = await service.unlinkEmployee(nodeId, companyId);
-    this.logger.info('Employee unlinked from CompanyTreeNode[%s] updated successfully!', nodeId);
-    return { data: unlinkEmployee };
+    this.logger.debug(
+      'Received request to unlink Employee from CompanyTreeNode[%s]',
+      nodeId
+    );
+    const updatedCompanyTreeNode = await service.unlinkEmployee(
+      nodeId,
+      companyId,
+      req.user!
+    );
+    this.logger.info(
+      'Employee unlinked from CompanyTreeNode[%s] successfully!',
+      nodeId
+    );
+    return { data: updatedCompanyTreeNode };
   }
-
   
   /**
-   * Remove an existing CompanyTreeNode
-   * @param nodeId CompanyTreeNode ID
-   * @param companyId companyId
-   * @param query request query parameter successorParentId
-   * @returns nothing
+   * Remove a Company tree node with option to specify successor
+   * 
+   * @param companyId Company id
+   * @param nodeId Node id
+   * @param query Query params
+   * @param req Request object
    */
-  @Delete('/{companyId}/tree/nodes/{nodeId}')
+  @Delete('/nodes/{nodeId}')
   @SuccessResponse(204)
   @Response<ApiErrorResponse>(404, 'Not Found', {
-    error: errors.GRIEVANCE_TYPE_NOT_FOUND,
-    message: 'CompanyTreeNode does not exist',
+    error: errors.COMPANY_TREE_NODE_NOT_FOUND,
+    message: 'Company tree node does not exist',
     details: [],
   })
   public async deleteCompanyTreeNode(
     @Path('companyId') companyId: number,
     @Path('nodeId') nodeId: number,
-    @Queries() query: DeleteCompanyTreeNodeQueryDto
+    @Queries() query: DeleteCompanyTreeNodeQueryDto,
+    @Request() req: Express.Request,
   ): Promise<void> {
     this.logger.debug('Received request to delete CompanyTreeNode[%s]', nodeId);
-    await service.deleteNode(nodeId, companyId, query);
-    this.logger.debug('CompanyTreeNode[%s] deleted successfully', nodeId);
+    await service.deleteNode(nodeId, companyId, query, req.user!);
+    this.logger.info('CompanyTreeNode[%s] deleted successfully', nodeId);
   }
-
+  
   /**
-   * Checks if an Employee is a supervisor
-   * @returns list of Supervisees and meta info
+   * Return employees reports and indicator whether supervisor or not
+   * 
+   * @param companyId Company id
+   * @param query Query params
+   * @param req Request object
+   * @returns List of Employees
    */
-  @Get('/{companyId}/tree/nodes/employees/supervisees')
-  public async checkIfSupervisor(
+  @Get('/nodes/employees/supervisees')
+  public async getSupervisionInfo(
     @Path('companyId') companyId: number,
+    @Queries() query: SupervisorInfoQueryDto,
     @Request() req: Express.Request,
-    @Queries() query: CheckIfSupervisorDto
   ): Promise<ApiSuccessResponse<Employee[]>> {
     this.logger.debug(
-      'Received request to check if Employee[%s] is supervisor', req.user?.employeeId
+      'Received request to get Employee supervision info', query
     );
-    const reimbursementRequest = await service.checkIfSupervisor(companyId, req.user!, query);
+    const reportEmployees = await service.getReportEmployees(
+      companyId,
+      query,
+      req.user!
+    );
+    this.logger.info('Employee supervision info retrieved');
     return { 
-      data: reimbursementRequest,
-      meta: { hasSupervisees: reimbursementRequest.length === 0 ? false : true }
+      data: reportEmployees,
+      meta: { hasSupervisees: reportEmployees.length > 0 }
     };
   }
 }
