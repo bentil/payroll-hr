@@ -4,6 +4,7 @@ import {
   REIMBURESEMENT_REQUEST_STATUS, 
   ReimbursementRequest 
 } from '@prisma/client';
+import { prisma } from '../components/db.component';
 import { 
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
@@ -12,9 +13,13 @@ import {
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto
 } from '../domain/dto/reimbursement-request.dto';
-import { prisma } from '../components/db.component';
-import { AlreadyExistsError, InputError, RecordInUse } from '../errors/http-errors';
+import {
+  AlreadyExistsError,
+  InputError,
+  RecordInUse
+} from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
+
 
 export async function create(
   { employeeId, currencyId, attachmentUrls, ...dtoData }: CreateReimbursementRequestDto
@@ -279,9 +284,9 @@ export async function search(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteReimbursementRequest(
+export async function deleteOne(
   where: Prisma.ReimbursementRequestWhereUniqueInput
-) {
+): Promise<ReimbursementRequest> {
   try {
     return await prisma.reimbursementRequest.delete({ where });
   } catch (err) {

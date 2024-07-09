@@ -1,11 +1,11 @@
-import { Prisma } from '@prisma/client';
-import {
-  CompanyTreeNodeDto, 
-  ChildNode, 
-  includeRelations
-} from '../domain/dto/company-tree-node.dto';
+import { CompanyTreeNode, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
+import {
+  ChildNode,
+  CompanyTreeNodeDto, 
+} from '../domain/dto/company-tree-node.dto';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
+
 
 export interface CreateCompanyTreeNodeObject {
   companyId: number;
@@ -17,37 +17,36 @@ export interface CreateCompanyTreeNodeObject {
 
 export async function create(
   { 
-    jobTitleId, employeeId, companyId, childNodes, parentId, ...dtoData 
+    jobTitleId,
+    employeeId,
+    companyId,
+    childNodes,
+    parentId,
+    ...dtoData
   }: CreateCompanyTreeNodeObject,
-  includeRelations?: boolean,
+  include?: Prisma.CompanyTreeNodeInclude,
 ): Promise<CompanyTreeNodeDto> {
-    
   const data: Prisma.CompanyTreeNodeCreateInput = {
     ...dtoData,
-    employee: employeeId? { connect: { id: employeeId } }: undefined,
+    employee: employeeId ? { connect: { id: employeeId } }: undefined,
     jobTitle: { connect: { id: jobTitleId } },
     company: { connect: { id: companyId } },
     parent: parentId ? { connect: { id: parentId } } : undefined,
-    children: childNodes && { createMany: {
-      data: childNodes.map(node => { return {
-        jobTitleId : node.jobTitleId,
-        employeeId : node.employeeId,
-        companyId
-      }; } )
-    } }
+    children: childNodes && {
+      createMany: {
+        data: childNodes.map(node => {
+          return {
+            jobTitleId : node.jobTitleId,
+            employeeId : node.employeeId,
+            companyId
+          };
+        })
+      }
+    }
   };
 
   try {
-    return await prisma.companyTreeNode.create({
-      data,
-      include: includeRelations
-        ? { 
-          parent: true, employee: true, jobTitle: true, children: {
-            include: { jobTitle: true, employee: true } 
-          } 
-        }
-        : undefined
-    });    
+    return await prisma.companyTreeNode.create({ data, include });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
@@ -65,7 +64,7 @@ export async function findOne(
   whereUniqueInput: Prisma.CompanyTreeNodeWhereUniqueInput,
   include?: Prisma.CompanyTreeNodeInclude
 ): Promise<CompanyTreeNodeDto | null> {
-  return await prisma.companyTreeNode.findUnique({
+  return prisma.companyTreeNode.findUnique({
     where: whereUniqueInput,
     include
   });
@@ -74,8 +73,8 @@ export async function findOne(
 export async function findFirst(
   where?: Prisma.CompanyTreeNodeWhereInput,
   include?: Prisma.CompanyTreeNodeInclude,
-) {
-  return await prisma.companyTreeNode.findFirst({ where, include });
+): Promise<CompanyTreeNodeDto | null> {
+  return prisma.companyTreeNode.findFirst({ where, include });
 }
 
 export async function findTree(
@@ -89,7 +88,7 @@ export async function update(params: {
   data: Prisma.CompanyTreeNodeUpdateInput
   where: Prisma.CompanyTreeNodeWhereUniqueInput,
   include?: Prisma.CompanyTreeNodeInclude
-}) {
+}): Promise<CompanyTreeNodeDto> {
   const { where, data, include } = params;
   
   try {
@@ -111,24 +110,32 @@ export async function update(params: {
   }
 }
 
-export function recurse(level: number): includeRelations {
+export function recurse(
+  level: number
+): { include: Prisma.CompanyTreeNodeInclude; } {
   if (level === 0) {
     return {
       include: {
-        parent: true, employee: true, jobTitle: true, children: true
+        parent: true,
+        employee: true,
+        jobTitle: true,
+        children: true,
       }
     };
   }
   return {
     include: {
-      parent: true, employee: true, jobTitle: true, children: recurse(level - 1)
+      parent: true,
+      employee: true,
+      jobTitle: true,
+      children: recurse(level - 1),
     }
   };
 }
 
 export async function deleteNode(
   where: Prisma.CompanyTreeNodeWhereUniqueInput,
-) {
+): Promise<CompanyTreeNode> {
   try {
     return await prisma.companyTreeNode.delete({ where });
   } catch (err) {
@@ -150,7 +157,7 @@ export async function deleteNodeWithChildren(
   childrenIds: number[],
 ) {
   try {
-    return await prisma.$transaction(async (txn) => {
+    return await prisma.$transaction(async txn => {
       await txn.companyTreeNode.updateMany({
         where: { id: { in: childrenIds } }, 
         data 

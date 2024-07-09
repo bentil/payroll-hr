@@ -42,16 +42,6 @@ export interface CompanyTreeNodeDto extends CompanyTreeNode {
   children?: CompanyTreeNodeDto[]
 }
 
-export class includeRelations {
-  include?: {
-    employee?: boolean;
-    company?: boolean;
-    jobTitle?: boolean;
-    parent?: boolean;
-    children?: boolean | any ;
-  };
-}
-
-export class CheckIfSupervisorDto {
+export class SupervisorInfoQueryDto {
   employeeId?: number;
 }
