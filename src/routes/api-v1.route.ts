@@ -488,46 +488,46 @@ router.post(
 
 // ### Company Tree Node 
 router.post(
-  '/payroll-companies/:companyId/tree/nodes',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes',
   authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.addNewCompanyTreeNode
 );
 
 router.get(
-  '/payroll-companies/:companyId/tree',
+  '/payroll-compan(y|ies)/:companyId/tree',
   authenticateUser(),
   treeNodeV1Controller.getCompanyTree
 );
 
 router.get(
-  '/payroll-companies/:companyId/tree/nodes/:nodeId',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser(),
   treeNodeV1Controller.getCompanyTreeNode
 );
 
 router.patch(
-  '/payroll-companies/:companyId/tree/nodes/:nodeId',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.updateCompanyTreeNode
 );
 
 router.delete(
-  '/payroll-companies/:companyId/tree/nodes/:nodeId/employee',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId/employee',
   authenticateUser({ category: [UserCategory.HR] }),
   treeNodeV1Controller.unlinkEmployee
 );
 
 router.delete(
-  '/payroll-companies/:companyId/tree/nodes/:nodeId',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ category: [UserCategory.HR] }),
   validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
   treeNodeV1Controller.deleteCompanyTreeNode
 );
 
 router.get(
-  '/payroll-companies/:companyId/tree/nodes/employees/supervisees',
+  '/payroll-compan(y|ies)/:companyId/tree/nodes/employees/supervisees',
   authenticateUser(),
   validateRequestQuery(CHECK_IF_SUPERVISEE_SCHEMA),
   treeNodeV1Controller.getSupervisionInfo
