@@ -14,6 +14,10 @@ export interface PayrollCompanyMessage {
   allowNegativeRates?: boolean;
   considerPublicHolidayAsWorkday?: boolean; 
   considerWeekendAsWorkday?: boolean;
+  enableEmployeeLogin: boolean
+  workHoursInADay: number
+  leaveRequestApprovalsRequired: number
+  reimbursementRequestApprovalsRequired: number
 }
 
 export interface PayrollCompanyCreatedEvent extends PayrollCompanyMessage {
