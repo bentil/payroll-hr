@@ -27,7 +27,11 @@ export async function createOrUpdatePayrollCompany(
     status: data.status,
     allowNegativeRates: data.allowNegativeRates,
     considerPublicHolidayAsWorkday: data.considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday: data.considerWeekendAsWorkday
+    considerWeekendAsWorkday: data.considerWeekendAsWorkday,
+    enableEmployeeLogin: data.enableEmployeeLogin,
+    workHoursInADay: data.workHoursInADay,
+    leaveRequestApprovalsRequired: data.leaveRequestApprovalsRequired,
+    reimbursementRequestApprovalsRequired: data.reimbursementRequestApprovalsRequired
   });
   logger.info(
     'PayrollCompany[%s] saved for Organization[%s]',
