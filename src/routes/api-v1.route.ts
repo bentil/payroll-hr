@@ -84,6 +84,7 @@ import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-
 import * as compDocTypeV1Controller from '../controllers/company-document-type-v1.api.controller';
 import * as employeeDocumentV1Controller from '../controllers/employee-document-v1.api.controller';
 import * as announcementV1Controller from '../controllers/announcement-v1.api.controller';
+import * as employeeApproverV1Controller from '../controllers/employee-approver-v1.api.controller';
 import { 
   authenticateClient,
   authenticatePlatformUser, 
@@ -128,6 +129,12 @@ import {
   UPDATE_ANNOUNCEMENT_SCHEMA,
   UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
 } from '../domain/request-schema/announcement.schema';
+import { 
+  CREATE_EMPLOYEE_APPROVER_SCHEMA, 
+  GET_ONE_EMPLOYEE_APPROVER_SCHEMA, 
+  QUERY_EMPLOYEE_APPROVER_SCHEMA, 
+  UPDATE_EMPLOYEE_APPROVER_SCHEMA 
+} from '../domain/request-schema/employee-approver.schema';
 
 
 const router = Router();
@@ -800,6 +807,42 @@ router.delete(
   '/announcements/:id',
   authenticateUser({ category: [UserCategory.HR] }),
   announcementV1Controller.deleteAnnouncement
+);
+
+// ### EMPLOYEE APPROVER ROUTES
+
+router.post(
+  '/employees/:employeeId/approvers',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
+  employeeApproverV1Controller.addEmployeeApprover
+);
+
+router.get(
+  '/employees/:employeeId/approvers',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(QUERY_EMPLOYEE_APPROVER_SCHEMA),
+  employeeApproverV1Controller.getEmployeeApprovers
+);
+
+router.get(
+  '/employees/:employeeId/approvers/:id',
+  authenticateUser({ isEmployee: true }),
+  validateRequestQuery(GET_ONE_EMPLOYEE_APPROVER_SCHEMA),
+  employeeApproverV1Controller.getEmployeeApprover,
+);
+
+router.patch(
+  '/employees/:employeeId/approvers/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(UPDATE_EMPLOYEE_APPROVER_SCHEMA),
+  employeeApproverV1Controller.updateEEmployeeApprover
+);
+
+router.delete(
+  '/employees/:employeeId/approvers/:id',
+  authenticateUser({ category: [UserCategory.HR] }),
+  employeeApproverV1Controller.deleteEmployeeApprover
 );
 
 export default router;

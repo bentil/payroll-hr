@@ -25,6 +25,10 @@ model PayrollCompany {
   allowNegativeRates               Boolean   @default(false) @map("allow_negative_rates")
   considerPublicHolidayAsWorkday   Boolean   @default(false) @map("consider_public_holiday_as_workday")
   considerWeekendAsWorkday         Boolean   @default(false) @map("consider_weekend_as_workday")
+  enableEmployeeLogin              Boolean           @default(false) @map("enable_employee_login")
+  workHoursInADay                  Int               @default(8) @map("work_hours_in_a_day")
+  leaveRequestApprovalsRequired    Int               @default(1) @map("leave_request_approvals_required") @db.UnsignedTinyInt()
+  reimbursementRequestApprovalsRequired Int          @default(1) @map("reimbursement_request_approvals_required") @db.UnsignedTinyInt()
   createdAt                        DateTime  @default(now()) @map("created_at")
   modifiedAt                       DateTime? @updatedAt @map("modified_at")
   statusLastModifiedAt             DateTime? @map("status_last_modified_at")
@@ -101,6 +105,8 @@ model Employee {
   employeeWorkTimes               EmployeeWorkTime[]
   employeeOvertimeEntries         EmployeeOvertimeEntry[]
   employeeDocuments               EmployeeDocument[]
+  approvalResponders              EmployeeApprover[]               @relation(name: "employee")
+  approvalRequesters              EmployeeApprover[]               @relation(name: "approver")
 
   @@map("employee")
 }
@@ -707,4 +713,19 @@ model AnnouncementResource {
   announcement Announcement @relation(fields: [announcementId], references: [id])
 
   @@map("announcement_resource")
+}
+
+model EmployeeApprover {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId Int       @map("employee_id") @db.UnsignedInt()
+  approverId Int       @map("approver_id") @db.UnsignedInt()
+  level      Int       @db.UnsignedTinyInt()
+  createdAt  DateTime     @default(now()) @map("created_at")
+  modifiedAt DateTime?    @updatedAt @map("modified_at")
+
+  employee     Employee            @relation(fields: [employeeId], references: [id], name: "employee")
+  approver     Employee            @relation(fields: [approverId], references: [id], name: "approver")
+
+  @@unique([employeeId, approverId, level])
+  @@map("employee_approver")
 }
