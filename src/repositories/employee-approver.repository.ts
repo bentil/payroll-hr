@@ -3,10 +3,14 @@ import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 import { 
-  CreateEmployeeApproverObject, 
   EmployeeApproverDto 
 } from '../domain/dto/employee-approver.dto';
 
+export class CreateEmployeeApproverObject {
+  employeeId!: number;
+  approverId!: number;
+  level!: number;
+}
 
 export async function create(
   { employeeId, approverId, level }: CreateEmployeeApproverObject,

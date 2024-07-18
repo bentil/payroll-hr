@@ -78,9 +78,10 @@ export async function findOne(
 }
 
 export async function findFirst(
-  where: Prisma.EmployeeWhereInput
+  where: Prisma.EmployeeWhereInput,
+  include?: Prisma.EmployeeInclude
 ): Promise<Employee | null> {
-  return prisma.employee.findFirst({ where });
+  return prisma.employee.findFirst({ where, include });
 }
 
 export async function count(

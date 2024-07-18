@@ -6,12 +6,6 @@ export class CreateEmployeeApproverDto {
   level!: number;
 }
 
-export class CreateEmployeeApproverObject {
-  employeeId!: number;
-  approverId!: number;
-  level!: number;
-}
-
 export class UpdateEmployeeApproverDto {
   approverId?: number;
   level?: number;

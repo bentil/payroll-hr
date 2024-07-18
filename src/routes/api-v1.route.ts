@@ -836,7 +836,7 @@ router.patch(
   '/employees/:employeeId/approvers/:id',
   authenticateUser({ category: [UserCategory.HR] }),
   validateRequestBody(UPDATE_EMPLOYEE_APPROVER_SCHEMA),
-  employeeApproverV1Controller.updateEEmployeeApprover
+  employeeApproverV1Controller.updateEmployeeApprover
 );
 
 router.delete(

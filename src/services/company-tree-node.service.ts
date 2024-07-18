@@ -87,7 +87,7 @@ export async function addCompanyTreeNode(
         : Promise.resolve(undefined),
       getJobTitle(jobTitleId)
     ]);
-    if (!parent) {
+    if (parentId && !parent) {
       throw new NotFoundError({
         name: errors.COMPANY_TREE_NODE_NOT_FOUND,
         message: 'Parent node does not exist'

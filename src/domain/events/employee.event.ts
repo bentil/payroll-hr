@@ -1,46 +1,6 @@
-export type Employee = {
-    id: number
-    companyId: number
-    notchId?: number
-    employeeNumber: string
-    title: string
-    firstName: string
-    lastName: string
-    otherNames?: string
-    gender: string
-    dateOfBirth: Date
-    photoUrl?: string
-    ssn: string
-    taxIdentificationNumber?: string
-    majorGradeLevelId?: number
-    minorGradeLevelId?: number
-    nationality: string
-    regionId?: number
-    tribeId?: number
-    email?: string
-    privateEmail?: string
-    msisdn?: string 
-    alternateMsisdn?: string 
-    address?: string 
-    digitalAddress?: string 
-    jobTitleId?: number 
-    departmentId?: number 
-    divisionId?: number 
-    stationId?: number 
-    costAreaId?: number
-    status: string
-    employmentDate: Date
-    terminationDate?: Date
-    reemployed?: boolean
-    resident?: boolean
-    unionMember?: boolean
-    statusLastModifiedAt?: Date
-    createdAt: Date
-    modifiedAt?: Date
-  }
+import { Employee, PayrollCompany } from '@prisma/client';
 
-
-  type EmployeeAccountInfo = {
+ type EmployeeAccountInfo = {
     id: number;
     employeeId: number;
     type: string;
@@ -72,4 +32,8 @@ type EmployeePayInfo = {
 export interface EmployeeEvent extends Employee {
   employeeAccountInfo?: EmployeeAccountInfo[]
   employeePayInfo?: EmployeePayInfo | null
+}
+
+export interface EmployeeDto extends Employee {
+  company?: PayrollCompany;
 }
