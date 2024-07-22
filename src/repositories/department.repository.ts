@@ -24,12 +24,29 @@ export async function createOrUpdate(
   });
 }
 
+export async function find(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.DepartmentWhereInput,
+  include?: Prisma.DepartmentInclude,
+  orderBy?: Prisma.DepartmentOrderByWithRelationAndSearchRelevanceInput
+}): Promise<Department[]> {
+  return await prisma.department.findMany(params);
+}
+
 export async function findOne(
   whereUniqueInput: Prisma.DepartmentWhereUniqueInput,
 ): Promise<Department | null> {
   return prisma.department.findUnique({
     where: whereUniqueInput,
   });
+}
+
+export async function findFirst(
+  where: Prisma.DepartmentWhereInput,
+  include?: Prisma.DepartmentInclude
+): Promise<Department | null> {
+  return prisma.department.findFirst({ where, include });
 }
 
 export async function deleteOne(where: Prisma.DepartmentWhereUniqueInput) {

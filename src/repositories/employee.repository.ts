@@ -6,8 +6,13 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  data: Prisma.EmployeeCreateInput
+  { departmentId, companyId,  ...dtoData }: EmployeeEvent
 ): Promise<Employee> {
+  const data: Prisma.EmployeeCreateInput = {
+    ...dtoData,
+    company: { connect: { id: companyId } },
+    department: departmentId ? { connect: { id: departmentId } } : undefined
+  };
   try {
     return await prisma.employee.create({ data });
   } catch (err) {
@@ -27,6 +32,7 @@ export async function createOrUpdate(
   {
     majorGradeLevelId,
     companyId,
+    departmentId,
     ...dtoData
   }: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<Employee> {
@@ -35,6 +41,7 @@ export async function createOrUpdate(
     majorGradeLevel: majorGradeLevelId
       ? { connect: { id: majorGradeLevelId } } : undefined,
     company: { connect: { id: companyId } },
+    department: departmentId ? { connect: { id: departmentId } } : undefined
   };
   const { id, ...dataWithoutId } = data;
   return prisma.employee.upsert({

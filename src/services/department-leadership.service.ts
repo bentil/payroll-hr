@@ -80,6 +80,35 @@ export async function getDepartmentLeadershipWithEmployeeId(
   return departmentLeadership;
 }
 
+export async function getDepartmentLeaderships(
+  query: { departmentId: number, level: number},
+  options?: { 
+    includeEmployee?: boolean,
+  }
+): Promise<DepartmentLeadershipEvent[]> {
+
+  let result: DepartmentLeadershipEvent[];
+  logger.debug('Finding DepartmentLeadership(s) that match query', { query });
+  try {
+    result = await repository.find({
+      where: query,
+      include: { employee: options?.includeEmployee ? true : undefined }
+    });
+    logger.info(
+      'Found %d DepartmentLeadership(s) that matched query',
+      result.length, { query }
+    );
+  } catch (err) {
+    logger.warn(
+      'Querying Employee with query failed',
+      { query }, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  return result;
+}
+
 export async function deleteDepartmentLeadership(id: number): Promise<void> {
   const departmentLeadership = await repository.findOne({ id });
   if (!departmentLeadership) {

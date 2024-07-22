@@ -294,7 +294,10 @@ export async function deleteEmployeeApprover(
   logger.info(`${events.deleted} event created successfully!`);
 }
 
-type EmployeeApproverSummary = Pick<EmployeeApproverDto, 'approverId' | 'employeeId' | 'level'>
+type EmployeeApproverSummary = Pick<
+  EmployeeApproverDto, 
+  'approverId' | 'employeeId' | 'level' | 'approver' | 'employee'
+>
 
 export async function getEmployeeApproversWithEmployeeId(
   employeeId: number,
@@ -332,34 +335,46 @@ export async function getEmployeeApproversWithEmployeeId(
   }
   //getting levels
 
-  if (employeeApprovers.data.length < allowedLevels.length) {
-    const availableLevels = [...new Set(employeeApprovers.data.map((d) => d.level))];
-    const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
-    unavailableLevels.forEach(async (x) => {
+  const availableLevels = [...new Set(employeeApprovers.data.map((d) => d.level))];
+  //const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
+  let defaultLevels: number[];
+  if (allowedLevels.length > 1) {
+    defaultLevels = [1, 2];
+  } else {
+    defaultLevels = [1];
+  }
+  const unavailableDefaultLevels = defaultLevels.filter(
+    o => !availableLevels.includes(o)
+  );
+  if (unavailableDefaultLevels.length > 0) {
+    unavailableDefaultLevels.forEach(async (x) => {
       if (x === 1) {
         const data = await companyTreeService.getParentEmployee(employeeId);
-        if (!data) {
-          employeeApprovers.data.push();
-        } else {
+        if (data)  {
           employeeApprovers.data.push({
             employeeId,
             approverId: data.id,
             level: x,
+            employee: employee,
+            approver: data
           });
         }
-        
       } else if (x === 2) {
-        const data = 
-          await deptLeadershipService.getDepartmentLeadershipWithEmployeeId(employeeId, 0);
-        if (!data || !data.employeeId) {
-          employeeApprovers.data.push();
-        } else {
-          employeeApprovers.data.push({
-            employeeId,
-            approverId: data.employeeId,
-            level: x,
-          });
-        }  
+        if (employee.departmentId) {
+          const data = 
+          await deptLeadershipService.getDepartmentLeaderships(
+            { departmentId: employee.departmentId, level: 0 }
+          );
+          if (data.length > 0 && data[0].employeeId) {
+            employeeApprovers.data.push({
+              employeeId,
+              approverId: data[0].employeeId,
+              level: x,
+              employee: employee,
+              approver: data[0].employee
+            });
+          }  
+        }
       }
     });
   }

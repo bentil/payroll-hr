@@ -26,6 +26,16 @@ export async function createOrUpdate(
   });
 }
 
+export async function find(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.DepartmentLeadershipWhereInput,
+  include?: Prisma.DepartmentLeadershipInclude,
+  orderBy?: Prisma.DepartmentLeadershipOrderByWithRelationAndSearchRelevanceInput
+}): Promise<DepartmentLeadership[]> {
+  return await prisma.departmentLeadership.findMany(params);
+}
+
 export async function findOne(
   whereUniqueInput: Prisma.DepartmentLeadershipWhereUniqueInput,
 ): Promise<DepartmentLeadership | null> {
