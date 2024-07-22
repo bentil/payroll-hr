@@ -43,6 +43,7 @@ model PayrollCompany {
   companyTreeNodes        CompanyTreeNode[]
   companyDocumentTypes    CompanyDocumentType[]
   announcements           Announcement[]
+  departments             Department[]
 
   @@map("payroll_company")
 }
@@ -107,6 +108,8 @@ model Employee {
   employeeDocuments               EmployeeDocument[]
   approvalResponders              EmployeeApprover[]               @relation(name: "employee")
   approvalRequesters              EmployeeApprover[]               @relation(name: "approver")
+  department                      Department?                 @relation(fields: [departmentId], references: [id])
+  departmentLeadership            DepartmentLeadership[]
 
   @@map("employee")
 }
@@ -728,4 +731,36 @@ model EmployeeApprover {
 
   @@unique([employeeId, approverId, level])
   @@map("employee_approver")
+}
+
+model Department {
+  id          Int            @id @db.UnsignedInt()
+  companyId   Int            @map("company_id") @db.UnsignedInt() //fk
+  code        String         @map("code") @db.VarChar(30)
+  name        String         @map("name") @db.VarChar(100)
+  description String         @map("description") @db.Text()
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  modifiedAt  DateTime?      @updatedAt @map("modified_at")
+  company     PayrollCompany @relation(fields: [companyId], references: [id])
+
+  employees  Employee[]
+  leadership DepartmentLeadership[]
+
+  @@map("department")
+}
+
+model DepartmentLeadership {
+  id           Int       @id @db.UnsignedInt()
+  departmentId Int       @map("department_id") @db.UnsignedInt()
+  rank         Int
+  permanent    Boolean   @default(true)
+  employeeId   Int?      @map("employee_id") @db.UnsignedInt()
+  createdAt    DateTime  @default(now()) @map("created_at")
+  modifiedAt   DateTime? @updatedAt @map("modified_at")
+
+  department Department @relation(fields: [departmentId], references: [id])
+  employee   Employee?  @relation(fields: [employeeId], references: [id])
+
+  @@map("department_leadership")
 }

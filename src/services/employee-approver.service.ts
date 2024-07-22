@@ -11,15 +11,17 @@ import {
   RequirementNotMetError,
   ServerError
 } from '../errors/http-errors';
-// eslint-disable-next-line max-len
 import * as repository from '../repositories/employee-approver.repository';
 import * as employeeService from './employee.service';
+import * as companyTreeService from './company-tree-node.service';
+import * as deptLeadershipService from './department-leadership.service';
 import { ListWithPagination } from '../repositories/types';
 import { rootLogger } from '../utils/logger';
 import * as helpers from '../utils/helpers';
 import { KafkaService } from '../components/kafka.component';
 import { AuthorizedUser } from '../domain/user.domain';
 import { EmployeeApprover } from '@prisma/client';
+import { errors } from '../utils/constants';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -32,20 +34,33 @@ const events = {
 };
 
 export async function createEmployeeApprover(
-  createData: CreateEmployeeApproverDto,
   employeeId: number,
+  createData: CreateEmployeeApproverDto,
   authUser: AuthorizedUser
 ): Promise<EmployeeApproverDto> {
-  const { approverId } = createData;
+  const { approverId, level } = createData;
+  await helpers.applyEmployeeScopeToQuery(authUser, { employeeId });
   //Validation
   const [employee, approver] = await Promise.all([
-    employeeService.validateEmployee(employeeId, authUser, { throwOnNotActive: true }),
+    employeeService.validateEmployee(
+      employeeId, authUser, { throwOnNotActive: true, includeCompany: true }
+    ),
     employeeService.validateEmployee(approverId, authUser, { throwOnNotActive: true })
   ]);
   logger.info('Employee[%s] and Approver[%s] validated successfully', employeeId, approverId);
   if (employee.companyId !== approver.companyId) {
     throw new RequirementNotMetError({
       message: 'Approver and employee are not of same company'
+    });
+  }
+
+  const employeesCompanyAllowedLevels = Math.max(
+    employee.company!.leaveRequestApprovalsRequired, 
+    employee.company!.reimbursementRequestApprovalsRequired
+  );
+  if (level > employeesCompanyAllowedLevels) {
+    throw new RequirementNotMetError({
+      message: 'Level is greater than allowed'
     });
   }
 
@@ -77,11 +92,14 @@ export async function updateEmployeeApprover(
   updateData: UpdateEmployeeApproverDto,
   authUser: AuthorizedUser
 ): Promise<EmployeeApproverDto> {
-  const { approverId } = updateData;
+  const { approverId, level } = updateData;
   logger.info('Getting EmployeeApprover[%s] to update', id);
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, { employeeId }
+  );
   let employeeApprover: EmployeeApproverDto | null;
   try {
-    employeeApprover = await repository.findOne({ id, employeeId });
+    employeeApprover = await repository.findOne({ id, ...scopedQuery });
   } catch (err) {
     logger.warn('Getting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -97,6 +115,22 @@ export async function updateEmployeeApprover(
   // validating
   if (approverId) {
     await employeeService.validateEmployee(approverId, authUser);
+  }
+
+  if (level) {
+    const employee = await employeeService.validateEmployee(
+      employeeId, authUser, { includeCompany: true }
+    );
+
+    const employeesCompanyAllowedLevels = Math.max(
+      employee.company!.leaveRequestApprovalsRequired, 
+      employee.company!.reimbursementRequestApprovalsRequired
+    );
+    if (level > employeesCompanyAllowedLevels) {
+      throw new RequirementNotMetError({
+        message: 'Level is greater than allowed'
+      });
+    }
   }
 
   const updatedEmployeeApprover = await repository.update({
@@ -181,14 +215,18 @@ export async function getEmployeeApproverId(
   id: number,
   employeeId: number,
   query: GetOneEmployeeApproverDto,
+  authUser: AuthorizedUser,
 ): Promise<EmployeeApproverDto> {
   logger.debug('Getting details for EmployeeApprover[%s]', id);
   let approverId: number, employeeApprover: EmployeeApproverDto | null;
   if (query?.inverse) {
     approverId = employeeId;
+    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+      authUser, { }
+    );
     try {
       employeeApprover = await repository.findOne(
-        { id, approverId },
+        { id, approverId, ...scopedQuery },
         { employee: true, approver: true }
       );
     } catch (err) {
@@ -197,9 +235,12 @@ export async function getEmployeeApproverId(
     }
     
   } else {
+    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+      authUser, { employeeId }
+    );
     try {
       employeeApprover = await repository.findOne(
-        { id, employeeId },
+        { id, ...scopedQuery },
         { employee: true, approver: true }
       );
     } catch (err) {
@@ -219,32 +260,124 @@ export async function getEmployeeApproverId(
 
 export async function deleteEmployeeApprover(
   id: number,
-  employeeId: number
-): Promise<EmployeeApprover> {
+  employeeId: number,
+  authUser: AuthorizedUser
+): Promise<void> {
   logger.debug('Getting details for EmployeeApprover[%s]', id);
-  let deletedEmployeeApprover: EmployeeApprover | null, employeeApprover: EmployeeApprover | null;
-  try {
-    employeeApprover = await repository.findOne({ id, employeeId });
-    logger.info('EmployeeApprover[%s] details retrieved!', id);
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, { employeeId }
+  );
+  const employeeApprover = await repository.findOne({ id, ...scopedQuery });
+  if (!employeeApprover) {
+    logger.warn('EmployeeApprover[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_APPROVER_NOT_FOUND,
+      message: 'Employee approver to remove does not exist'
+    });
+  }
+  logger.info('EmployeeApprover[%s] to remove exists!', id);
 
-    if (!employeeApprover) {
-      logger.warn('EmployeeApprover[%s] does not exist', id);
-      throw new NotFoundError({
-        message: 'Employee approver you are attempting to delete does not exist'
-      });
-    }
+  logger.debug('Deleting EmployeeApprover[%s] from database...', id);
+  let deletedEmployeeApprover: EmployeeApprover | null;
+  try {
     deletedEmployeeApprover = await repository.deleteOne({ id });
     logger.info('EmployeeApprover[%s] successfully deleted!', id);
-
-    // Emit event.EmployeeApprover.deleted event
-    logger.debug(`Emitting ${events.deleted} event`);
-    kafkaService.send(events.deleted, deletedEmployeeApprover);
-    logger.info(`${events.deleted} event created successfully!`);
-
-    return deletedEmployeeApprover;
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.warn('Deleting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.EmployeeApprover.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, deletedEmployeeApprover);
+  logger.info(`${events.deleted} event created successfully!`);
+}
+
+type EmployeeApproverSummary = Pick<
+  EmployeeApproverDto, 
+  'approverId' | 'employeeId' | 'level' | 'approver' | 'employee'
+>
+
+export async function getEmployeeApproversWithEmployeeId(
+  employeeId: number,
+  approvalType?: string,
+): Promise<ListWithPagination<EmployeeApproverSummary>> {
+  //return approvals highest number or add it but optional
+  const employee = await employeeService.getEmployee(employeeId, { includeCompany: true });
+  let employeesCompanyAllowdLevels: number;
+  if (!approvalType) {
+    employeesCompanyAllowdLevels = Math.max(
+      employee.company!.leaveRequestApprovalsRequired, 
+      employee.company!.reimbursementRequestApprovalsRequired
+    );
+  } else if (approvalType === 'leave') {
+    employeesCompanyAllowdLevels = employee.company!.leaveRequestApprovalsRequired;
+  } else {
+    employeesCompanyAllowdLevels = employee.company!.reimbursementRequestApprovalsRequired;
+  }
+  const allowedLevels: number[] =[];
+  for (let val = 1; val <=employeesCompanyAllowdLevels; val++) {
+    allowedLevels.push(val);
+  }
+  logger.debug('Getting details for Employee[%s] Approvers', employeeId);
+  let employeeApprovers: ListWithPagination<EmployeeApproverSummary>;
+  try {
+    employeeApprovers = await repository.find({
+      where: { employeeId },
+      include: { employee: true, approver: true }
+    });
+  } catch (err) {
+    logger.warn(
+      'Getting Employee[%s] Approvers failed', employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+  //getting levels
+
+  const availableLevels = [...new Set(employeeApprovers.data.map((d) => d.level))];
+  //const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
+  let defaultLevels: number[];
+  if (allowedLevels.length > 1) {
+    defaultLevels = [1, 2];
+  } else {
+    defaultLevels = [1];
+  }
+  const unavailableDefaultLevels = defaultLevels.filter(
+    o => !availableLevels.includes(o)
+  );
+  if (unavailableDefaultLevels.length > 0) {
+    unavailableDefaultLevels.forEach(async (x) => {
+      if (x === 1) {
+        const data = await companyTreeService.getParentEmployee(employeeId);
+        if (data)  {
+          employeeApprovers.data.push({
+            employeeId,
+            approverId: data.id,
+            level: x,
+            employee: employee,
+            approver: data
+          });
+        }
+      } else if (x === 2) {
+        if (employee.departmentId) {
+          const data = 
+          await deptLeadershipService.getDepartmentLeaderships(
+            { departmentId: employee.departmentId, level: 0 }
+          );
+          if (data.length > 0 && data[0].employeeId) {
+            employeeApprovers.data.push({
+              employeeId,
+              approverId: data[0].employeeId,
+              level: x,
+              employee: employee,
+              approver: data[0].employee
+            });
+          }  
+        }
+      }
+    });
+  }
+  logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
+  return employeeApprovers;
 }

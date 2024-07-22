@@ -49,7 +49,8 @@ export async function getEmployeeApprover(
     const response = await controller.getEmployeeApprover(
       +id, 
       +employeeId, 
-      req.query as GetOneEmployeeApproverDto
+      req.query as GetOneEmployeeApproverDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -57,7 +58,7 @@ export async function getEmployeeApprover(
   }
 }
 
-export async function updateEEmployeeApprover(
+export async function updateEmployeeApprover(
   req: Request, 
   res: Response, 
   next: NextFunction
@@ -78,7 +79,7 @@ export async function deleteEmployeeApprover(
 ): Promise<void> {
   const { id, employeeId } = req.params;
   try {
-    await controller.deleteEmployeeApprover(+id, +employeeId);
+    await controller.deleteEmployeeApprover(+id, +employeeId, req);
     res.status(204).send();
   } catch (err) {
     next(err);

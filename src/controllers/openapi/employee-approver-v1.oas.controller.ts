@@ -48,9 +48,9 @@ export class EmployeeApproverV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApprover>> {
     this.logger.debug('Received request to add EmployeeApprover', { data: createData, });
-    const employeeApprover = await service.createEmployeeApprover(
+    const employeeApprover = await service.createEmployeeApprover( 
+      employeeId,
       createData, 
-      employeeId, 
       req.user!
     );
     return { data: employeeApprover };
@@ -86,7 +86,7 @@ export class EmployeeApproverV1Controller {
    */
   @Get('{id}')
   @Response<ApiErrorResponse>(404, 'Not Found', {
-    error: 'NOT_FOUND',
+    error: errors.NOT_FOUND,
     message: 'Employee approver does not exist',
     details: [],
   })
@@ -94,9 +94,10 @@ export class EmployeeApproverV1Controller {
     @Path('id') id: number,
     @Path('employeeId') employeeId: number,
     @Queries() query: GetOneEmployeeApproverDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApproverDto>> {
     this.logger.debug('Received request to get EmployeeApprover[%s]', id);
-    const employeeApprover = await service.getEmployeeApproverId(id, employeeId, query);
+    const employeeApprover = await service.getEmployeeApproverId(id, employeeId, query, req.user!);
     return { data: employeeApprover };
   }
 
@@ -111,12 +112,12 @@ export class EmployeeApproverV1Controller {
    */
   @Patch('{id}')
   @Response<ApiErrorResponse>(400, 'Bad Request', {
-    error: 'REQUEST_VALIDATION_FAILED',
+    error: errors.REQUEST_VALIDATION_FAILED,
     message: 'Request validation failed',
     details: ['fieldA is required', 'fieldB must not be blank'],
   })
   @Response<ApiErrorResponse>(409, 'Conflict', {
-    error: 'INVALID_STATE',
+    error: errors.INVALID_STATE,
     message: 'Resource of interest is in an invalid state',
     details: [],
   })
@@ -143,16 +144,17 @@ export class EmployeeApproverV1Controller {
   @Delete('{id}')
   @SuccessResponse(204)
   @Response<ApiErrorResponse>(404, 'Not Found', {
-    error: errors.EMPLOYEE_DOCUMENT_NOT_FOUND,
+    error: errors.EMPLOYEE_APPROVER_NOT_FOUND,
     message: 'Employee approver does not exist',
     details: [],
   })
   public async deleteEmployeeApprover(
     @Path('id') id: number,
     @Path('employeeId') employeeId: number,
+    @Request() req: Express.Request
   ): Promise<void> {
     this.logger.debug('Received request to delete EmployeeApprover[%s]', id);
-    await service.deleteEmployeeApprover(id, employeeId);
+    await service.deleteEmployeeApprover(id, employeeId, req.user!);
     this.logger.debug('EmployeeApprover[%s] deleted successfully', id);
   }
 

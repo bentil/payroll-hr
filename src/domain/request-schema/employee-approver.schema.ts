@@ -6,12 +6,13 @@ export const CREATE_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
   approverId: Joi.number()
     .required()
     .messages({
-      'number.base': 'Company Id must be a number'
+      'number.base': 'Approver Id must be a number'
     }),
   level: Joi.number()
     .required()
+    .min(1)
     .messages({
-      'number.base': 'Type id must be a number'
+      'number.base': 'Level must be a number'
     }),
 });
 
@@ -29,7 +30,7 @@ export const QUERY_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
     }
   ),
   level: Joi.number().optional(),
-  inverse: Joi.boolean().optional(),
+  inverse: Joi.boolean().valid(true, false).optional(),
   page: Joi.number().optional()
     .min(1)
     .default(1)
@@ -53,5 +54,5 @@ export const QUERY_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
 });
 
 export const GET_ONE_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
-  inverse: Joi.boolean().optional(),
+  inverse: Joi.boolean().valid(true, false).optional(),
 });

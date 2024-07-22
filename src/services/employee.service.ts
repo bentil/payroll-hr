@@ -1,5 +1,5 @@
 import {  Employee } from '@prisma/client';
-import { EmployeeEvent } from '../domain/events/employee.event';
+import { EmployeeDto, EmployeeEvent } from '../domain/events/employee.event';
 import { AuthorizedUser } from '../domain/user.domain';
 import {
   ForbiddenError,
@@ -62,12 +62,20 @@ export async function createOrUpdateEmployee(
   return employee;
 }
 
-export async function getEmployee(id: number): Promise<Employee> {
+export async function getEmployee(
+  id: number,
+  options?: {
+    includeCompany?: boolean;
+  }
+): Promise<EmployeeDto> {
   logger.debug('Getting details for Employee[%s]', id);
   let employee: Employee | null;
 
   try {
-    employee = await repository.findOne({ id });
+    employee = await repository.findOne(
+      { id },
+      options?.includeCompany ? { company: true } : undefined
+    );
   } catch (err) {
     logger.warn(
       'Getting Employee[%s] failed',
@@ -114,9 +122,10 @@ export async function validateEmployee(
   options?: {
     throwOnNotActive?: boolean,
     companyId?: number,
-    companyIds?: number[]
+    companyIds?: number[],
+    includeCompany?: boolean;
   }
-): Promise<Employee> {
+): Promise<EmployeeDto> {
   const { companyId: oCompanyId, companyIds: oCompanyIds } = options ?? {};
 
   const checkPassed = !oCompanyIds
@@ -141,7 +150,12 @@ export async function validateEmployee(
   logger.debug('Getting details for Employee[%s]', id);
   let employee: Employee | null;
   try {
-    employee = await repository.findFirst({ id, ...scopedQuery });
+    employee = await repository.findFirst({ 
+      id, 
+      ...scopedQuery,
+    },
+    options?.includeCompany ? { company: true } : undefined
+    );
   } catch (err) {
     logger.warn('Getting Employee[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
