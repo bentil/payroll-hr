@@ -2,6 +2,7 @@ import {
   LEAVE_REQUEST_STATUS,
   LEAVE_RESPONSE_TYPE,
   LeaveRequest,
+  LeaveResponse,
   Prisma
 } from '@prisma/client';
 import { prisma } from '../components/db.component';
@@ -26,6 +27,7 @@ export class CreateLeaveRequestObject{
   returnDate!: Date;
   comment!: string;
   numberOfDays!: number;
+  approvalsRequired!: number;
 }
 
 export async function create(
@@ -101,6 +103,18 @@ export const findFirst = async (
   return prisma.leaveRequest.findFirst({ where, include });
 };
 
+export async function findResponse(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.LeaveResponseWhereInput,
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput,
+  include?: Prisma.LeaveResponseInclude,
+}): Promise<LeaveResponse[]> {
+  const data = await prisma.leaveResponse.findMany(params);
+
+  return data;
+}
+
 export async function update(params: {
   where: Prisma.LeaveRequestWhereUniqueInput,
   data: Prisma.LeaveRequestUpdateInput | Prisma.LeaveRequestUncheckedUpdateInput,
@@ -165,15 +179,19 @@ export async function cancel(params: {
 
 export async function respond(params: {
   id: number;
-  data: LeaveResponseInputDto & { approvingEmployeeId: number };
+  data: LeaveResponseInputDto & { 
+    approvingEmployeeId: number, 
+    finalApproval: boolean,
+    approverLevel: number
+  };
   include?: Prisma.LeaveRequestInclude
 }): Promise<LeaveRequest> {
   const { id, data, include } = params;
   
-  let requestStatus: LEAVE_REQUEST_STATUS, responseType: LEAVE_RESPONSE_TYPE;
+  let requestStatus: LEAVE_REQUEST_STATUS | undefined, responseType: LEAVE_RESPONSE_TYPE;
   switch (data.action) {
   case LeaveResponseAction.APPROVE:
-    requestStatus = LEAVE_REQUEST_STATUS.APPROVED;
+    requestStatus = data.finalApproval ? LEAVE_REQUEST_STATUS.APPROVED : undefined ;
     responseType = LEAVE_RESPONSE_TYPE.APPROVED;
     break;
   case LeaveResponseAction.DECLINE:
@@ -189,12 +207,13 @@ export async function respond(params: {
       where: { id },
       data: {
         status: requestStatus,
-        responseCompletedAt: new Date(),
+        responseCompletedAt: requestStatus ? new Date() : undefined,
         leaveResponses: {
           create: {
             employee: { connect: { id: data.approvingEmployeeId } },
             comment: data.comment,
-            responseType
+            responseType,
+            approverLevel: data.approverLevel
           }
         }
       },

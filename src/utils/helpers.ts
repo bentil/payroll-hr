@@ -6,12 +6,10 @@ import {
 } from '../domain/dto/leave-package.dto';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
-import { ForbiddenError } from '../errors/http-errors';
+import { ForbiddenError, NotFoundError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
-import {
-  getParentEmployee,
-  getSupervisees
-} from '../services/company-tree-node.service';
+import { getSupervisees } from '../services/company-tree-node.service';
+import { getEmployeeApproversWithEmployeeId } from '../services/employee-approver.service';
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
@@ -153,8 +151,15 @@ export async function applySupervisionScopeToQuery(
     logger.warn('employeeId not present in AuthUser object');
     throw new UnauthorizedError({});
   } else if (employeeId) {
-    const supervisees = await getSupervisees(employeeId);
-    superviseeIds = supervisees.map(e => e.id);
+    try {
+      const supervisees = await getSupervisees(employeeId);
+      superviseeIds = supervisees.map(e => e.id);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+    }
+    
   }
 
   const hasAdminCategory = (
@@ -224,6 +229,7 @@ export async function applyEmployeeScopeToQuery(
 export async function validateResponder(
   authUser: AuthorizedUser,
   requestorEmployeeId: number, 
+  expectedLevel?: number,
 ): Promise<void> {
   const { employeeId, category, companyIds } = authUser;
   if (employeeId === requestorEmployeeId) {
@@ -232,18 +238,26 @@ export async function validateResponder(
       message: 'You are not allowed to perform this action'
     });
   }
-  const [parentEmployee, requestorEmployee] = await Promise.all([
-    getParentEmployee(requestorEmployeeId),
-    getEmployee(requestorEmployeeId)
-  ]);
+  const requestorEmployee = await getEmployee(requestorEmployeeId);
 
-  if (
-    category !== UserCategory.HR 
-    && (!parentEmployee || employeeId !== parentEmployee.id)
-  ) {
-    throw new ForbiddenError({
-      message: 'You are not allowed to perform this action'
+  if (category !== UserCategory.HR && employeeId) {
+    const employeeApprovers = await getEmployeeApproversWithEmployeeId({
+      employeeId: requestorEmployeeId, level: expectedLevel
     });
+    let exists = false;
+    if (employeeApprovers.length > 0) {
+      employeeApprovers.forEach((x) => {
+        if (x.approverId === employeeId) {
+          exists = true; 
+        }
+      });
+      
+    } 
+    if (!exists) {
+      throw new ForbiddenError({
+        message: 'You are not allowed to perform this action'
+      });
+    }
   }
   //check if hr employee is of same company as requestor employee
   if ([UserCategory.HR, UserCategory.EMPLOYEE].includes(category) && (companyIds.length === 1)) {

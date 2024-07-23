@@ -81,7 +81,7 @@ export async function getDepartmentLeadershipWithEmployeeId(
 }
 
 export async function getDepartmentLeaderships(
-  query: { departmentId: number, level: number},
+  query: { departmentId: number, rank: number},
   options?: { 
     includeEmployee?: boolean,
   }
