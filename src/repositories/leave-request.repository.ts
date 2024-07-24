@@ -117,11 +117,21 @@ export async function findResponse(params: {
 
 export async function findFirstResponse(params: {
   where: Prisma.LeaveResponseWhereInput,
-  take?: number,
   orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput,
   include?: Prisma.LeaveResponseInclude,
 }): Promise<LeaveResponse | null>  {
   return prisma.leaveResponse.findFirst(params);
+}
+
+export async function findLastResponse(
+  where: Prisma.LeaveResponseWhereInput,
+  include?: Prisma.LeaveResponseInclude
+) {
+  return await findFirstResponse({ 
+    where, 
+    orderBy: { createdAt: 'desc' },
+    include 
+  });
 }
 
 export async function update(params: {

@@ -415,11 +415,9 @@ export async function addLeaveResponse(
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
-  const lastResponse = await leaveRequestRepository.findFirstResponse({
-    where: { leaveRequestId: id },
-    take: -1,
-    orderBy: { id: 'desc' }
-  });
+  const lastResponse = await leaveRequestRepository.findLastResponse(
+    { leaveRequestId: id }
+  );
   const lastLevel = lastResponse ? lastResponse.approverLevel : 0;
   const expectedLevel = lastLevel + 1;
   await helpers.validateResponder({
@@ -428,13 +426,14 @@ export async function addLeaveResponse(
     expectedLevel, 
   });
 
-  // Checking if this is last response expected for reques
-  const finalApproval = leaveRequest.approvalsRequired === expectedLevel ? true : false;
-
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     id,
-    data: { ...responseData, approvingEmployeeId, finalApproval, approverLevel: expectedLevel },
+    data: { 
+      ...responseData, 
+      approvingEmployeeId, 
+      finalApproval: leaveRequest.approvalsRequired === expectedLevel, 
+      approverLevel: expectedLevel },
     include: { 
       leavePackage: { include: { leaveType: true } },
       leaveResponses: true,
