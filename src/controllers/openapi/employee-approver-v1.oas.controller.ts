@@ -17,6 +17,8 @@ import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses
 import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
+  EmployeeApproverPreflightRequestDto,
+  EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
   UpdateEmployeeApproverDto
@@ -156,6 +158,27 @@ export class EmployeeApproverV1Controller {
     this.logger.debug('Received request to delete EmployeeApprover[%s]', id);
     await service.deleteEmployeeApprover(id, employeeId, req.user!);
     this.logger.debug('EmployeeApprover[%s] deleted successfully', id);
+  }
+
+  /**
+   * Test if an employee is best fit as an Approver
+   * @param employeeId Employee ID
+   * @param dtoDataRequest body with details for preflight test
+   * @param req Request object
+   * @returns Warning messages if any
+   */
+  @Post('/preflight')
+  public async employeeApproverPreflight(
+    @Path('employeeId') employeeId: number,
+    @Body() dtoData: EmployeeApproverPreflightRequestDto,
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<EmployeeApproverPreflightResponseDto>> {
+    this.logger.debug('Received preflight request for Employee[%s]', employeeId);
+    const data = await service.EmployeeApproverPreflight(
+      employeeId, dtoData, req.user!
+    );
+    this.logger.info('Preflight request for Employee[%s] done successfully!', employeeId);
+    return { data };
   }
 
 }

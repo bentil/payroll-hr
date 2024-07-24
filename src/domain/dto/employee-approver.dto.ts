@@ -35,3 +35,12 @@ export interface EmployeeApproverDto extends EmployeeApprover {
   employee?: Employee;
   approver?: Employee;
 }
+
+export class EmployeeApproverPreflightRequestDto {
+  approverId!: number;
+  level!: number;
+}
+
+export class EmployeeApproverPreflightResponseDto {
+  warnings!: string[];
+}

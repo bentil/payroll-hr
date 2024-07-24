@@ -1,6 +1,8 @@
 import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
+  EmployeeApproverPreflightRequestDto,
+  EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
   UpdateEmployeeApproverDto
@@ -391,4 +393,32 @@ export async function getEmployeeApproversWithEmployeeId(params: {
   }
   logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
   return employeeApproverList;
+}
+
+export async function EmployeeApproverPreflight(
+  employeeId: number,
+  dtoData: EmployeeApproverPreflightRequestDto,
+  authUser: AuthorizedUser
+): Promise<EmployeeApproverPreflightResponseDto> {
+  const { approverId } = dtoData;
+  const warnings: string[] = [];
+
+  // Validating approver
+
+  const [ approver, existingApprovals ] = await Promise.all([
+    employeeService.validateEmployee(approverId, authUser),
+    repository.find({
+      where: { employeeId, approverId }
+    })
+  ]);
+
+  if (approver.status !== 'ACTIVE') {
+    warnings.push('Approver is not an active employee');
+  }
+  if (existingApprovals.data.length > 0) {
+    const warn = 'Approver has been set up at Level ';
+    const levels = existingApprovals.data.map(x =>  x.level).join(' - ');
+    warnings.push(warn.concat(levels));
+  }
+  return { warnings };
 }
