@@ -96,12 +96,12 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.LeaveRequestWhereInput,
   include: Prisma.LeaveRequestInclude,
-): Promise<LeaveRequestDto | null> => {
+): Promise<LeaveRequestDto | null>  {
   return prisma.leaveRequest.findFirst({ where, include });
-};
+}
 
 export async function findResponse(params: {
   skip?: number,
@@ -113,6 +113,15 @@ export async function findResponse(params: {
   const data = await prisma.leaveResponse.findMany(params);
 
   return data;
+}
+
+export async function findFirstResponse(params: {
+  where: Prisma.LeaveResponseWhereInput,
+  take?: number,
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput,
+  include?: Prisma.LeaveResponseInclude,
+}): Promise<LeaveResponse | null>  {
+  return prisma.leaveResponse.findFirst(params);
 }
 
 export async function update(params: {

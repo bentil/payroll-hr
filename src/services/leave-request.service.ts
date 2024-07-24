@@ -386,9 +386,9 @@ export async function deleteLeaveRequest(id: number): Promise<void> {
 export async function addLeaveResponse(
   id: number, 
   responseData: LeaveResponseInputDto,
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -415,24 +415,21 @@ export async function addLeaveResponse(
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
-  // getting expected level and lastLevel
-  const lastResponse = await leaveRequestRepository.findResponse({
-    take: 1,
+  const lastResponse = await leaveRequestRepository.findFirstResponse({
     where: { leaveRequestId: id },
-    orderBy: { createdAt: 'desc', },
+    take: -1,
+    orderBy: { id: 'desc' }
   });
-  const lastLevel = lastResponse.length > 0 ? lastResponse[0].approverLevel : 0;
+  const lastLevel = lastResponse ? lastResponse.approverLevel : 0;
   const expectedLevel = lastLevel + 1;
-  await helpers.validateResponder(
-    authorizedUser, leaveRequest.employeeId, expectedLevel, 
-  );
+  await helpers.validateResponder({
+    authUser, 
+    requestorEmployeeId: leaveRequest.employeeId, 
+    expectedLevel, 
+  });
 
   // Checking if this is last response expected for reques
-
-  let finalApproval = false;
-  if (leaveRequest.approvalsRequired === expectedLevel) {
-    finalApproval = true;
-  }
+  const finalApproval = leaveRequest.approvalsRequired === expectedLevel ? true : false;
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({

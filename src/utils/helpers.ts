@@ -226,11 +226,12 @@ export async function applyEmployeeScopeToQuery(
   );
 }
 
-export async function validateResponder(
-  authUser: AuthorizedUser,
+export async function validateResponder(params: {
   requestorEmployeeId: number, 
   expectedLevel?: number,
-): Promise<void> {
+  authUser: AuthorizedUser,
+}): Promise<void> {
+  const { authUser, requestorEmployeeId, expectedLevel } = params;
   const { employeeId, category, companyIds } = authUser;
   if (employeeId === requestorEmployeeId) {
     logger.warn('Responder of request cannot be same as requestor');
@@ -244,16 +245,8 @@ export async function validateResponder(
     const employeeApprovers = await getEmployeeApproversWithEmployeeId({
       employeeId: requestorEmployeeId, level: expectedLevel
     });
-    let exists = false;
-    if (employeeApprovers.length > 0) {
-      employeeApprovers.forEach((x) => {
-        if (x.approverId === employeeId) {
-          exists = true; 
-        }
-      });
-      
-    } 
-    if (!exists) {
+    const approverCheck = employeeApprovers.filter(x => x.approverId === employeeId);
+    if (approverCheck.length === 0) {
       throw new ForbiddenError({
         message: 'You are not allowed to perform this action'
       });
