@@ -307,22 +307,22 @@ export async function getEmployeeApproversWithEmployeeId(params: {
   const { employeeId, approvalType, level } = params;
   const employee = await employeeService.getEmployee(employeeId, { includeCompany: true });
   // Getting allowed level for employees company
-  let employeesCompanyAllowdLevels: number;
+  let approverLevelsRequired: number;
   if (!approvalType) {
-    employeesCompanyAllowdLevels = Math.max(
+    approverLevelsRequired = Math.max(
       employee.company!.leaveRequestApprovalsRequired, 
       employee.company!.reimbursementRequestApprovalsRequired
     );
   } else if (approvalType === 'leave') {
-    employeesCompanyAllowdLevels = employee.company!.leaveRequestApprovalsRequired;
+    approverLevelsRequired = employee.company!.leaveRequestApprovalsRequired;
   } else {
-    employeesCompanyAllowdLevels = employee.company!.reimbursementRequestApprovalsRequired;
+    approverLevelsRequired = employee.company!.reimbursementRequestApprovalsRequired;
   }
   const allowedLevels: number[] =[];
   if (level) {
     allowedLevels.push(level);
   } else {
-    for (let val = 1; val <= employeesCompanyAllowdLevels; val++) {
+    for (let val = 1; val <= approverLevelsRequired; val++) {
       allowedLevels.push(val);
     }
   }
