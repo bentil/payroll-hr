@@ -126,10 +126,10 @@ export async function findFirstResponse(params: {
 export async function findLastResponse(
   where: Prisma.LeaveResponseWhereInput,
   include?: Prisma.LeaveResponseInclude
-) {
+): Promise<LeaveResponse | null> {
   return await findFirstResponse({ 
     where, 
-    orderBy: { createdAt: 'desc' },
+    orderBy: { id: 'desc' },
     include 
   });
 }

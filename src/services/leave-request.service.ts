@@ -433,7 +433,8 @@ export async function addLeaveResponse(
       ...responseData, 
       approvingEmployeeId, 
       finalApproval: leaveRequest.approvalsRequired === expectedLevel, 
-      approverLevel: expectedLevel },
+      approverLevel: expectedLevel 
+    },
     include: { 
       leavePackage: { include: { leaveType: true } },
       leaveResponses: true,
