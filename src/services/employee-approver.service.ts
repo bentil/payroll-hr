@@ -20,7 +20,7 @@ import { rootLogger } from '../utils/logger';
 import * as helpers from '../utils/helpers';
 import { KafkaService } from '../components/kafka.component';
 import { AuthorizedUser } from '../domain/user.domain';
-import { EmployeeApprover } from '@prisma/client';
+import { Employee, EmployeeApprover } from '@prisma/client';
 import { errors } from '../utils/constants';
 
 
@@ -299,32 +299,40 @@ type EmployeeApproverSummary = Pick<
   'approverId' | 'employeeId' | 'level' | 'approver' | 'employee'
 >
 
-export async function getEmployeeApproversWithEmployeeId(
+export async function getEmployeeApproversWithEmployeeId(params: {
   employeeId: number,
   approvalType?: string,
-): Promise<ListWithPagination<EmployeeApproverSummary>> {
-  //return approvals highest number or add it but optional
+  level?: number
+}): Promise<EmployeeApproverSummary[]> {
+  const { employeeId, approvalType, level } = params;
   const employee = await employeeService.getEmployee(employeeId, { includeCompany: true });
-  let employeesCompanyAllowdLevels: number;
+  // Getting allowed level for employees company
+  let approverLevelsRequired: number;
   if (!approvalType) {
-    employeesCompanyAllowdLevels = Math.max(
+    approverLevelsRequired = Math.max(
       employee.company!.leaveRequestApprovalsRequired, 
       employee.company!.reimbursementRequestApprovalsRequired
     );
   } else if (approvalType === 'leave') {
-    employeesCompanyAllowdLevels = employee.company!.leaveRequestApprovalsRequired;
+    approverLevelsRequired = employee.company!.leaveRequestApprovalsRequired;
   } else {
-    employeesCompanyAllowdLevels = employee.company!.reimbursementRequestApprovalsRequired;
+    approverLevelsRequired = employee.company!.reimbursementRequestApprovalsRequired;
   }
   const allowedLevels: number[] =[];
-  for (let val = 1; val <=employeesCompanyAllowdLevels; val++) {
-    allowedLevels.push(val);
+  if (level) {
+    allowedLevels.push(level);
+  } else {
+    for (let val = 1; val <= approverLevelsRequired; val++) {
+      allowedLevels.push(val);
+    }
   }
+  
+
   logger.debug('Getting details for Employee[%s] Approvers', employeeId);
   let employeeApprovers: ListWithPagination<EmployeeApproverSummary>;
   try {
     employeeApprovers = await repository.find({
-      where: { employeeId },
+      where: { employeeId, level },
       include: { employee: true, approver: true }
     });
   } catch (err) {
@@ -333,25 +341,27 @@ export async function getEmployeeApproversWithEmployeeId(
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-  //getting levels
-
-  const availableLevels = [...new Set(employeeApprovers.data.map((d) => d.level))];
-  //const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
-  let defaultLevels: number[];
-  if (allowedLevels.length > 1) {
-    defaultLevels = [1, 2];
-  } else {
-    defaultLevels = [1];
-  }
-  const unavailableDefaultLevels = defaultLevels.filter(
-    o => !availableLevels.includes(o)
-  );
-  if (unavailableDefaultLevels.length > 0) {
-    unavailableDefaultLevels.forEach(async (x) => {
+  // Getting list of available and unavailable levels
+  const employeeApproverList: EmployeeApproverSummary[] = employeeApprovers.data;
+  const availableLevels = [...new Set(employeeApproverList.map((d) => d.level))];
+  const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
+  
+  // Assigning default levels of employee as approver
+  if (unavailableLevels.length > 0) {
+    for (const x of unavailableLevels) {
+      logger.debug('No EmployeeApprover at Level %s. Getting default', x);
       if (x === 1) {
-        const data = await companyTreeService.getParentEmployee(employeeId);
+        let data: Employee;
+        try {
+          data = await companyTreeService.getParentEmployee(employeeId);
+        } catch (err) {
+          if(!(err instanceof NotFoundError)) {
+            throw err;
+          } 
+          continue;
+        }
         if (data)  {
-          employeeApprovers.data.push({
+          employeeApproverList.push({
             employeeId,
             approverId: data.id,
             level: x,
@@ -361,12 +371,13 @@ export async function getEmployeeApproversWithEmployeeId(
         }
       } else if (x === 2) {
         if (employee.departmentId) {
-          const data = 
-          await deptLeadershipService.getDepartmentLeaderships(
-            { departmentId: employee.departmentId, level: 0 }
-          );
+          const data = await deptLeadershipService
+            .getDepartmentLeaderships(
+              { departmentId: employee.departmentId, rank: 0 },
+              { includeEmployee: true }
+            );
           if (data.length > 0 && data[0].employeeId) {
-            employeeApprovers.data.push({
+            employeeApproverList.push({
               employeeId,
               approverId: data[0].employeeId,
               level: x,
@@ -376,8 +387,8 @@ export async function getEmployeeApproversWithEmployeeId(
           }  
         }
       }
-    });
+    }
   }
   logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
-  return employeeApprovers;
+  return employeeApproverList;
 }

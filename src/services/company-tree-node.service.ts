@@ -315,7 +315,7 @@ export async function updateCompanyTreeNode(
       throw new AlreadyExistsError({
         message: 'Employee already linked to an existing node'
       });
-    } else if (!parent) {
+    } else if (parentId && !parent) {
       throw new NotFoundError({
         name: errors.COMPANY_TREE_NODE_NOT_FOUND,
         message: 'Parent node does not exist'

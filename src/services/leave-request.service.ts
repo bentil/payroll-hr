@@ -38,6 +38,7 @@ import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
+import * as employeeService from './employee.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -52,13 +53,14 @@ export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
-  let validateData, nodeExist, leaveSummary;
+  let validateData, nodeExist, leaveSummary, employee;
   // VALIDATION
   try {
-    [nodeExist, validateData, leaveSummary] = await Promise.all([
+    [nodeExist, validateData, leaveSummary, employee] = await Promise.all([
       findFirstCompanyTreeNode({ employeeId }),
       validate(leaveTypeId, employeeId),
-      getEmployeeLeaveTypeSummary(employeeId, leaveTypeId)
+      getEmployeeLeaveTypeSummary(employeeId, leaveTypeId),
+      employeeService.getEmployee(employeeId, { includeCompany: true })
     ]);
   } catch (err) {
     logger.warn('Validating Employee[%s] and/or LeaveType[%s] failed', 
@@ -101,7 +103,8 @@ export async function addLeaveRequest(
     startDate: payload.startDate,
     returnDate: payload.returnDate,
     comment: payload.comment,
-    numberOfDays
+    numberOfDays,
+    approvalsRequired: employee.company!.leaveRequestApprovalsRequired
   };
  
   logger.debug('Adding new LeaveRequest to the database...');
@@ -383,9 +386,9 @@ export async function deleteLeaveRequest(id: number): Promise<void> {
 export async function addLeaveResponse(
   id: number, 
   responseData: LeaveResponseInputDto,
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -412,12 +415,26 @@ export async function addLeaveResponse(
   } 
   logger.info('LeaveRequest[%s] exists and can be responded to', id);
 
-  await helpers.validateResponder(authorizedUser, leaveRequest.employeeId);
+  const lastResponse = await leaveRequestRepository.findLastResponse(
+    { leaveRequestId: id }
+  );
+  const lastLevel = lastResponse ? lastResponse.approverLevel : 0;
+  const expectedLevel = lastLevel + 1;
+  await helpers.validateResponder({
+    authUser, 
+    requestorEmployeeId: leaveRequest.employeeId, 
+    expectedLevel, 
+  });
 
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     id,
-    data: { ...responseData, approvingEmployeeId },
+    data: { 
+      ...responseData, 
+      approvingEmployeeId, 
+      finalApproval: leaveRequest.approvalsRequired === expectedLevel, 
+      approverLevel: expectedLevel 
+    },
     include: { 
       leavePackage: { include: { leaveType: true } },
       leaveResponses: true,

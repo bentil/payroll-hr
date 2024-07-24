@@ -264,9 +264,9 @@ export async function updateReimbursementRequest(
 export async function addResponse(
   id: number, 
   responseData: ReimbursementResponseInputDto,
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   const { action } = responseData;
   let approvingEmployeeId: number;
   if (employeeId) {
@@ -289,7 +289,10 @@ export async function addResponse(
   ) {
     logger.info('ReimbursementRequest[%s] exists and can be responded to', id);
 
-    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+    await helpers.validateResponder({
+      authUser, 
+      requestorEmployeeId: reimbursementRequest.employeeId
+    });
 
   
     logger.debug('Adding response to ReimbursementRequest[%s]', id);
@@ -329,9 +332,9 @@ export async function addResponse(
 export async function postUpdate(
   id: number, 
   responseData: ReimbursementRequestUpdatesDto,
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   let updatingEmployeeId: number;
   if (employeeId) {
     updatingEmployeeId = employeeId;
@@ -360,7 +363,10 @@ export async function postUpdate(
 
   if (updatingEmployeeId !== reimbursementRequest.employeeId) {
     logger.debug('Validating if Employee[%s] can post update to this request', updatingEmployeeId);
-    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+    await helpers.validateResponder({
+      authUser, 
+      requestorEmployeeId: reimbursementRequest.employeeId
+    });
     logger.info('Employee[%s] can post update to this request', updatingEmployeeId);
   }
   
@@ -390,9 +396,9 @@ export async function postUpdate(
 export async function completeRequest(
   id: number, 
   responseData: CompleteReimbursementRequestDto,
-  authorizedUser: AuthorizedUser,
+  authUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   let completingEmployeeId: number;
   if (employeeId) {
     completingEmployeeId = employeeId;
@@ -422,7 +428,10 @@ export async function completeRequest(
   }
 
   logger.debug('Validating if Employee[%s] can complete this request', completingEmployeeId);
-  await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+  await helpers.validateResponder({
+    authUser, 
+    requestorEmployeeId: reimbursementRequest.employeeId
+  });
   logger.info('Employee[%s] can complete this request', completingEmployeeId);
 
   logger.debug('Completing ReimbursementRequest[%s]', id);
@@ -504,9 +513,9 @@ export async function searchReimbursementRequests(
 
 export async function deleteReimbursementRequest(
   id: number, 
-  authorizedUser: AuthorizedUser
+  authUser: AuthorizedUser
 ): Promise<void> {
-  const { employeeId } = authorizedUser;
+  const { employeeId } = authUser;
   let deletingEmployeeId: number;
   if (employeeId) {
     deletingEmployeeId = employeeId;
@@ -533,7 +542,10 @@ export async function deleteReimbursementRequest(
 
   if (deletingEmployeeId !== reimbursementRequest.employeeId) {
     logger.debug('Validating if Employee[%s] can delete this request', deletingEmployeeId);
-    await helpers.validateResponder(authorizedUser, reimbursementRequest.employeeId);
+    await helpers.validateResponder({
+      authUser, 
+      requestorEmployeeId: reimbursementRequest.employeeId
+    });
     logger.info('Employee[%s] can deletd this request', deletingEmployeeId);
   }
 
