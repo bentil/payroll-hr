@@ -56,8 +56,3 @@ export const QUERY_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
 export const GET_ONE_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
   inverse: Joi.boolean().valid(true, false).optional(),
 });
-
-export const EMPLOYEE_APPROVER_PREFLIGHT_SCHEMA = Joi.object({
-  approverId: Joi.number().required(),
-  level: Joi.number().required(),
-});

@@ -17,7 +17,6 @@ import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses
 import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
-  EmployeeApproverPreflightRequestDto,
   EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
@@ -170,7 +169,7 @@ export class EmployeeApproverV1Controller {
   @Post('/preflight')
   public async employeeApproverPreflight(
     @Path('employeeId') employeeId: number,
-    @Body() dtoData: EmployeeApproverPreflightRequestDto,
+    @Body() dtoData: CreateEmployeeApproverDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApproverPreflightResponseDto>> {
     this.logger.debug('Received preflight request for Employee[%s]', employeeId);

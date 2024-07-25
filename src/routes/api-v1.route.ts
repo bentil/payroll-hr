@@ -131,7 +131,6 @@ import {
 } from '../domain/request-schema/announcement.schema';
 import { 
   CREATE_EMPLOYEE_APPROVER_SCHEMA, 
-  EMPLOYEE_APPROVER_PREFLIGHT_SCHEMA, 
   GET_ONE_EMPLOYEE_APPROVER_SCHEMA, 
   QUERY_EMPLOYEE_APPROVER_SCHEMA, 
   UPDATE_EMPLOYEE_APPROVER_SCHEMA 
@@ -849,7 +848,7 @@ router.delete(
 router.post(
   '/employees/:employeeId/approvers/preflight',
   authenticateUser({ category: [UserCategory.HR] }),
-  validateRequestBody(EMPLOYEE_APPROVER_PREFLIGHT_SCHEMA),
+  validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.employeeApproverPreflight
 );
 

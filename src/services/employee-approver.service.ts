@@ -1,7 +1,6 @@
 import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
-  EmployeeApproverPreflightRequestDto,
   EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
@@ -397,7 +396,7 @@ export async function getEmployeeApproversWithEmployeeId(params: {
 
 export async function EmployeeApproverPreflight(
   employeeId: number,
-  dtoData: EmployeeApproverPreflightRequestDto,
+  dtoData: CreateEmployeeApproverDto,
   authUser: AuthorizedUser
 ): Promise<EmployeeApproverPreflightResponseDto> {
   const { approverId } = dtoData;
@@ -417,7 +416,7 @@ export async function EmployeeApproverPreflight(
   }
   if (existingApprovals.data.length > 0) {
     const warn = 'Approver has been set up at Level ';
-    const levels = existingApprovals.data.map(x =>  x.level).join(' - ');
+    const levels = existingApprovals.data.map(x =>  x.level).join(', ');
     warnings.push(warn.concat(levels));
   }
   return { warnings };
