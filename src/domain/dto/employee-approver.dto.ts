@@ -38,4 +38,5 @@ export interface EmployeeApproverDto extends EmployeeApprover {
 
 export class EmployeeApproverPreflightResponseDto {
   warnings!: string[];
+  errors!: string[];
 }

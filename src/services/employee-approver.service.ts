@@ -23,6 +23,7 @@ import { KafkaService } from '../components/kafka.component';
 import { AuthorizedUser } from '../domain/user.domain';
 import { Employee, EmployeeApprover } from '@prisma/client';
 import { errors } from '../utils/constants';
+import { EmployeeDto } from '../repositories/employee.repository';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -399,25 +400,51 @@ export async function EmployeeApproverPreflight(
   dtoData: CreateEmployeeApproverDto,
   authUser: AuthorizedUser
 ): Promise<EmployeeApproverPreflightResponseDto> {
-  const { approverId } = dtoData;
+  const { approverId, level } = dtoData;
   const warnings: string[] = [];
+  const errors: string[] = [];
 
   // Validating approver
+  await helpers.applyEmployeeScopeToQuery(authUser, { employeeId });
+  //Validation
+  let employee: EmployeeDto, approver: EmployeeDto, 
+    existingApprovals: ListWithPagination<EmployeeApproverDto>;
+  try {
+    [employee, approver, existingApprovals] = await Promise.all([
+      employeeService.validateEmployee(
+        employeeId, authUser, { throwOnNotActive: true, includeCompany: true }
+      ),
+      employeeService.validateEmployee(approverId, authUser),
+      repository.find({
+        where: { employeeId, approverId }
+      })
+    ]);
 
-  const [ approver, existingApprovals ] = await Promise.all([
-    employeeService.validateEmployee(approverId, authUser),
-    repository.find({
-      where: { employeeId, approverId }
-    })
-  ]);
-
-  if (approver.status !== 'ACTIVE') {
-    warnings.push('Approver is not an active employee');
+    if (employee.companyId !== approver.companyId) {
+      errors.push('Approver and employee are not of same company');
+    }
+  
+    const employeesCompanyAllowedLevels = Math.max(
+      employee.company!.leaveRequestApprovalsRequired, 
+      employee.company!.reimbursementRequestApprovalsRequired
+    );
+    if (level > employeesCompanyAllowedLevels) {
+      errors.push('Level is greater than allowed');
+    }
+  
+    if (approver.status !== 'ACTIVE') {
+      warnings.push('Approver is not an active employee');
+    }
+    if (existingApprovals.data.length > 0) {
+      const warn = 'Approver has been set up at Level ';
+      const levels = existingApprovals.data.map(x =>  x.level).join(', ');
+      warnings.push(warn.concat(levels));
+    }
+  } catch (err) {
+    errors.push((err as Error).message);
   }
-  if (existingApprovals.data.length > 0) {
-    const warn = 'Approver has been set up at Level ';
-    const levels = existingApprovals.data.map(x =>  x.level).join(', ');
-    warnings.push(warn.concat(levels));
-  }
-  return { warnings };
+  
+  logger.info('Employee[%s] and Approver[%s] validated successfully', employeeId, approverId);
+  
+  return { warnings, errors };
 }
