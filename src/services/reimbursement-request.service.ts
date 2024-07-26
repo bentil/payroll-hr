@@ -1,4 +1,8 @@
-import { REIMBURESEMENT_REQUEST_STATUS, ReimbursementRequest } from '@prisma/client';
+import { 
+  CompanyCurrency,
+  REIMBURESEMENT_REQUEST_STATUS, 
+  ReimbursementRequest 
+} from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { 
@@ -30,6 +34,7 @@ import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { getParentEmployee } from './company-tree-node.service';
+import { EmployeeDto } from '../repositories/employee.repository';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -49,10 +54,11 @@ export async function addReimbursementRequest(
     'Validating Employee[%s], parent & CompanyCurrency[%s]',
     employeeId, currencyId
   );
+  let _parent: EmployeeDto, _employee: EmployeeDto, _currency: CompanyCurrency;
   try {
-    const [_parent, _employee, _currency] = await Promise.all([
+    [_parent, _employee, _currency] = await Promise.all([
       getParentEmployee(employeeId),
-      employeeService.getEmployee(employeeId),
+      employeeService.getEmployee(employeeId, { includeCompany: true }),
       currencyService.getCompanyCurrency(currencyId)
     ]);
   } catch (err) {
@@ -74,7 +80,10 @@ export async function addReimbursementRequest(
   logger.debug('Adding new ReimbursementRequest to the database...');
   let newReimbursementRequest: ReimbursementRequest;
   try {
-    newReimbursementRequest = await repository.create(payload);
+    newReimbursementRequest = await repository.create({
+      ...payload,
+      approvalsRequired: _employee.company!.leaveRequestApprovalsRequired
+    });
     logger.info(
       'ReimbursementRequest[%s] added successfully!',
       newReimbursementRequest.id
@@ -288,18 +297,28 @@ export async function addResponse(
     reimbursementRequest.status === REIMBURESEMENT_REQUEST_STATUS.SUBMITTED
   ) {
     logger.info('ReimbursementRequest[%s] exists and can be responded to', id);
-
+    let expectedLevel: number | undefined;
+    if (action === ReimbursementResponseAction.APPROVE 
+      || action === ReimbursementResponseAction.REJECT) {
+      const lastComment = await repository.findLastComment({ requestId: id });
+      const lastLevel = lastComment ? lastComment.approverLevel : 0;
+      expectedLevel = lastLevel + 1;
+    }
     await helpers.validateResponder({
       authUser, 
-      requestorEmployeeId: reimbursementRequest.employeeId
+      requestorEmployeeId: reimbursementRequest.employeeId,
+      expectedLevel: expectedLevel ? expectedLevel : undefined
     });
 
   
     logger.debug('Adding response to ReimbursementRequest[%s]', id);
     const updatedReimbursementRequest = await repository.respond({
       id,
-      data: { ...responseData, approvingEmployeeId, 
-        approvedAt: action === ReimbursementResponseAction.APPROVE ? new Date() : undefined
+      data: { 
+        ...responseData, 
+        approvingEmployeeId, 
+        finalApproval: reimbursementRequest.approvalsRequired === expectedLevel, 
+        approverLevel: expectedLevel,
       },
       include: { 
         employee: true, 

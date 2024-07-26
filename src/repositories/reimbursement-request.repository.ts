@@ -2,7 +2,8 @@ import {
   Prisma, 
   REIMBURESEMENT_REQUEST_STATE, 
   REIMBURESEMENT_REQUEST_STATUS, 
-  ReimbursementRequest 
+  ReimbursementRequest, 
+  ReimbursementRequestComment
 } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { 
@@ -22,7 +23,9 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  { employeeId, currencyId, attachmentUrls, ...dtoData }: CreateReimbursementRequestDto
+  { employeeId, currencyId, attachmentUrls, ...dtoData }: CreateReimbursementRequestDto & {
+    approvalsRequired?: number
+  }
 ): Promise<ReimbursementRequest> {
   try {
     return await prisma.reimbursementRequest.create({ 
@@ -120,16 +123,21 @@ export async function update(params: {
 
 export async function respond(params: {
   id: number;
-  data: ReimbursementResponseInputDto & { approvingEmployeeId: number, approvedAt?: Date };
+  data: ReimbursementResponseInputDto & { 
+    approvingEmployeeId: number, 
+    finalApproval: boolean,
+    approverLevel?: number
+  };
   include: Prisma.ReimbursementRequestInclude,
 }): Promise<ReimbursementRequestDto> {
   // how is approverId supposed to be assigned
   const { id, data, include } = params;
   
-  let requestStatus: REIMBURESEMENT_REQUEST_STATUS, requestState: REIMBURESEMENT_REQUEST_STATE;
+  let requestStatus: REIMBURESEMENT_REQUEST_STATUS | undefined, 
+    requestState: REIMBURESEMENT_REQUEST_STATE;
   switch (data.action) {
   case ReimbursementResponseAction.APPROVE:
-    requestStatus = REIMBURESEMENT_REQUEST_STATUS.APPROVED;
+    requestStatus = data.finalApproval ? REIMBURESEMENT_REQUEST_STATUS.APPROVED : undefined;
     requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
     break;
   case ReimbursementResponseAction.REJECT:
@@ -150,7 +158,7 @@ export async function respond(params: {
       data: {
         status: requestStatus,
         statusLastModifiedAt: new Date(),
-        approvedAt: data.approvedAt,
+        approvedAt: requestStatus ? new Date() : undefined,
         approverId: data.approvingEmployeeId,
         requestAttachments: data.attachmentUrls && {
           createMany: { 
@@ -165,7 +173,8 @@ export async function respond(params: {
           create: {
             commenterId: data.approvingEmployeeId,
             comment: data.comment,
-            requestState
+            requestState,
+            approverLevel: data.approverLevel
           }
         } : undefined
       },
@@ -300,4 +309,23 @@ export async function deleteOne(
     }
     throw err;
   }
+}
+
+export async function findFirstComment(params: {
+  where: Prisma.ReimbursementRequestCommentWhereInput,
+  orderBy?: Prisma.ReimbursementRequestCommentOrderByWithRelationAndSearchRelevanceInput,
+  include?: Prisma.ReimbursementRequestCommentInclude,
+}): Promise<ReimbursementRequestComment | null>  {
+  return prisma.reimbursementRequestComment.findFirst(params);
+}
+
+export async function findLastComment(
+  where: Prisma.ReimbursementRequestCommentWhereInput,
+  include?: Prisma.ReimbursementRequestCommentInclude
+): Promise<ReimbursementRequestComment | null> {
+  return await findFirstComment({ 
+    where, 
+    orderBy: { id: 'desc' },
+    include 
+  });
 }
