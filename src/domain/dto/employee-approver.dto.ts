@@ -1,5 +1,6 @@
-import { Employee, EmployeeApprover } from '@prisma/client';
+import { EmployeeApprover } from '@prisma/client';
 import config from '../../config';
+import { EmployeeDto } from '../events/employee.event';
 
 export class CreateEmployeeApproverDto {
   approverId!: number;
@@ -32,8 +33,8 @@ export class GetOneEmployeeApproverDto {
 }
 
 export interface EmployeeApproverDto extends EmployeeApprover {
-  employee?: Employee;
-  approver?: Employee;
+  employee?: EmployeeDto;
+  approver?: EmployeeDto;
 }
 
 export class EmployeeApproverPreflightResponseDto {

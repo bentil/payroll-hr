@@ -1,11 +1,18 @@
 import {
+  Employee,
+  EmployeeApprover,
+  PayrollCompany
+} from '@prisma/client';
+import { KafkaService } from '../components/kafka.component';
+import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
   EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
-  UpdateEmployeeApproverDto
+  UpdateEmployeeApproverDto,
 } from '../domain/dto/employee-approver.dto';
+import { AuthorizedUser } from '../domain/user.domain';
 import {
   HttpError,
   NotFoundError,
@@ -13,27 +20,110 @@ import {
   ServerError
 } from '../errors/http-errors';
 import * as repository from '../repositories/employee-approver.repository';
-import * as employeeService from './employee.service';
+import { EmployeeDto } from '../repositories/employee.repository';
+import { ListWithPagination } from '../repositories/types';
+import { errors } from '../utils/constants';
+import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
 import * as companyTreeService from './company-tree-node.service';
 import * as deptLeadershipService from './department-leadership.service';
-import { ListWithPagination } from '../repositories/types';
-import { rootLogger } from '../utils/logger';
-import * as helpers from '../utils/helpers';
-import { KafkaService } from '../components/kafka.component';
-import { AuthorizedUser } from '../domain/user.domain';
-import { Employee, EmployeeApprover } from '@prisma/client';
-import { errors } from '../utils/constants';
-import { EmployeeDto } from '../repositories/employee.repository';
+import * as employeeService from './employee.service';
 
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeApproverService' });
-
 const events = {
   created: 'event.EmployeeApprover.created',
   modified: 'event.EmployeeApprover.modified',
-  deleted: 'event.EmployeeApprover.deleted'
-};
+  deleted: 'event.EmployeeApprover.deleted',
+} as const;
+
+export async function employeeApproverPreflight(
+  employeeId: number,
+  dtoData: CreateEmployeeApproverDto,
+  authUser: AuthorizedUser
+): Promise<EmployeeApproverPreflightResponseDto> {
+  const { approverId, level } = dtoData;
+
+  logger.debug(
+    'Performing preflight checks for Employee[%s] Approver[%s]',
+    employeeId, approverId
+  );
+
+  await helpers.applyEmployeeScopeToQuery(authUser, { employeeId });
+
+  const warnings: string[] = [], errors: string[] = [];
+  let employee: EmployeeDto | undefined,
+    approver: EmployeeDto | undefined,
+    existingApprovals: ListWithPagination<EmployeeApproverDto> | undefined;
+
+  const [
+    employeeSettledResult,
+    approverSettledResult,
+    existingApprovalsSettledResult,
+  ] = await Promise.allSettled([
+    employeeService.validateEmployee(
+      employeeId,
+      authUser,
+      { throwOnNotActive: true, includeCompany: true }
+    ),
+    employeeService.validateEmployee(approverId, authUser),
+    repository.find({
+      where: { employeeId, approverId }
+    }),
+  ]);
+
+  if (employeeSettledResult.status === 'rejected') {
+    errors.push(`Employee: ${employeeSettledResult.reason}`);
+  } else {
+    employee = employeeSettledResult.value;
+  }
+
+  if (approverSettledResult.status === 'rejected') {
+    errors.push(`Approver: ${approverSettledResult.reason}`);
+  } else {
+    approver = approverSettledResult.value;
+  }
+
+  if (existingApprovalsSettledResult.status === 'rejected') {
+    errors.push(
+      'Failed to find existing approvals for employee and approver pair'
+    );
+  } else {
+    existingApprovals = existingApprovalsSettledResult.value;
+  }
+
+  if (employee && approver && existingApprovals) {
+    if (employee.companyId !== approver.companyId) {
+      errors.push('Approver could not be found in employee\'s company');
+    }
+
+    const approverLevelsAllowed = Math.max(
+      employee.company!.leaveRequestApprovalsRequired,
+      employee.company!.reimbursementRequestApprovalsRequired
+    );
+    if (level > approverLevelsAllowed) {
+      errors.push(
+        `Approver level exceeds maximum (${approverLevelsAllowed}) allowed`
+      );
+    }
+
+    if (existingApprovals.data.length > 0) {
+      warnings.push(
+        'Approver has been set up at Level '.concat(
+          existingApprovals.data.map(a => a.level).join(', ')
+        )
+      );
+    }
+  }
+
+  logger.info(
+    'Completed Employee[%s] & Approver[%s] preflight checks',
+    employeeId, approverId
+  );
+
+  return { warnings, errors };
+}
 
 export async function createEmployeeApprover(
   employeeId: number,
@@ -45,24 +135,34 @@ export async function createEmployeeApprover(
   //Validation
   const [employee, approver] = await Promise.all([
     employeeService.validateEmployee(
-      employeeId, authUser, { throwOnNotActive: true, includeCompany: true }
+      employeeId,
+      authUser,
+      { throwOnNotActive: true, includeCompany: true }
     ),
-    employeeService.validateEmployee(approverId, authUser, { throwOnNotActive: true })
+    employeeService.validateEmployee(
+      approverId,
+      authUser,
+      { throwOnNotActive: true }
+    )
   ]);
-  logger.info('Employee[%s] and Approver[%s] validated successfully', employeeId, approverId);
+
   if (employee.companyId !== approver.companyId) {
     throw new RequirementNotMetError({
       message: 'Approver and employee are not of same company'
     });
   }
+  logger.info(
+    'Employee[%s] and Approver[%s] validated successfully',
+    employeeId, approverId
+  );
 
-  const employeesCompanyAllowedLevels = Math.max(
-    employee.company!.leaveRequestApprovalsRequired, 
+  const approverLevelsAllowed = Math.max(
+    employee.company!.leaveRequestApprovalsRequired,
     employee.company!.reimbursementRequestApprovalsRequired
   );
-  if (level > employeesCompanyAllowedLevels) {
+  if (level > approverLevelsAllowed) {
     throw new RequirementNotMetError({
-      message: 'Level is greater than allowed'
+      message: `Approver level exceeds maximum (${approverLevelsAllowed}) allowed`
     });
   }
 
@@ -73,7 +173,10 @@ export async function createEmployeeApprover(
       ...createData,
       employeeId
     });
-    logger.info('EmployeeApprover[%s] persisted successfully!', employeeApprover.id);
+    logger.info(
+      'EmployeeApprover[%s] persisted successfully!',
+      employeeApprover.id
+    );
   } catch (err) {
     if (err instanceof HttpError) throw err;
     logger.error('Persisting EmployeeApprover failed', { error: err });
@@ -101,45 +204,66 @@ export async function updateEmployeeApprover(
   );
   let employeeApprover: EmployeeApproverDto | null;
   try {
-    employeeApprover = await repository.findOne({ id, ...scopedQuery });
+    employeeApprover = await repository.findFirst({
+      id,
+      ...scopedQuery
+    }, {
+      employee: { include: { company: true } },
+    });
   } catch (err) {
-    logger.warn('Getting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
+    logger.warn(
+      'Getting EmployeeApprover[%s] failed',
+      id, { error: (err as Error).stack }
+    );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
-  
+
   if (!employeeApprover) {
     logger.warn('EmployeeApprover[%s] to update does not exist', id);
-    throw new NotFoundError({ 
-      message: 'Employee approver to update does not exist' 
+    throw new NotFoundError({
+      message: 'Employee approver to update does not exist'
     });
   }
 
-  // validating
+  const employee = employeeApprover.employee as EmployeeDto;
+  const company = employee.company as PayrollCompany;
+
   if (approverId) {
-    await employeeService.validateEmployee(approverId, authUser);
+    try {
+      await employeeService.validateEmployee(
+        approverId,
+        authUser,
+        { companyId: company.id }
+      );
+    } catch (err) {
+      logger.warn(
+        'Getting Approver[%s] failed',
+        approverId, { error: (err as Error).stack }
+      );
+      if (err instanceof HttpError) {
+        err.message = `Approver: ${err.message}`;
+        throw err;
+      }
+    }
   }
 
   if (level) {
-    const employee = await employeeService.validateEmployee(
-      employeeId, authUser, { includeCompany: true }
+    const approverLevelsAllowed = Math.max(
+      company.leaveRequestApprovalsRequired,
+      company.reimbursementRequestApprovalsRequired
     );
-
-    const employeesCompanyAllowedLevels = Math.max(
-      employee.company!.leaveRequestApprovalsRequired, 
-      employee.company!.reimbursementRequestApprovalsRequired
-    );
-    if (level > employeesCompanyAllowedLevels) {
+    if (level > approverLevelsAllowed) {
       throw new RequirementNotMetError({
-        message: 'Level is greater than allowed'
+        message: `Approver level exceeds maximum (${approverLevelsAllowed}) allowed`
       });
     }
   }
 
+  logger.debug('Persisting update(s) to EmployeeApprover[%s]', id);
   const updatedEmployeeApprover = await repository.update({
     where: { id, employeeId },
     data: updateData
   });
-
   logger.info('Update(s) to EmployeeApprover[%s] persisted successfully!', id);
 
   // Emit event.EmployeeApprover.modified event
@@ -159,26 +283,19 @@ export async function getEmployeeApprovers(
     page,
     limit: take,
     orderBy,
-    approverId: queryApprover,
+    approverId: qApproverId,
     level,
     inverse,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  let approverId: number | undefined, scopeQuery;
-  if (inverse) {
-    approverId = employeeId;
-    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
-      authUser, { }
-    );
-    scopeQuery = scopedQuery;
-  } else {
-    approverId = queryApprover;
-    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
-      authUser, { employeeId }
-    );
-    scopeQuery = scopedQuery;
-  }
+  
+  const approverId = inverse ? employeeId : qApproverId;
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, {
+      employeeId: !inverse ? employeeId : undefined,
+    }
+  );
 
   let result: ListWithPagination<EmployeeApproverDto>;
   logger.debug('Finding EmployeeApprover(s) that match query', { query });
@@ -187,7 +304,7 @@ export async function getEmployeeApprovers(
       skip,
       take,
       where: {
-        ...scopeQuery,
+        ...scopedQuery,
         approverId,
         level
       },
@@ -203,7 +320,7 @@ export async function getEmployeeApprovers(
     );
   } catch (err) {
     logger.warn(
-      'Querying EmployeeApprover with query failed',
+      'Querying EmployeeApprovers with query failed',
       { query }, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -212,50 +329,41 @@ export async function getEmployeeApprovers(
   return result;
 }
 
-
-export async function getEmployeeApproverId(
+export async function getEmployeeApprover(
   id: number,
   employeeId: number,
   query: GetOneEmployeeApproverDto,
   authUser: AuthorizedUser,
 ): Promise<EmployeeApproverDto> {
+  const { inverse } = query;
+
   logger.debug('Getting details for EmployeeApprover[%s]', id);
-  let approverId: number, employeeApprover: EmployeeApproverDto | null;
-  if (query?.inverse) {
-    approverId = employeeId;
-    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
-      authUser, { }
-    );
-    try {
-      employeeApprover = await repository.findOne(
-        { id, approverId, ...scopedQuery },
-        { employee: true, approver: true }
-      );
-    } catch (err) {
-      logger.warn('Getting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
-      throw new ServerError({ message: (err as Error).message, cause: err });
+  const approverId = inverse ? employeeId : undefined;
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, {
+      employeeId: !inverse ? employeeId : undefined,
     }
-    
-  } else {
-    const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
-      authUser, { employeeId }
+  );
+  
+  let employeeApprover: EmployeeApproverDto | null;
+  try {
+    employeeApprover = await repository.findFirst(
+      { id, approverId, ...scopedQuery },
+      { employee: true, approver: true }
     );
-    try {
-      employeeApprover = await repository.findOne(
-        { id, ...scopedQuery },
-        { employee: true, approver: true }
-      );
-    } catch (err) {
-      logger.warn('Getting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
-      throw new ServerError({ message: (err as Error).message, cause: err });
-    }
-    
-  }  
+  } catch (err) {
+    logger.warn(
+      'Getting EmployeeApprover[%s] failed',
+      id, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
 
   if (!employeeApprover) {
     logger.warn('EmployeeApprover[%s] does not exist', id);
     throw new NotFoundError({ message: 'Employee approver does not exist' });
   }
+
   logger.info('EmployeeApprover[%s] details retrieved!', id);
   return employeeApprover;
 }
@@ -269,7 +377,7 @@ export async function deleteEmployeeApprover(
   const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
     authUser, { employeeId }
   );
-  const employeeApprover = await repository.findOne({ id, ...scopedQuery });
+  const employeeApprover = await repository.findFirst({ id, ...scopedQuery });
   if (!employeeApprover) {
     logger.warn('EmployeeApprover[%s] to delete does not exist', id);
     throw new NotFoundError({
@@ -286,7 +394,10 @@ export async function deleteEmployeeApprover(
     logger.info('EmployeeApprover[%s] successfully deleted!', id);
   } catch (err) {
     if (err instanceof HttpError) throw err;
-    logger.warn('Deleting EmployeeApprover[%s] failed', id, { error: (err as Error).stack });
+    logger.warn(
+      'Deleting EmployeeApprover[%s] failed',
+      id, { error: (err as Error).stack }
+    );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 
@@ -297,40 +408,45 @@ export async function deleteEmployeeApprover(
 }
 
 type EmployeeApproverSummary = Pick<
-  EmployeeApproverDto, 
+  EmployeeApproverDto,
   'approverId' | 'employeeId' | 'level' | 'approver' | 'employee'
->
+>;
 
-export async function getEmployeeApproversWithEmployeeId(params: {
+export async function getEmployeeApproversWithDefaults(params: {
   employeeId: number,
   approvalType?: string,
   level?: number
 }): Promise<EmployeeApproverSummary[]> {
   const { employeeId, approvalType, level } = params;
-  const employee = await employeeService.getEmployee(employeeId, { includeCompany: true });
-  // Getting allowed level for employees company
-  let approverLevelsRequired: number;
+  const employee = await employeeService.getEmployee(
+    employeeId,
+    { includeCompany: true }
+  );
+
+  // Getting allowed approver level for employee's company
+  const company = employee.company as PayrollCompany;
+  let approverLevelsAllowed: number;
   if (!approvalType) {
-    approverLevelsRequired = Math.max(
-      employee.company!.leaveRequestApprovalsRequired, 
-      employee.company!.reimbursementRequestApprovalsRequired
+    approverLevelsAllowed = Math.max(
+      company.leaveRequestApprovalsRequired,
+      company.reimbursementRequestApprovalsRequired
     );
   } else if (approvalType === 'leave') {
-    approverLevelsRequired = employee.company!.leaveRequestApprovalsRequired;
+    approverLevelsAllowed = company.leaveRequestApprovalsRequired;
   } else {
-    approverLevelsRequired = employee.company!.reimbursementRequestApprovalsRequired;
+    approverLevelsAllowed = company.reimbursementRequestApprovalsRequired;
   }
-  const allowedLevels: number[] =[];
+
+  const allowedLevels: number[] = [];
   if (level) {
     allowedLevels.push(level);
   } else {
-    for (let val = 1; val <= approverLevelsRequired; val++) {
+    for (let val = 1; val <= approverLevelsAllowed; val++) {
       allowedLevels.push(val);
     }
   }
-  
 
-  logger.debug('Getting details for Employee[%s] Approvers', employeeId);
+  logger.debug('Getting details for Employee[%s] Approver(s)', employeeId);
   let employeeApprovers: ListWithPagination<EmployeeApproverSummary>;
   try {
     employeeApprovers = await repository.find({
@@ -339,112 +455,60 @@ export async function getEmployeeApproversWithEmployeeId(params: {
     });
   } catch (err) {
     logger.warn(
-      'Getting Employee[%s] Approvers failed', employeeId, { error: (err as Error).stack }
+      'Getting Employee[%s] Approvers failed',
+      employeeId, { error: (err as Error).stack }
     );
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   // Getting list of available and unavailable levels
-  const employeeApproverList: EmployeeApproverSummary[] = employeeApprovers.data;
-  const availableLevels = [...new Set(employeeApproverList.map((d) => d.level))];
-  const unavailableLevels = allowedLevels.filter(i => !availableLevels.includes(i));
-  
+  const employeeApproverList = employeeApprovers.data;
+  const availableLevels = [...new Set(employeeApproverList.map(a => a.level))];
+  const unavailableLevels = allowedLevels.filter(
+    i => !availableLevels.includes(i)
+  );
+
   // Assigning default levels of employee as approver
-  if (unavailableLevels.length > 0) {
-    for (const x of unavailableLevels) {
-      logger.debug('No EmployeeApprover at Level %s. Getting default', x);
-      if (x === 1) {
-        let data: Employee;
-        try {
-          data = await companyTreeService.getParentEmployee(employeeId);
-        } catch (err) {
-          if(!(err instanceof NotFoundError)) {
-            throw err;
-          } 
-          continue;
+  for (const x of unavailableLevels) {
+    logger.debug('No EmployeeApprover at Level %s. Getting default', x);
+    if (x === 1) {
+      let data: Employee;
+      try {
+        data = await companyTreeService.getParentEmployee(employeeId);
+      } catch (err) {
+        if (!(err instanceof NotFoundError)) {
+          throw err;
         }
-        if (data)  {
+        continue;
+      }
+      if (data) {
+        employeeApproverList.push({
+          employeeId,
+          approverId: data.id,
+          level: x,
+          employee: employee,
+          approver: data
+        });
+      }
+    } else if (x === 2) {
+      if (employee.departmentId) {
+        const data = await deptLeadershipService
+          .getDepartmentLeaderships(
+            { departmentId: employee.departmentId, rank: 0 },
+            { includeEmployee: true }
+          );
+        if (data.length > 0 && data[0].employeeId) {
           employeeApproverList.push({
             employeeId,
-            approverId: data.id,
+            approverId: data[0].employeeId,
             level: x,
             employee: employee,
-            approver: data
+            approver: data[0].employee
           });
-        }
-      } else if (x === 2) {
-        if (employee.departmentId) {
-          const data = await deptLeadershipService
-            .getDepartmentLeaderships(
-              { departmentId: employee.departmentId, rank: 0 },
-              { includeEmployee: true }
-            );
-          if (data.length > 0 && data[0].employeeId) {
-            employeeApproverList.push({
-              employeeId,
-              approverId: data[0].employeeId,
-              level: x,
-              employee: employee,
-              approver: data[0].employee
-            });
-          }  
         }
       }
     }
   }
   logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
+
   return employeeApproverList;
-}
-
-export async function EmployeeApproverPreflight(
-  employeeId: number,
-  dtoData: CreateEmployeeApproverDto,
-  authUser: AuthorizedUser
-): Promise<EmployeeApproverPreflightResponseDto> {
-  const { approverId, level } = dtoData;
-  const warnings: string[] = [];
-  const errors: string[] = [];
-
-  // Validating approver
-  await helpers.applyEmployeeScopeToQuery(authUser, { employeeId });
-  //Validation
-  let employee: EmployeeDto, approver: EmployeeDto, 
-    existingApprovals: ListWithPagination<EmployeeApproverDto>;
-  try {
-    [employee, approver, existingApprovals] = await Promise.all([
-      employeeService.validateEmployee(
-        employeeId, authUser, { throwOnNotActive: true, includeCompany: true }
-      ),
-      employeeService.validateEmployee(approverId, authUser),
-      repository.find({
-        where: { employeeId, approverId }
-      })
-    ]);
-
-    if (employee.companyId !== approver.companyId) {
-      errors.push('Approver and employee are not of same company');
-    }
-  
-    const employeesCompanyAllowedLevels = Math.max(
-      employee.company!.leaveRequestApprovalsRequired, 
-      employee.company!.reimbursementRequestApprovalsRequired
-    );
-    if (level > employeesCompanyAllowedLevels) {
-      errors.push('Level is greater than allowed');
-    }
-  
-    if (approver.status !== 'ACTIVE') {
-      warnings.push('Approver is not an active employee');
-    }
-    if (existingApprovals.data.length > 0) {
-      const warn = 'Approver has been set up at Level ';
-      const levels = existingApprovals.data.map(x =>  x.level).join(', ');
-      warnings.push(warn.concat(levels));
-    }
-  } catch (err) {
-    errors.push((err as Error).message);
-  }
-  
-  logger.info('Employee[%s] and Approver[%s] validated successfully', employeeId, approverId);
-  
-  return { warnings, errors };
 }
