@@ -142,7 +142,7 @@ export async function respond(params: {
     break;
   case ReimbursementResponseAction.REJECT:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.REJECTED;
-    requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
+    requestState = REIMBURESEMENT_REQUEST_STATE.REJECTION;
     break;
   case ReimbursementResponseAction.QUERY:
     requestStatus = REIMBURESEMENT_REQUEST_STATUS.QUERIED;
@@ -157,8 +157,9 @@ export async function respond(params: {
       where: { id },
       data: {
         status: requestStatus,
-        statusLastModifiedAt: new Date(),
-        approvedAt: requestStatus ? new Date() : undefined,
+        statusLastModifiedAt: requestStatus ? new Date() : undefined,
+        approvedAt: requestStatus === REIMBURESEMENT_REQUEST_STATUS.APPROVED 
+          ? new Date() : undefined,
         approverId: data.approvingEmployeeId,
         requestAttachments: data.attachmentUrls && {
           createMany: { 

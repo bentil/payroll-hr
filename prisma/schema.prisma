@@ -468,6 +468,7 @@ enum REIMBURESEMENT_REQUEST_STATE {
   QUERY
   APPROVAL
   COMPLETION
+  REJECTION
 }
 
 model ReimbursementRequestComment {
