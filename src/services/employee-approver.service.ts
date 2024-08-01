@@ -512,3 +512,77 @@ export async function getEmployeeApproversWithDefaults(params: {
 
   return employeeApproverList;
 }
+
+export async function getEmployeesToApprove(params: {
+  employeeId: number,
+  approvalType?: string,
+  level?: number
+}): Promise<EmployeeApproverDto[]> {
+  const { employeeId, approvalType, level } = params;
+  const employee = await employeeService.getEmployee(
+    employeeId,
+    { includeCompany: true }
+  );
+
+  // Getting allowed approver level for employee's company
+  const company = employee.company as PayrollCompany;
+  let approverLevelsAllowed: number;
+  if (!approvalType) {
+    approverLevelsAllowed = Math.max(
+      company.leaveRequestApprovalsRequired,
+      company.reimbursementRequestApprovalsRequired
+    );
+  } else if (approvalType === 'leave') {
+    approverLevelsAllowed = company.leaveRequestApprovalsRequired;
+  } else {
+    approverLevelsAllowed = company.reimbursementRequestApprovalsRequired;
+  }
+
+  const allowedLevels: number[] = [];
+  if (level) {
+    allowedLevels.push(level);
+  } else {
+    for (let val = 1; val <= approverLevelsAllowed; val++) {
+      allowedLevels.push(val);
+    }
+  }
+
+  // Get list of supervisees that do not have a custom approver at level 1
+  logger.debug(
+    'Getting details for Employee[%s] Supervisees without custom Approver at level 1', employeeId
+  );
+  const supervisees = await companyTreeService.getSupervisees(employeeId);
+  const superviseeIds = supervisees.map(e => e.id);
+  let superviseesWithNoApproversAtLevelOne: ListWithPagination<EmployeeApproverDto>;
+  try {
+    superviseesWithNoApproversAtLevelOne = await repository.find({
+      where: { employeeId: { in: superviseeIds }, approverId: undefined, level: 1 },
+      include: { employee: true, approver: true }
+    });
+  } catch (err) {
+    logger.warn(
+      'Getting Employee[%s] Approvers failed',
+      employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  // Get list of employees with employeeId as approver at level 1
+  logger.debug('Getting employees whose Approver is Employee[%s]', employeeId);
+  let employeeApprovers: ListWithPagination<EmployeeApproverDto>;
+  try {
+    employeeApprovers = await repository.find({
+      where: { approverId: employeeId, level: 1 },
+      include: { employee: true, approver: true }
+    });
+  } catch (err) {
+    logger.warn(
+      'Getting Employee[%s] Approvers failed',
+      employeeId, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+  const employeesToApprove = 
+    superviseesWithNoApproversAtLevelOne.data.concat(employeeApprovers.data);
+  return employeesToApprove;
+}

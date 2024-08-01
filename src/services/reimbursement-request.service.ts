@@ -33,7 +33,6 @@ import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { getParentEmployee } from './company-tree-node.service';
 import { EmployeeDto } from '../repositories/employee.repository';
 
 
@@ -54,10 +53,9 @@ export async function addReimbursementRequest(
     'Validating Employee[%s], parent & CompanyCurrency[%s]',
     employeeId, currencyId
   );
-  let _parent: EmployeeDto, _employee: EmployeeDto, _currency: CompanyCurrency;
+  let _employee: EmployeeDto, _currency: CompanyCurrency;
   try {
-    [_parent, _employee, _currency] = await Promise.all([
-      getParentEmployee(employeeId),
+    [_employee, _currency] = await Promise.all([
       employeeService.getEmployee(employeeId, { includeCompany: true }),
       currencyService.getCompanyCurrency(currencyId)
     ]);
@@ -128,7 +126,11 @@ export async function getReimbursementRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  // const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  //   authorizedUser, { employeeId: qEmployeeId, queryMode }
+  // );
+
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
     
@@ -187,7 +189,11 @@ export async function getReimbursementRequest(
   id: number,
   authorizedUser: AuthorizedUser
 ): Promise<ReimbursementRequestDto> {
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  // const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  //   authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+  // );
+
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { id, queryMode: RequestQueryMode.ALL }
   );
 
