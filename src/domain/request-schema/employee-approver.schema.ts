@@ -18,7 +18,7 @@ export const CREATE_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
 
 export const UPDATE_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
   approverId: Joi.number().optional(),
-  level: Joi.number().optional(),
+  level: Joi.number().optional().min(1),
 }).or('approverId', 'level');
 
 export const QUERY_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
@@ -44,9 +44,7 @@ export const QUERY_EMPLOYEE_APPROVER_SCHEMA = Joi.object({
       'number.min': 'limit must be more than or equal to 1'
     }),
   orderBy: Joi.string().optional()
-    .valid(
-      ...Object.values(EmployeeApproverOrderBy)
-    )
+    .valid(...Object.values(EmployeeApproverOrderBy))
     .default(EmployeeApproverOrderBy.CREATED_AT_DESC)
     .messages({
       'any.only': `orderBy must be one of these: ${Object.values(EmployeeApproverOrderBy)}`

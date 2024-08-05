@@ -433,6 +433,7 @@ model ReimbursementRequest {
   expenditureDate      DateTime                      @map("expenditure_date")
   approverId           Int?                          @map("approver_id") @db.UnsignedInt()
   completerId          Int?                          @map("completer_id") @db.UnsignedInt()
+  approvalsRequired    Int                           @default(1) @map("approvals_required") @db.UnsignedTinyInt()
   createdAt            DateTime                      @default(now()) @map("created_at")
   modifiedAt           DateTime?                     @updatedAt @map("modified_at")
   statusLastModifiedAt DateTime?                     @map("status_last_modified_at")
@@ -467,6 +468,7 @@ enum REIMBURESEMENT_REQUEST_STATE {
   QUERY
   APPROVAL
   COMPLETION
+  REJECTION
 }
 
 model ReimbursementRequestComment {
@@ -475,6 +477,7 @@ model ReimbursementRequestComment {
   commenterId  Int                          @map("commenter_id") @db.UnsignedInt()
   requestState REIMBURESEMENT_REQUEST_STATE @map("request_state")
   comment      String                       @db.Text()
+  approverLevel Int                         @default(1) @map("approver_level") @db.UnsignedTinyInt()
   createdAt    DateTime                     @default(now()) @map("created_at")
   modifiedAt   DateTime?                    @updatedAt @map("modified_at")
 

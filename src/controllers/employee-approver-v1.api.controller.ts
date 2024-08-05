@@ -85,3 +85,17 @@ export async function deleteEmployeeApprover(
     next(err);
   }
 }
+
+export async function employeeApproverPreflight(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { employeeId } = req.params;
+  try {
+    const response = await controller.employeeApproverPreflight(+employeeId, req.body, req);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}

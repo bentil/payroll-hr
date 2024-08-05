@@ -9,7 +9,9 @@ import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { ForbiddenError, NotFoundError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { getSupervisees } from '../services/company-tree-node.service';
-import { getEmployeeApproversWithEmployeeId } from '../services/employee-approver.service';
+import {
+  getEmployeeApproversWithDefaults
+} from '../services/employee-approver.service';
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
 
@@ -242,7 +244,7 @@ export async function validateResponder(params: {
   const requestorEmployee = await getEmployee(requestorEmployeeId);
 
   if (category !== UserCategory.HR && employeeId) {
-    const employeeApprovers = await getEmployeeApproversWithEmployeeId({
+    const employeeApprovers = await getEmployeeApproversWithDefaults({
       employeeId: requestorEmployeeId, level: expectedLevel
     });
     const approverCheck = employeeApprovers.filter(x => x.approverId === employeeId);

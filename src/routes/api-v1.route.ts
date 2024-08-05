@@ -845,4 +845,11 @@ router.delete(
   employeeApproverV1Controller.deleteEmployeeApprover
 );
 
+router.post(
+  '/employees/:employeeId/approvers/preflight',
+  authenticateUser({ category: [UserCategory.HR] }),
+  validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
+  employeeApproverV1Controller.employeeApproverPreflight
+);
+
 export default router;

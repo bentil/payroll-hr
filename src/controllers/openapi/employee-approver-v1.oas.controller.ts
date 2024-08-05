@@ -1,39 +1,73 @@
+import { EmployeeApprover } from '@prisma/client';
 import {
   Body,
+  Delete,
   Get,
   Patch,
   Path,
   Post,
   Queries,
-  Response,
   Request,
+  Response,
   Route,
   Security,
   SuccessResponse,
   Tags,
-  Delete
 } from 'tsoa';
-import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
+import {
+  ApiErrorResponse,
+  ApiSuccessResponse
+} from '../../domain/api-responses';
 import {
   CreateEmployeeApproverDto,
   EmployeeApproverDto,
+  EmployeeApproverPreflightResponseDto,
   GetOneEmployeeApproverDto,
   QueryEmployeeApproverDto,
   UpdateEmployeeApproverDto
 } from '../../domain/dto/employee-approver.dto';
 import * as service from '../../services/employee-approver.service';
-import { rootLogger } from '../../utils/logger';
 import { errors } from '../../utils/constants';
-import { EmployeeApprover } from '@prisma/client';
+import { rootLogger } from '../../utils/logger';
 
 @Tags('employee-approvers')
 @Route('/api/v1/employees/{employeeId}/approvers')
 @Security('api_key')
 export class EmployeeApproverV1Controller {
-  private readonly logger = rootLogger.child({ context: EmployeeApproverV1Controller.name, });
+  private readonly logger = rootLogger.child({
+    context: EmployeeApproverV1Controller.name,
+  });
 
   /**
-   * Create a EmployeeApprover
+   * Check if a request to add an approver will be successful or not
+   * 
+   * @param employeeId Employee ID
+   * @param dtoData Request body with details for preflight
+   * @param req Request object
+   * @returns Warning and error messages if any
+   */
+  @Post('/preflight')
+  public async employeeApproverPreflight(
+    @Path('employeeId') employeeId: number,
+    @Body() dtoData: CreateEmployeeApproverDto,
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<EmployeeApproverPreflightResponseDto>> {
+    this.logger.debug(
+      'Received EmployeeApprover preflight request for Employee[%s]',
+      employeeId
+    );
+    const data = await service.employeeApproverPreflight(
+      employeeId, dtoData, req.user!
+    );
+    this.logger.info(
+      'Preflight request for Employee[%s] done successfully!',
+      employeeId
+    );
+    return { data };
+  }
+
+  /**
+   * Add an Employee approver
    * 
    * @param employeeId 
    * @param createData Request body
@@ -47,7 +81,10 @@ export class EmployeeApproverV1Controller {
     @Body() createData: CreateEmployeeApproverDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApprover>> {
-    this.logger.debug('Received request to add EmployeeApprover', { data: createData, });
+    this.logger.debug(
+      'Received request to add EmployeeApprover',
+      { data: createData }
+    );
     const employeeApprover = await service.createEmployeeApprover( 
       employeeId,
       createData, 
@@ -59,7 +96,7 @@ export class EmployeeApproverV1Controller {
   /**
    * Get a list of EmployeeApprover(s) matching query
    * 
-   * @param employeeId 
+   * @param employeeId Employee or approver id, depending on 'inverse' value
    * @param query Request query parameters, including pagination and ordering details
    * @param req Request object
    * @returns List of matching EmployeeApprover(s)
@@ -70,18 +107,28 @@ export class EmployeeApproverV1Controller {
     @Queries() query: QueryEmployeeApproverDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApproverDto[]>> {
-    this.logger.debug('Received request to get EmployeeApprover(s) matching query', { query });
-    const { data, pagination } = await service.getEmployeeApprovers(employeeId, query, req.user!);
-    this.logger.info('Returning %d EmployeeApprover(s) that matched the query', data.length);
+    this.logger.debug(
+      'Received request to get EmployeeApprover(s) matching query',
+      { query }
+    );
+    const {
+      data,
+      pagination
+    } = await service.getEmployeeApprovers(employeeId, query, req.user!);
+    this.logger.info(
+      'Returning %d EmployeeApprover(s) that matched query',
+      data.length
+    );
     return { data, pagination };
   }
 
   /**
-   * Get an EmployeeApprover by Id
+   * Get an EmployeeApprover by id
    * 
-   * @param id EmployeeApprover Id
+   * @param id EmployeeApprover id
    * @param employeeId Employee Id
-   * @param query Request query parameter of inverse
+   * @param query Request query parameters
+   * @param req Request object
    * @returns EmployeeApprover
    */
   @Get('{id}')
@@ -97,7 +144,12 @@ export class EmployeeApproverV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<EmployeeApproverDto>> {
     this.logger.debug('Received request to get EmployeeApprover[%s]', id);
-    const employeeApprover = await service.getEmployeeApproverId(id, employeeId, query, req.user!);
+    const employeeApprover = await service.getEmployeeApprover(
+      id,
+      employeeId,
+      query,
+      req.user!
+    );
     return { data: employeeApprover };
   }
 
@@ -129,7 +181,10 @@ export class EmployeeApproverV1Controller {
   ): Promise<ApiSuccessResponse<EmployeeApproverDto>> {
     this.logger.debug('Received request to update EmployeeApprover[%s]', id);
     const updatedEmployeeApprover = await service.updateEmployeeApprover(
-      id, employeeId, updateDto, req.user!
+      id,
+      employeeId,
+      updateDto,
+      req.user!
     );
     this.logger.info('EmployeeApprover[%s] updated successfully!', id);
     return { data: updatedEmployeeApprover };
@@ -157,5 +212,4 @@ export class EmployeeApproverV1Controller {
     await service.deleteEmployeeApprover(id, employeeId, req.user!);
     this.logger.debug('EmployeeApprover[%s] deleted successfully', id);
   }
-
 }
