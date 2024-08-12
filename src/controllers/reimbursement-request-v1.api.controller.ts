@@ -58,7 +58,7 @@ export async function updateReimbursementRequest(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.updateReimbursementRequest(+id, req.body);
+    const response = await controller.updateReimbursementRequest(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);

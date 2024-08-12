@@ -25,9 +25,6 @@ import {
   ServerError,
 } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
-import {
-  findFirst as findFirstCompanyTreeNode
-} from '../repositories/company-tree-node.repository';
 import * as employeeRepository from '../repositories/employee.repository';
 import * as leaveRequestRepository from '../repositories/leave-request.repository';
 import { ListWithPagination } from '../repositories/types';
@@ -51,13 +48,23 @@ const events = {
 
 export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
+  authUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId } = payload;
-  let validateData, nodeExist, leaveSummary, employee;
+  const { employeeId: reqEmployeeId } = authUser;
+  if (reqEmployeeId !== employeeId) {
+    logger.warn(
+      'LeaveRequest was not created by Employee[%s]. Create rejected',
+      employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to create for another employee'
+    });
+  }
+  let validateData, leaveSummary, employee;
   // VALIDATION
   try {
-    [nodeExist, validateData, leaveSummary, employee] = await Promise.all([
-      findFirstCompanyTreeNode({ employeeId }),
+    [validateData, leaveSummary, employee] = await Promise.all([
       validate(leaveTypeId, employeeId),
       getEmployeeLeaveTypeSummary(employeeId, leaveTypeId),
       employeeService.getEmployee(employeeId, { includeCompany: true })
@@ -73,12 +80,6 @@ export async function addLeaveRequest(
     });
   }
   logger.info('Employee[%s] and LeaveType[%s] exists', employeeId, leaveTypeId);
-
-  if (!nodeExist) {
-    throw new RequirementNotMetError({
-      message: 'Kindly contact HR to complete your setup'
-    });
-  }
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
 
@@ -147,7 +148,7 @@ export async function getLeaveRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
   let include: Prisma.LeaveRequestInclude;
@@ -205,7 +206,7 @@ export async function getLeaveRequest(
   id: number,
   authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { id, queryMode: RequestQueryMode.ALL }
   );
 
@@ -352,7 +353,11 @@ export async function updateLeaveRequest(
   return updatedLeaveRequest;
 }
 
-export async function deleteLeaveRequest(id: number): Promise<void> {
+export async function deleteLeaveRequest(
+  id: number,
+  authorizedUser: AuthorizedUser,
+): Promise<void> {
+  const { employeeId } = authorizedUser;
   logger.debug('Finding LeaveRequest[%s] to delete', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
@@ -366,6 +371,14 @@ export async function deleteLeaveRequest(id: number): Promise<void> {
       'LeaveRequest[%s] cannot be deleted due to current status[%s]',
       id, leaveRequest.status
     );
+  } else if (employeeId !== leaveRequest.employeeId) {
+    logger.warn(
+      'LeaveRequest[%s] was not created by Employee[%s]. Delete rejected',
+      id, employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   }
 
   logger.debug('Deleting LeaveRequest[%s] from database...', id);

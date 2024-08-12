@@ -175,7 +175,8 @@ export async function respond(params: {
             commenterId: data.approvingEmployeeId,
             comment: data.comment,
             requestState,
-            approverLevel: data.approverLevel
+            approverLevel: data.action === ReimbursementResponseAction.QUERY
+              ? undefined : data.approverLevel
           }
         } : undefined
       },

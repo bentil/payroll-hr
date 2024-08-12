@@ -16,9 +16,10 @@ import {
   UpdateReimbursementRequestDto,
   SearchReimbursementRequestDto
 } from '../domain/dto/reimbursement-request.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
   InvalidStateError, 
   NotFoundError, 
@@ -230,9 +231,11 @@ export async function getReimbursementRequest(
 
 export async function updateReimbursementRequest(
   id: number, 
-  updateData: UpdateReimbursementRequestDto
+  updateData: UpdateReimbursementRequestDto,
+  authUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
   const { currencyId } = updateData;
+  const { employeeId: updatingEmployeeId, category } = authUser;
 
   const reimbursementRequest = await repository.findOne({ id });
   if (!reimbursementRequest) {
@@ -255,6 +258,12 @@ export async function updateReimbursementRequest(
       });
     }
     logger.info('CompanyCurrency[%s] exists', currencyId);
+  }
+
+  if (updatingEmployeeId !== reimbursementRequest.employeeId && category !== UserCategory.HR) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   }
 
   logger.debug('Persisting update(s) to ReimbursementRequest[%s]', id);
@@ -307,7 +316,7 @@ export async function addResponse(
     if (action === ReimbursementResponseAction.APPROVE 
       || action === ReimbursementResponseAction.REJECT) {
       const lastComment = await repository.findLastComment({ requestId: id });
-      const lastLevel = lastComment ? lastComment.approverLevel : 0;
+      const lastLevel = lastComment?.approverLevel ? lastComment.approverLevel : 0;
       expectedLevel = lastLevel + 1;
     }
     await helpers.validateResponder({
@@ -495,7 +504,7 @@ export async function searchReimbursementRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authUser, { queryMode }
   );
 

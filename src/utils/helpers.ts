@@ -289,14 +289,12 @@ export async function applyApprovalScopeToQuery(
     throw new UnauthorizedError({});
   } else if (employeeId) {
     try {
-      const supervisees = await getEmployeesToApprove({ employeeId });
-      superviseeIds = supervisees.map(e => e.employeeId);
+      superviseeIds = await getEmployeesToApprove({ employeeId });
     } catch (err) {
       if (!(err instanceof NotFoundError)) {
         throw err;
       }
     }
-    
   }
 
   const hasAdminCategory = (
