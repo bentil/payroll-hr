@@ -81,7 +81,7 @@ export async function addReimbursementRequest(
   try {
     newReimbursementRequest = await repository.create({
       ...payload,
-      approvalsRequired: _employee.company!.leaveRequestApprovalsRequired
+      approvalsRequired: _employee.company!.reimbursementRequestApprovalsRequired
     });
     logger.info(
       'ReimbursementRequest[%s] added successfully!',
