@@ -557,7 +557,7 @@ export async function deleteReimbursementRequest(
     throw new UnauthorizedError({});
   }
   logger.debug('Finding ReimbursementRequest[%s] to delete', id);
-  const reimbursementRequest = await repository.findOne({ id });
+  const reimbursementRequest = await repository.findOne({ id }, { requestAttachments: true });
   if (!reimbursementRequest) {
     logger.warn('ReimbursementRequest[%s] to delete does not exist', id);
     throw new NotFoundError({
@@ -582,11 +582,15 @@ export async function deleteReimbursementRequest(
     });
     logger.info('Employee[%s] can deletd this request', deletingEmployeeId);
   }
+  const attachmentIds: number[] = [];
+  if (reimbursementRequest.requestAttachments) {
+    reimbursementRequest.requestAttachments.forEach((x) => attachmentIds.push(x.id));
+  }
 
   let deletedReimbursementRequest: ReimbursementRequest;
   logger.debug('Deleting ReimbursementRequest[%s] from database...', id);
   try {
-    deletedReimbursementRequest = await repository.deleteOne({ id });
+    deletedReimbursementRequest = await repository.deleteOne({ id }, attachmentIds);
     logger.info('ReimbursementRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting ReimbursementRequest[%] failed', id);

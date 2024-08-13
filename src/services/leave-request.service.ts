@@ -371,6 +371,9 @@ export async function deleteLeaveRequest(
       'LeaveRequest[%s] cannot be deleted due to current status[%s]',
       id, leaveRequest.status
     );
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   } else if (employeeId !== leaveRequest.employeeId) {
     logger.warn(
       'LeaveRequest[%s] was not created by Employee[%s]. Delete rejected',

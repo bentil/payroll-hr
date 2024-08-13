@@ -463,6 +463,7 @@ router.get(
 
 router.delete(
   '/leave-requests/:id',
+  authenticateUser(),
   leaveReqV1Controller.deleteLeaveRequest
 );
 

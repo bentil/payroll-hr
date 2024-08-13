@@ -296,10 +296,18 @@ export async function search(params: {
 }
 
 export async function deleteOne(
-  where: Prisma.ReimbursementRequestWhereUniqueInput
+  where: Prisma.ReimbursementRequestWhereUniqueInput,
+  attachmentIds: number[]
 ): Promise<ReimbursementRequest> {
   try {
-    return await prisma.reimbursementRequest.delete({ where });
+    return await prisma.$transaction( async txn => {
+      await txn.reimbursementRequestAttachment.deleteMany({
+        where: { id: { in: attachmentIds } }
+      });
+      return await txn.reimbursementRequest.delete({
+        where
+      });
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
