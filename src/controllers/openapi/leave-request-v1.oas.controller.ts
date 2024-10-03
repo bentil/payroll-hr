@@ -41,9 +41,10 @@ export class LeaveRequestV1Controller {
   @SuccessResponse(201, 'Created')
   public async addLeaveRequest(
     @Body() createData: CreateLeaveRequestDto, 
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<LeaveRequest>> {
     this.logger.debug('Received request to add LeaveRequest', { data: createData, });
-    const leaveRequest = await leaveReqService.addLeaveRequest(createData);
+    const leaveRequest = await leaveReqService.addLeaveRequest(createData, req.user!);
     return { data: leaveRequest };
   }
 
@@ -122,10 +123,11 @@ export class LeaveRequestV1Controller {
     details: [],
   })
   public async deleteLeaveRequest(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<void> {
     this.logger.debug('Received request to delete LeaveRequest[%s]', id);
-    await leaveReqService.deleteLeaveRequest(id);
+    await leaveReqService.deleteLeaveRequest(id, req.user!);
     this.logger.debug('LeaveRequest[%s] deleted successfully', id);
   }
 

@@ -16,9 +16,10 @@ import {
   UpdateReimbursementRequestDto,
   SearchReimbursementRequestDto
 } from '../domain/dto/reimbursement-request.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
   InvalidStateError, 
   NotFoundError, 
@@ -33,7 +34,6 @@ import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { getParentEmployee } from './company-tree-node.service';
 import { EmployeeDto } from '../repositories/employee.repository';
 
 
@@ -54,10 +54,9 @@ export async function addReimbursementRequest(
     'Validating Employee[%s], parent & CompanyCurrency[%s]',
     employeeId, currencyId
   );
-  let _parent: EmployeeDto, _employee: EmployeeDto, _currency: CompanyCurrency;
+  let _employee: EmployeeDto, _currency: CompanyCurrency;
   try {
-    [_parent, _employee, _currency] = await Promise.all([
-      getParentEmployee(employeeId),
+    [_employee, _currency] = await Promise.all([
       employeeService.getEmployee(employeeId, { includeCompany: true }),
       currencyService.getCompanyCurrency(currencyId)
     ]);
@@ -82,7 +81,7 @@ export async function addReimbursementRequest(
   try {
     newReimbursementRequest = await repository.create({
       ...payload,
-      approvalsRequired: _employee.company!.leaveRequestApprovalsRequired
+      approvalsRequired: _employee.company!.reimbursementRequestApprovalsRequired
     });
     logger.info(
       'ReimbursementRequest[%s] added successfully!',
@@ -128,7 +127,11 @@ export async function getReimbursementRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  // const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  //   authorizedUser, { employeeId: qEmployeeId, queryMode }
+  // );
+
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { employeeId: qEmployeeId, queryMode }
   );
     
@@ -187,7 +190,11 @@ export async function getReimbursementRequest(
   id: number,
   authorizedUser: AuthorizedUser
 ): Promise<ReimbursementRequestDto> {
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  // const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  //   authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+  // );
+
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { id, queryMode: RequestQueryMode.ALL }
   );
 
@@ -224,9 +231,11 @@ export async function getReimbursementRequest(
 
 export async function updateReimbursementRequest(
   id: number, 
-  updateData: UpdateReimbursementRequestDto
+  updateData: UpdateReimbursementRequestDto,
+  authUser: AuthorizedUser,
 ): Promise<ReimbursementRequestDto> {
   const { currencyId } = updateData;
+  const { employeeId: updatingEmployeeId, category } = authUser;
 
   const reimbursementRequest = await repository.findOne({ id });
   if (!reimbursementRequest) {
@@ -249,6 +258,12 @@ export async function updateReimbursementRequest(
       });
     }
     logger.info('CompanyCurrency[%s] exists', currencyId);
+  }
+
+  if (updatingEmployeeId !== reimbursementRequest.employeeId && category !== UserCategory.HR) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
   }
 
   logger.debug('Persisting update(s) to ReimbursementRequest[%s]', id);
@@ -301,7 +316,7 @@ export async function addResponse(
     if (action === ReimbursementResponseAction.APPROVE 
       || action === ReimbursementResponseAction.REJECT) {
       const lastComment = await repository.findLastComment({ requestId: id });
-      const lastLevel = lastComment ? lastComment.approverLevel : 0;
+      const lastLevel = lastComment?.approverLevel ? lastComment.approverLevel : 0;
       expectedLevel = lastLevel + 1;
     }
     await helpers.validateResponder({
@@ -489,7 +504,7 @@ export async function searchReimbursementRequests(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authUser, { queryMode }
   );
 
@@ -542,7 +557,7 @@ export async function deleteReimbursementRequest(
     throw new UnauthorizedError({});
   }
   logger.debug('Finding ReimbursementRequest[%s] to delete', id);
-  const reimbursementRequest = await repository.findOne({ id });
+  const reimbursementRequest = await repository.findOne({ id }, { requestAttachments: true });
   if (!reimbursementRequest) {
     logger.warn('ReimbursementRequest[%s] to delete does not exist', id);
     throw new NotFoundError({
@@ -567,11 +582,15 @@ export async function deleteReimbursementRequest(
     });
     logger.info('Employee[%s] can deletd this request', deletingEmployeeId);
   }
+  const attachmentIds: number[] = [];
+  if (reimbursementRequest.requestAttachments) {
+    reimbursementRequest.requestAttachments.forEach((x) => attachmentIds.push(x.id));
+  }
 
   let deletedReimbursementRequest: ReimbursementRequest;
   logger.debug('Deleting ReimbursementRequest[%s] from database...', id);
   try {
-    deletedReimbursementRequest = await repository.deleteOne({ id });
+    deletedReimbursementRequest = await repository.deleteOne({ id }, attachmentIds);
     logger.info('ReimbursementRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting ReimbursementRequest[%] failed', id);

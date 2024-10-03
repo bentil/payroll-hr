@@ -107,10 +107,11 @@ export class ReimbursementRequestV1Controller {
   public async updateReimbursementRequest(
     @Path('id') id: number,
     @Body() updateDto: UpdateReimbursementRequestDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<ReimbursementRequest>> {
     this.logger.debug('Received request to update ReimbursementRequest[%s]', id);
     const updateReimbursementRequest = await reimbursementReqService.updateReimbursementRequest(
-      id, updateDto
+      id, updateDto, req.user!
     );
     this.logger.info('ReimbursementRequest[%s] updated successfully!', id);
     return { data: updateReimbursementRequest };

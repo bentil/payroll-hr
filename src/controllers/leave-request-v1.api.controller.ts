@@ -10,7 +10,7 @@ export async function addNewLeaveRequest(
   next: NextFunction
 ): Promise<void> {
   try {
-    const response = await controller.addLeaveRequest(req.body);
+    const response = await controller.addLeaveRequest(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -67,7 +67,7 @@ export async function deleteLeaveRequest(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    await controller.deleteLeaveRequest(+id);
+    await controller.deleteLeaveRequest(+id, req);
     res.status(204).send();
   } catch (err) {
     next(err);

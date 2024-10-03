@@ -1,5 +1,5 @@
-import {
-  CreateGrievanceReportedEmployeeRecord
+
+import {  CreateGrievanceReportedEmployeeRecord
 } from '../domain/dto/grievance-reported-employee.dto';
 import {
   CreateCompanyLevelLeavePackageDto
@@ -10,7 +10,8 @@ import { ForbiddenError, NotFoundError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { getSupervisees } from '../services/company-tree-node.service';
 import {
-  getEmployeeApproversWithDefaults
+  getEmployeeApproversWithDefaults,
+  getEmployeesToApprove
 } from '../services/employee-approver.service';
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
@@ -266,4 +267,77 @@ export async function validateResponder(params: {
       message: 'You are not allowed to perform this action'
     });
   }
+}
+
+export async function applyApprovalScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>,
+  options?: { extendAdminCategories?: UserCategory[]; },
+): Promise<ScopedQuery> {
+  const { employeeId, category, companyIds } = user;
+  const { extendAdminCategories } = options || {};
+  const {
+    employeeId: qEmployeeId,
+    companyId: qCompanyId,
+    queryMode,
+    ...query
+  } = queryParams;
+
+  let superviseeIds: number[] = [];
+  if (!extendAdminCategories?.includes(category) && !employeeId) {
+    logger.warn('employeeId not present in AuthUser object');
+    throw new UnauthorizedError({});
+  } else if (employeeId) {
+    try {
+      superviseeIds = await getEmployeesToApprove({ employeeId });
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+    }
+  }
+
+  const hasAdminCategory = (
+    category === UserCategory.HR || extendAdminCategories?.includes(category)
+  );
+  let authorized = false;
+  const scopeQuery = {
+    employeeId,
+    employee: { companyId: qCompanyId ? qCompanyId : { in: companyIds } },
+  } as { [key: string]: any, employeeId?: { in: number[] } | number };
+
+  if (qEmployeeId) {
+    if (
+      hasAdminCategory
+      || employeeId === qEmployeeId
+      || superviseeIds.includes(qEmployeeId)
+    ) {
+      scopeQuery.employeeId = qEmployeeId;
+      authorized = true;
+    }
+  } else {
+    authorized = true;
+    switch (queryMode) {
+    case RequestQueryMode.SUPERVISEES:
+      scopeQuery.employeeId = { in: superviseeIds };
+      break;
+    case RequestQueryMode.ALL:
+      if (hasAdminCategory) {
+        scopeQuery.employeeId = undefined;
+      } else {
+        scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+      }
+      break;
+    case RequestQueryMode.SELF:
+    default:
+      scopeQuery.employeeId = employeeId!;
+      break;
+    }
+  }
+
+  if (!authorized) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+
+  return { scopedQuery: { ...query, ...scopeQuery } };
 }
