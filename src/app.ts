@@ -1,17 +1,19 @@
+import tracer from 'cls-rtracer';
 import express, { Application } from 'express';
 import { PrismaService } from './components/db.component';
 import { KafkaService } from './components/kafka.component';
 import config from './config';
 import MainConsumer from './consumers/main.consumer';
-import appRouter from './routes';
 import morganMiddleware from './middleware/http-logger';
-import { rootLogger } from './utils/logger';
 import { appErrorHandler } from './middleware/error-handler.middleware';
-import tracer from 'cls-rtracer';
+import appRouter from './routes';
+import { rootLogger } from './utils/logger';
 
-const logger = rootLogger.child({ context: 'app' });
+const logger = rootLogger.child({ context: 'App' });
 
-export default async function startApp(port: string | number | undefined = config.port) {
+export default async function startApp(
+  port: string | number | undefined = config.port
+): Promise<void> {
   const app: Application = express();
   const kafkaService = KafkaService.getInstance();
   const prismaService = PrismaService.getInstance();
@@ -41,7 +43,7 @@ export default async function startApp(port: string | number | undefined = confi
   }
 
   const server = app.listen(config.port, async () => {
-    logger.info(`App started started successfully at http://**:${port}/`);
+    logger.info(`App started successfully at http://**:${port}/`);
   });
 
   // Clean up and shutdown on these signals

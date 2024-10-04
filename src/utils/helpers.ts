@@ -186,20 +186,20 @@ export async function applySupervisionScopeToQuery(
   } else {
     authorized = true;
     switch (queryMode) {
-    case RequestQueryMode.SUPERVISEES:
-      scopeQuery.employeeId = { in: superviseeIds };
-      break;
-    case RequestQueryMode.ALL:
-      if (hasAdminCategory) {
-        scopeQuery.employeeId = undefined;
-      } else {
-        scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
-      }
-      break;
-    case RequestQueryMode.SELF:
-    default:
-      scopeQuery.employeeId = employeeId!;
-      break;
+      case RequestQueryMode.SUPERVISEES:
+        scopeQuery.employeeId = { in: superviseeIds };
+        break;
+      case RequestQueryMode.ALL:
+        if (hasAdminCategory) {
+          scopeQuery.employeeId = undefined;
+        } else {
+          scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+        }
+        break;
+      case RequestQueryMode.SELF:
+      default:
+        scopeQuery.employeeId = employeeId!;
+        break;
     }
   }
 
@@ -318,20 +318,20 @@ export async function applyApprovalScopeToQuery(
   } else {
     authorized = true;
     switch (queryMode) {
-    case RequestQueryMode.SUPERVISEES:
-      scopeQuery.employeeId = { in: superviseeIds };
-      break;
-    case RequestQueryMode.ALL:
-      if (hasAdminCategory) {
-        scopeQuery.employeeId = undefined;
-      } else {
-        scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
-      }
-      break;
-    case RequestQueryMode.SELF:
-    default:
-      scopeQuery.employeeId = employeeId!;
-      break;
+      case RequestQueryMode.SUPERVISEES:
+        scopeQuery.employeeId = { in: superviseeIds };
+        break;
+      case RequestQueryMode.ALL:
+        if (hasAdminCategory) {
+          scopeQuery.employeeId = undefined;
+        } else {
+          scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+        }
+        break;
+      case RequestQueryMode.SELF:
+      default:
+        scopeQuery.employeeId = employeeId!;
+        break;
     }
   }
 

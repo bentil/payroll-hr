@@ -20,7 +20,7 @@ import {
 } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
-export class CreateLeaveRequestObject{
+export class CreateLeaveRequestObject {
   employeeId!: number;
   leavePackageId!: number;
   startDate!: Date;
@@ -74,11 +74,11 @@ export async function findOne(
 }
 
 export async function find(params: {
-  skip?: number,
-  take?: number,
-  where?: Prisma.LeaveRequestWhereInput,
-  orderBy?: Prisma.LeaveRequestOrderByWithRelationAndSearchRelevanceInput,
-  include?: Prisma.LeaveRequestInclude,
+  skip?: number;
+  take?: number;
+  where?: Prisma.LeaveRequestWhereInput;
+  orderBy?: Prisma.LeaveRequestOrderByWithRelationAndSearchRelevanceInput;
+  include?: Prisma.LeaveRequestInclude;
 }): Promise<ListWithPagination<LeaveRequestDto>> {
   const { skip, take, include } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -90,7 +90,9 @@ export async function find(params: {
       orderBy: params.orderBy,
       include
     }),
-    paginate ? prisma.leaveRequest.count({ where: params.where }) : Promise.resolve(undefined),
+    paginate
+      ? prisma.leaveRequest.count({ where: params.where })
+      : Promise.resolve(undefined),
   ]);
 
   return getListWithPagination(data, { skip, take, totalCount });
@@ -104,11 +106,11 @@ export async function findFirst(
 }
 
 export async function findResponse(params: {
-  skip?: number,
-  take?: number,
-  where?: Prisma.LeaveResponseWhereInput,
-  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput,
-  include?: Prisma.LeaveResponseInclude,
+  skip?: number;
+  take?: number;
+  where?: Prisma.LeaveResponseWhereInput;
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput;
+  include?: Prisma.LeaveResponseInclude;
 }): Promise<LeaveResponse[]> {
   const data = await prisma.leaveResponse.findMany(params);
 
@@ -116,10 +118,10 @@ export async function findResponse(params: {
 }
 
 export async function findFirstResponse(params: {
-  where: Prisma.LeaveResponseWhereInput,
-  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput,
-  include?: Prisma.LeaveResponseInclude,
-}): Promise<LeaveResponse | null>  {
+  where: Prisma.LeaveResponseWhereInput;
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput;
+  include?: Prisma.LeaveResponseInclude;
+}): Promise<LeaveResponse | null> {
   return prisma.leaveResponse.findFirst(params);
 }
 
@@ -135,18 +137,16 @@ export async function findLastResponse(
 }
 
 export async function update(params: {
-  where: Prisma.LeaveRequestWhereUniqueInput,
-  data: Prisma.LeaveRequestUpdateInput | Prisma.LeaveRequestUncheckedUpdateInput,
-  includeRelations?: boolean
-}) {
-  const { where, data, includeRelations } = params;
+  where: Prisma.LeaveRequestWhereUniqueInput;
+  data: Prisma.LeaveRequestUpdateInput | Prisma.LeaveRequestUncheckedUpdateInput;
+  include?: Prisma.LeaveRequestInclude;
+}): Promise<LeaveRequestDto> {
+  const { where, data, include } = params;
   try {
     return await prisma.leaveRequest.update({ 
       where, 
       data,
-      include: includeRelations 
-        ? { leavePackage: { include: { leaveType: true } } } 
-        : undefined
+      include,
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -161,7 +161,9 @@ export async function update(params: {
   }
 }
 
-export async function remove(where: Prisma.LeaveRequestWhereUniqueInput) {
+export async function deleteOne(
+  where: Prisma.LeaveRequestWhereUniqueInput
+): Promise<LeaveRequest> {
   try {
     return await prisma.leaveRequest.delete({ where });
   } catch (err) {
@@ -178,11 +180,11 @@ export async function remove(where: Prisma.LeaveRequestWhereUniqueInput) {
 }
 
 export async function cancel(params: {
-    id: number;
-    cancelledByEmployeeId: number;
-    includeRelations?: boolean;
-  }): Promise<LeaveRequest> {
-  const { id, cancelledByEmployeeId, includeRelations } = params;
+  id: number;
+  cancelledByEmployeeId: number;
+  include?: Prisma.LeaveRequestInclude;
+}): Promise<LeaveRequestDto> {
+  const { id, cancelledByEmployeeId, include } = params;
   return await prisma.leaveRequest.update({ 
     where: { id }, 
     data: {
@@ -190,9 +192,7 @@ export async function cancel(params: {
       cancelledAt: new Date(),
       cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
     },
-    include: includeRelations 
-      ? { leavePackage: { include: { leaveType: true } } } 
-      : undefined
+    include,
   });
 }
 
@@ -204,21 +204,24 @@ export async function respond(params: {
     approverLevel: number
   };
   include?: Prisma.LeaveRequestInclude
-}): Promise<LeaveRequest> {
+}): Promise<LeaveRequestDto> {
   const { id, data, include } = params;
   
-  let requestStatus: LEAVE_REQUEST_STATUS | undefined, responseType: LEAVE_RESPONSE_TYPE;
+  let requestStatus: LEAVE_REQUEST_STATUS | undefined,
+    responseType: LEAVE_RESPONSE_TYPE;
   switch (data.action) {
-  case LeaveResponseAction.APPROVE:
-    requestStatus = data.finalApproval ? LEAVE_REQUEST_STATUS.APPROVED : undefined ;
-    responseType = LEAVE_RESPONSE_TYPE.APPROVED;
-    break;
-  case LeaveResponseAction.DECLINE:
-    requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
-    responseType = LEAVE_RESPONSE_TYPE.DECLINED;
-    break;
-  default:
-    throw new InputError({ message: 'Invalid leave response type' });
+    case LeaveResponseAction.APPROVE:
+      requestStatus = data.finalApproval
+        ? LEAVE_REQUEST_STATUS.APPROVED
+        : undefined;
+      responseType = LEAVE_RESPONSE_TYPE.APPROVED;
+      break;
+    case LeaveResponseAction.DECLINE:
+      requestStatus = LEAVE_REQUEST_STATUS.DECLINED;
+      responseType = LEAVE_RESPONSE_TYPE.DECLINED;
+      break;
+    default:
+      throw new InputError({ message: 'Invalid leave response type' });
   }
 
   try {
@@ -253,9 +256,9 @@ export async function respond(params: {
 
 export async function adjustDays(params: {
   id: number;
-  data: AdjustDaysDto & { respondingEmployeeId: number }
-  include?: Prisma.LeaveRequestInclude,
-}): Promise<LeaveRequest> {
+  data: AdjustDaysDto & { respondingEmployeeId: number };
+  include?: Prisma.LeaveRequestInclude;
+}): Promise<LeaveRequestDto> {
   const { id, data, include } = params;
 
   try {

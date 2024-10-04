@@ -341,7 +341,9 @@ export async function updateLeaveRequest(
       comment,
       leavePackageId
     },
-    includeRelations: true
+    include: {
+      leavePackage: { include: { leaveType: true } }
+    },
   });
   logger.info('Update(s) to LeaveRequest[%s] persisted successfully!', id);
 
@@ -386,7 +388,7 @@ export async function deleteLeaveRequest(
 
   logger.debug('Deleting LeaveRequest[%s] from database...', id);
   try {
-    await leaveRequestRepository.remove({ id });
+    await leaveRequestRepository.deleteOne({ id });
     logger.info('LeaveRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting LeaveRequest[%] failed', id);
@@ -521,7 +523,9 @@ export async function cancelLeaveRequest(
     cancelledLeaveRequest = await leaveRequestRepository.cancel({
       id,
       cancelledByEmployeeId: employeeId,
-      includeRelations: true
+      include: {
+        leavePackage: { include: { leaveType: true } }
+      },
     });
     logger.info('LeaveRequest[%s] cancelled successfully', id);
   } catch (err) {

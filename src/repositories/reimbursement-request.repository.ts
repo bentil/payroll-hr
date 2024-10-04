@@ -23,7 +23,12 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  { employeeId, currencyId, attachmentUrls, ...dtoData }: CreateReimbursementRequestDto & {
+  {
+    employeeId,
+    currencyId,
+    attachmentUrls,
+    ...dtoData
+  }: CreateReimbursementRequestDto & {
     approvalsRequired?: number
   }
 ): Promise<ReimbursementRequest> {
@@ -65,11 +70,11 @@ export async function findOne(
 }
 
 export async function find(params: {
-  skip?: number,
-  take?: number,
-  where?: Prisma.ReimbursementRequestWhereInput,
-  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput,
-  include: Prisma.ReimbursementRequestInclude,
+  skip?: number;
+  take?: number;
+  where?: Prisma.ReimbursementRequestWhereInput;
+  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput;
+  include?: Prisma.ReimbursementRequestInclude;
 }): Promise<ListWithPagination<ReimbursementRequestDto>> {
   const { skip, take, include } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -89,18 +94,18 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export const findFirst = async (
+export async function findFirst(
   where: Prisma.ReimbursementRequestWhereInput,
-  include: Prisma.ReimbursementRequestInclude
-): Promise<ReimbursementRequestDto | null> => {
+  include?: Prisma.ReimbursementRequestInclude
+): Promise<ReimbursementRequestDto | null> {
   return prisma.reimbursementRequest.findFirst({ where, include });
-};
+}
 
 export async function update(params: {
-  where: Prisma.ReimbursementRequestWhereUniqueInput,
-  data: Prisma.ReimbursementRequestUpdateInput,
-  include?: Prisma.ReimbursementRequestInclude,
-}) {
+  where: Prisma.ReimbursementRequestWhereUniqueInput;
+  data: Prisma.ReimbursementRequestUpdateInput;
+  include?: Prisma.ReimbursementRequestInclude;
+}): Promise<ReimbursementRequestDto> {
   const { where, data, include } = params;
   try {
     return await prisma.reimbursementRequest.update({ 
@@ -128,7 +133,7 @@ export async function respond(params: {
     finalApproval: boolean,
     approverLevel?: number
   };
-  include: Prisma.ReimbursementRequestInclude,
+  include?: Prisma.ReimbursementRequestInclude;
 }): Promise<ReimbursementRequestDto> {
   // how is approverId supposed to be assigned
   const { id, data, include } = params;
@@ -136,20 +141,22 @@ export async function respond(params: {
   let requestStatus: REIMBURESEMENT_REQUEST_STATUS | undefined, 
     requestState: REIMBURESEMENT_REQUEST_STATE;
   switch (data.action) {
-  case ReimbursementResponseAction.APPROVE:
-    requestStatus = data.finalApproval ? REIMBURESEMENT_REQUEST_STATUS.APPROVED : undefined;
-    requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
-    break;
-  case ReimbursementResponseAction.REJECT:
-    requestStatus = REIMBURESEMENT_REQUEST_STATUS.REJECTED;
-    requestState = REIMBURESEMENT_REQUEST_STATE.REJECTION;
-    break;
-  case ReimbursementResponseAction.QUERY:
-    requestStatus = REIMBURESEMENT_REQUEST_STATUS.QUERIED;
-    requestState = REIMBURESEMENT_REQUEST_STATE.QUERY;
-    break;
-  default:
-    throw new InputError({ message: 'Invalid reimbursement response type' });
+    case ReimbursementResponseAction.APPROVE:
+      requestStatus = data.finalApproval
+        ? REIMBURESEMENT_REQUEST_STATUS.APPROVED
+        : undefined;
+      requestState = REIMBURESEMENT_REQUEST_STATE.APPROVAL;
+      break;
+    case ReimbursementResponseAction.REJECT:
+      requestStatus = REIMBURESEMENT_REQUEST_STATUS.REJECTED;
+      requestState = REIMBURESEMENT_REQUEST_STATE.REJECTION;
+      break;
+    case ReimbursementResponseAction.QUERY:
+      requestStatus = REIMBURESEMENT_REQUEST_STATUS.QUERIED;
+      requestState = REIMBURESEMENT_REQUEST_STATE.QUERY;
+      break;
+    default:
+      throw new InputError({ message: 'Invalid reimbursement response type' });
   }
 
   try {
@@ -198,8 +205,8 @@ export async function respond(params: {
 export async function postUpdate(params: {
   id: number;
   data: ReimbursementRequestUpdatesDto & { updatingEmployeeId: number };
-  include: Prisma.ReimbursementRequestInclude;
-}): Promise<ReimbursementRequestDto | null> {
+  include?: Prisma.ReimbursementRequestInclude;
+}): Promise<ReimbursementRequestDto> {
   const { id, data, include } = params;
 
   try {
@@ -241,7 +248,7 @@ export async function postUpdate(params: {
 export async function completeRequest(params: {
   id: number;
   data: CompleteReimbursementRequestDto & { completingEmployeeId: number };
-  include: Prisma.ReimbursementRequestInclude;
+  include?: Prisma.ReimbursementRequestInclude;
 }): Promise<ReimbursementRequestDto> {
   const { id, data, include } = params;
 
@@ -277,11 +284,11 @@ export async function completeRequest(params: {
 }
 
 export async function search(params: {
-  skip?: number,
-  take?: number,
-  where: Prisma.ReimbursementRequestWhereInput,
-  include?: Prisma.ReimbursementRequestInclude,
-  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput
+  skip?: number;
+  take?: number;
+  where: Prisma.ReimbursementRequestWhereInput;
+  include?: Prisma.ReimbursementRequestInclude;
+  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput;
 }): Promise<ListWithPagination<ReimbursementRequest>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -322,9 +329,9 @@ export async function deleteOne(
 }
 
 export async function findFirstComment(params: {
-  where: Prisma.ReimbursementRequestCommentWhereInput,
-  orderBy?: Prisma.ReimbursementRequestCommentOrderByWithRelationAndSearchRelevanceInput,
-  include?: Prisma.ReimbursementRequestCommentInclude,
+  where: Prisma.ReimbursementRequestCommentWhereInput;
+  orderBy?: Prisma.ReimbursementRequestCommentOrderByWithRelationAndSearchRelevanceInput;
+  include?: Prisma.ReimbursementRequestCommentInclude;
 }): Promise<ReimbursementRequestComment | null>  {
   return prisma.reimbursementRequestComment.findFirst(params);
 }
