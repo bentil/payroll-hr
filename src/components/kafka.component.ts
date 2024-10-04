@@ -1,3 +1,4 @@
+import fs from 'fs';
 import {
   Consumer,
   ConsumerConfig,
@@ -6,11 +7,15 @@ import {
   Producer,
   ProducerConfig,
 } from 'kafkajs';
-
+import { ConnectionOptions } from 'tls';
 import config from '../config';
 import { KafkaSerializer } from '../utils/kafka-serializer';
+import { KafkaLogger, rootLogger } from '../utils/logger';
 
 export class KafkaService {
+  private static readonly logger = rootLogger.child({
+    context: KafkaService.name
+  });
   private static instance: KafkaService;
 
   private client: Kafka | null = null;
@@ -25,20 +30,30 @@ export class KafkaService {
 
   public static getInstance(): KafkaService {
     if (!KafkaService.instance) {
-      KafkaService.instance = new KafkaService(
-        {
-          brokers: config.kafka.brokers,
-          clientId: config.appName,
-          connectionTimeout: config.kafka.connectTimeout,
-        },
-        {
-          groupId: config.kafka.groupId || `${config.appName}-group`,
-        },
-        {
-          idempotent: true,
-          allowAutoTopicCreation: true,
-        }
-      );
+      let sslConfig: ConnectionOptions | boolean | undefined;
+      const { ca, key, cert } = config.kafka.sslConfigPaths;
+      if (config.kafka.useSsl && ca && key && cert) {
+        sslConfig = {
+          ca: [fs.readFileSync(ca, 'utf-8')],
+          key: fs.readFileSync(key, 'utf-8'),
+          cert: fs.readFileSync(cert, 'utf-8'),
+        };
+      } else {
+        sslConfig = config.kafka.useSsl;
+      }
+      
+      KafkaService.instance = new KafkaService({
+        brokers: config.kafka.brokers,
+        clientId: config.kafka.clientId || config.appName,
+        connectionTimeout: config.kafka.connectTimeout,
+        ssl: sslConfig,
+        logCreator: KafkaLogger.bind(null, KafkaService.logger),
+      }, {
+        groupId: config.kafka.groupId ?? `${config.appName}-consumer`
+      }, {
+        idempotent: true,
+        allowAutoTopicCreation: true
+      });
     }
 
     return KafkaService.instance;

@@ -16,7 +16,6 @@ export default {
   pagination: {
     limit: parseInt(process.env.PAGINATION_DEFAULT_LIMIT || '20'),
   },
-
   kafka: {
     brokers: (process.env.KAFKA_BOOTSTRAP_SERVERS || '').split(','),
     clientId: process.env.KAFKA_CLIENT_ID,
@@ -24,6 +23,13 @@ export default {
       ? parseInt(process.env.KAFKA_CONNECT_TIMEOUT)
       : undefined,
     groupId: process.env.KAFKA_GROUP_ID || '',
+    useSsl: process.env.KAFKA_USE_SSL
+      ? process.env.KAFKA_USE_SSL === 'true' : undefined,
+    sslConfigPaths: {
+      ca: process.env.KAFKA_SSL_CA_PATH,
+      key: process.env.KAFKA_SSL_KEY_PATH,
+      cert: process.env.KAFKA_SSL_CERT_PATH,
+    }
   },
   topics: {
     getCountryById: process.env.TOPIC_API_GET_COUNTRY_BY_ID,
