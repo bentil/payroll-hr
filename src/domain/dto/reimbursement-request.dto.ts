@@ -10,7 +10,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import config from '../../config';
 import { RequestQueryMode } from './leave-request.dto';
 
-export class CreateReimbursementRequestDto{
+export class CreateReimbursementRequestDto {
   employeeId!: number;
   title!: string;
   description!: string;
@@ -20,13 +20,13 @@ export class CreateReimbursementRequestDto{
   attachmentUrls?: string[];
 }
 
-export interface ReimbursementRequestDto  extends ReimbursementRequest {
+export interface ReimbursementRequestDto extends ReimbursementRequest {
   employee?: Employee;
   approver?: Employee | null;
   completer?: Employee | null;
   currency?: CompanyCurrency; 
-  requestAttachments?: ReimbursementRequestAttachment[]
-  requestComments?:    ReimbursementRequestComment[]
+  requestAttachments?: ReimbursementRequestAttachment[];
+  requestComments?: ReimbursementRequestComment[];
 }
 
 export class UpdateReimbursementRequestDto{
@@ -74,7 +74,7 @@ export class QueryReimbursementRequestDto {
 export enum ReimbursementResponseAction {
   APPROVE = 'APPROVE',
   REJECT = 'REJECT',
-  QUERY = 'QUERY'
+  QUERY = 'QUERY',
 }
 
 export class ReimbursementResponseInputDto {

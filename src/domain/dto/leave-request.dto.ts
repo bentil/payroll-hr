@@ -63,9 +63,9 @@ export class LeaveResponseInputDto {
 }
 
 export interface LeaveRequestDto extends LeaveRequest {
-	employee?: Employee,
-	leavePackage?: LeavePackage,
-  leaveResponses?: LeaveResponse[]
+	employee?: Employee;
+	leavePackage?: LeavePackage;
+  leaveResponses?: LeaveResponse[];
 }
 
 export enum AdjustmentOptions {
