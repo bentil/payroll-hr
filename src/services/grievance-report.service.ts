@@ -36,6 +36,7 @@ const logger = rootLogger.child({ context: 'GrievanceReportService' });
 const events = {
   created: 'event.GrievanceReport.created',
   modified: 'event.GrievanceReport.modified',
+  deleted: 'event.GrievanceReport.deleted',
 } as const;
 
 export async function addGrievanceReport(
@@ -287,11 +288,17 @@ export async function deleteGrievanceReport(id: number): Promise<void> {
   }
 
   logger.debug('Deleting GrievanceReport[%s] from database...', id);
+  let deletedGrievanceReport: GrievanceReport;
   try {
-    await grievanceReportRepository.deleteGrievanceReport({ id });
+    deletedGrievanceReport = await grievanceReportRepository.deleteOne({ id });
     logger.info('GrievanceReport[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting GrievanceReport[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.GrievanceReport.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, deletedGrievanceReport);
+  logger.info(`${events.deleted} event created successfully!`);
 }

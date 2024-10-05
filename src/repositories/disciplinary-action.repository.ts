@@ -127,7 +127,7 @@ export async function search(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteDisciplinaryAction(
+export async function deleteOne(
   where: Prisma.DisciplinaryActionWhereUniqueInput
 ) {
   try {
