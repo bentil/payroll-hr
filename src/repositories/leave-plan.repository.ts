@@ -107,7 +107,7 @@ export async function update(params: {
   }
 }
 
-export async function deleteLeavePlan(where: Prisma.LeavePlanWhereUniqueInput) {
+export async function deleteOne(where: Prisma.LeavePlanWhereUniqueInput) {
   try {
     return await prisma.leavePlan.delete({ where });
   } catch (err) {

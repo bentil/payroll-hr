@@ -130,7 +130,7 @@ export async function search(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteGrievanceReport(where: Prisma.GrievanceReportWhereUniqueInput) {
+export async function deleteOne(where: Prisma.GrievanceReportWhereUniqueInput) {
   try {
     return await prisma.grievanceReport.delete({ where });
   } catch (err) {

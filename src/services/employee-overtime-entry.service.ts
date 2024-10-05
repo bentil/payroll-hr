@@ -26,10 +26,10 @@ const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeOvertimeEntryService' });
 
 const events = {
-  created: 'event.EmployeeOvertimeEntryService.created',
-  modified: 'event.EmployeeOvertimeEntryService.modified',
-  deleted: 'event.EmployeeOvertimeEntryService.deleted'
-};
+  created: 'event.EmployeeOvertimeEntry.created',
+  modified: 'event.EmployeeOvertimeEntry.modified',
+  deleted: 'event.EmployeeOvertimeEntry.deleted'
+} as const;
 
 export async function addEmployeeOvertimeEntry(
   creatData: CreateEmployeeOvertimeEntryDto,

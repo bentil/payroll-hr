@@ -30,6 +30,7 @@ const logger = rootLogger.child({ context: 'CompanyTreeNodeService' });
 const events = {
   created: 'event.CompanyTreeNode.created',
   modified: 'event.CompanyTreeNode.modified',
+  deleted: 'event.CompanyTreeNode.deleted',
 } as const;
 
 export async function addCompanyTreeNode(
@@ -550,6 +551,11 @@ export async function deleteNode(
     logger.debug('Removing CompanyTreeNode[%s]', nodeId);
     await repository.deleteNode({ id: nodeId });
   }
+
+  // Emit event.CompanyTreeNode.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, companyTreeNode);
+  logger.info(`${events.deleted} event created successfully!`);
 
   logger.info('CompanyTreeNode[%s] removed!', nodeId);
 }

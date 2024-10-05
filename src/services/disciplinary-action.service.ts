@@ -32,6 +32,7 @@ const logger = rootLogger.child({ context: 'DisciplinaryActionService' });
 const events = {
   created: 'event.DisciplinaryAction.created',
   modified: 'event.DisciplinaryAction.modified',
+  deleted: 'event.DisciplinaryAction.deleted',
 } as const;
 
 export async function addDisciplinaryAction(
@@ -281,11 +282,17 @@ export async function deleteDisciplinaryAction(id: number): Promise<void> {
   }
 
   logger.debug('Deleting DisciplinaryAction[%s] from database...', id);
+  let deletedAction: DisciplinaryAction;
   try {
-    await repository.deleteDisciplinaryAction({ id });
+    deletedAction = await repository.deleteOne({ id });
     logger.info('DisciplinaryAction[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting DisciplinaryAction[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.DisciplinaryAction.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, deletedAction);
+  logger.info(`${events.deleted} event created successfully!`);
 }

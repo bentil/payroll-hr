@@ -28,7 +28,7 @@ const events = {
   created: 'event.EmployeeDocument.created',
   modified: 'event.EmployeeDocument.modified',
   deleted: 'event.EmployeeDocument.deleted'
-};
+} as const;
 
 export async function addEmployeeDocument(
   creatData: CreateEmployeeDocumentDto,
