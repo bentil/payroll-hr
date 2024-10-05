@@ -30,6 +30,7 @@ const logger = rootLogger.child({ context: 'LeavePlanService' });
 const events = {
   created: 'event.LeavePlan.created',
   modified: 'event.LeavePlan.modified',
+  deleted: 'event.LeavePlan.deleted',
 } as const;
 
 export async function addLeavePlan(
@@ -266,11 +267,17 @@ export async function deleteLeavePlan(id: number): Promise<void> {
   }
 
   logger.debug('Deleting LeavePlan[%s] from database...', id);
+  let deletedLeavePlan: LeavePlan;
   try {
-    await leavePlanRepository.deleteLeavePlan({ id });
+    deletedLeavePlan = await leavePlanRepository.deleteOne({ id });
     logger.info('LeavePlan[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting LeavePlan[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.LeavePlan.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, deletedLeavePlan);
+  logger.info(`${events.deleted} event created successfully!`);
 }

@@ -25,10 +25,10 @@ const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeWorkTimeService' });
 
 const events = {
-  created: 'event.EmployeeWorkTimeService.created',
-  modified: 'event.EmployeeWorkTimeService.modified',
-  deleted: 'event.EmployeeWorkTimeService.deleted'
-};
+  created: 'event.EmployeeWorkTime.created',
+  modified: 'event.EmployeeWorkTime.modified',
+  deleted: 'event.EmployeeWorkTime.deleted'
+} as const;
 
 export async function addEmployeeWorkTime(
   creatData: CreateEmployeeWorkTimeDto,

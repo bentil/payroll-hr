@@ -20,6 +20,7 @@ const logger = rootLogger.child({ context: 'CompanyLevelLeavePackageService' });
 const events = {
   created: 'event.CompanyLevelLeavePackage.created',
   modified: 'event.CompanyLevelLeavePackage.modified',
+  deleted: 'event.CompanyLevelLeavePackage.deleted',
 } as const;
 
 export async function createCompanyLevelLeavePackage(
@@ -168,12 +169,17 @@ export async function deleteCompanyLevelLeavePackage(
     if (!companyLevelLeavePackage) {
       logger.warn('CompanyLevelLeavePackage[%s] does not exist', id);
       throw new NotFoundError({ 
-        message: 'Company level leave package you are attempting to delete does not exist' 
+        message: 'Company level leave package does not exist' 
       });
     }
 
     deletedCompanyLevelLeavePackage = await repository.deleteOne({ id });
     logger.info('CompanyLevelLeavePackage[%s] successfully deleted!', id);
+
+    // Emit event.CompanyLevelLeavePackage.deleted event
+    logger.debug(`Emitting ${events.deleted} event`);
+    kafkaService.send(events.deleted, deletedCompanyLevelLeavePackage);
+    logger.info(`${events.deleted} event created successfully!`);
 
     return deletedCompanyLevelLeavePackage;
   } catch (err) {

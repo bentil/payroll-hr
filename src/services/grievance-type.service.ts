@@ -25,9 +25,12 @@ const logger = rootLogger.child({ context: 'GrievanceType' });
 const events = {
   created: 'event.GrievanceType.created',
   modified: 'event.GrievanceType.modified',
-};
+  deleted: 'event.GrievanceType.deleted',
+} as const;
 
-export async function addGrievanceType(creatData: CreateGrievanceTypeDto): Promise<GrievanceType> {
+export async function addGrievanceType(
+  creatData: CreateGrievanceTypeDto
+): Promise<GrievanceType> {
   const { companyId } = creatData;
 
   // VALIDATION
@@ -202,11 +205,17 @@ export async function deleteGrievanceType(id: number): Promise<void> {
   }
 
   logger.debug('Deleting GrievanceType[%s] from database...', id);
+  let deletedGrievanceType: GrievanceType;
   try {
-    await grievanceTypeRepository.deleteGrievanceType({ id });
+    deletedGrievanceType = await grievanceTypeRepository.deleteOne({ id });
     logger.info('GrievanceType[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting GrievanceType[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+
+  // Emit event.GrievanceType.deleted event
+  logger.debug(`Emitting ${events.deleted} event`);
+  kafkaService.send(events.deleted, deletedGrievanceType);
+  logger.info(`${events.deleted} event created successfully!`);
 }
