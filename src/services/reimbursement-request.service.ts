@@ -104,7 +104,7 @@ export async function addReimbursementRequest(
   
   for(const x of approvers) {
     if (x.approver && x.approver.email && x.employee) {
-      await sendReimbursementRequestEmail({
+      sendReimbursementRequestEmail({
         requestId: newReimbursementRequest.id,
         approverEmail: x.approver.email,
         approverFirstName: x.approver.firstName,
