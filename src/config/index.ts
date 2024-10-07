@@ -10,6 +10,7 @@ export default {
   templates: {
     leaveRequestPath: process.env.LEAVE_REQUEST_TEMPLATE_PATH || '',
     reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
+    defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || ''
   },
   log: {
     level: process.env.LOG_LEVEL,
@@ -39,7 +40,7 @@ export default {
     getCountryById: process.env.TOPIC_API_GET_COUNTRY_BY_ID,
     notifications: process.env.TOPIC_NOTIFICATIONS,
   },
-  authUrls: {
+  actionUrls: {
     leaveRequest: process.env.LEAVE_REQUEST_URL || '',
     reimbursementRequest: process.env.REIMBURSEMENT_REQUEST_URL || '',
   },

@@ -101,24 +101,21 @@ export async function addReimbursementRequest(
     employeeId,
     approvalType: 'leave'
   });
-
   
-  await Promise.all([
-    approvers.forEach(x => {
-      if (x.approver && x.approver.email) {
-        sendReimbursementRequestEmail({
-          requestId: newReimbursementRequest.id,
-          approverEmail: x.approver.email,
-          approverFirstName: x.approver.firstName,
-          employeeFullName: String(x.employee?.firstName) + ' ' + String(x.employee?.lastName),
-          requestDate: newReimbursementRequest.createdAt,
-          employeePhotoUrl: x.employee!.photoUrl!,
-          currencyCode: _currency.currency!.code,
-          amount
-        });
-      }
-    })
-  ]);
+  for(const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      await sendReimbursementRequestEmail({
+        requestId: newReimbursementRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: String(x.employee.firstName) + ' ' + String(x.employee.lastName),
+        requestDate: newReimbursementRequest.createdAt,
+        employeePhotoUrl: x.employee.photoUrl,
+        currencyCode: _currency.currency!.code,
+        amount
+      });
+    }
+  }
 
   // Emit event.ReimbursementRequest.created event
   logger.debug(`Emitting ${events.created} event`);

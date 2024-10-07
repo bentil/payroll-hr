@@ -37,11 +37,11 @@ interface LeaveRequestDetail {
   approverEmail: string;
   approverFirstName: string;
   employeeFullName: string;
-  requestDate:Date
-  startDate:Date
-  endDate:Date
+  requestDate: Date;
+  startDate: Date;
+  endDate: Date;
   leaveTypeName: string;
-  employeePhotoUrl: string;
+  employeePhotoUrl: string | null;
 }
 
 interface ReimbursementRequestDetail {
@@ -49,8 +49,8 @@ interface ReimbursementRequestDetail {
   approverFirstName: string;
   approverEmail: string;
   employeeFullName: string;
-  requestDate: Date
-  employeePhotoUrl: string;
+  requestDate: Date;
+  employeePhotoUrl: string | null;
   currencyCode: string;
   amount: Decimal;
 }
@@ -62,7 +62,7 @@ export async function sendLeaveRequestEmail(
   data: LeaveRequestDetail
 ): Promise<void> {
   const logger = _logger.child({ method: 'sendLeaveRequestEmail' });
-  const link = new URL(config.authUrls.leaveRequest);
+  const link = new URL(config.actionUrls.leaveRequest);
   link.searchParams.append('id', String(data.requestId));
   const emailBody = StringUtil.render(leaveRequestTemplate, {
     approverFirstName: data.approverFirstName,
@@ -74,7 +74,9 @@ export async function sendLeaveRequestEmail(
     endDate: data.endDate
       && dayjs(data.endDate).format('MMM DD YYYY'),
     leaveTypeName: data.leaveTypeName,
-    employeePhotoUrl: data.employeePhotoUrl,
+    employeePhotoUrl: data.employeePhotoUrl 
+      ? data.employeePhotoUrl 
+      : config.templates.defaultPhotoUrl,
     actionUrl: link,
     date: dayjs(new Date()).format('MMM DD YYYY')
   });
@@ -103,14 +105,17 @@ export async function sendReimbursementRequestEmail(
   data: ReimbursementRequestDetail
 ): Promise<void> {
   const logger = _logger.child({ method: 'sendReimbursementRequestEmail' });
-  const link = new URL(config.authUrls.reimbursementRequest);
-  link.searchParams.append('id', String(data.requestId));
+  const link = new URL(config.actionUrls.reimbursementRequest);
+  // eslint-disable-next-line quotes
+  link.searchParams.append('id', `$data.requestId`);
   const emailBody = StringUtil.render(reimbursementRequestTemplate, {
     approverFirstName: data.approverFirstName ?? 'User',
     employeeFullName: data.employeeFullName,
     requestDate: data.requestDate
       && dayjs(data.requestDate).format('MMM DD YYYY'),
-    employeePhotoUrl: data.employeePhotoUrl,
+    employeePhotoUrl: data.employeePhotoUrl 
+      ? data.employeePhotoUrl 
+      : config.templates.defaultPhotoUrl,
     currencyCode: data.currencyCode,
     amount: data.amount,
     actionUrl: link,

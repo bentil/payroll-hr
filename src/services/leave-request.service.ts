@@ -132,23 +132,21 @@ export async function addLeaveRequest(
     approvalType: 'leave'
   });
   
-  await Promise.all([
-    approvers.forEach(x => {
-      if (x.approver && x.approver.email) {
-        sendLeaveRequestEmail({
-          requestId: newLeaveRequest.id,
-          approverEmail: x.approver.email,
-          approverFirstName: x.approver.firstName,
-          employeeFullName: String(x.employee?.firstName) + ' ' + String(x.employee?.lastName),
-          requestDate: newLeaveRequest.createdAt,
-          startDate: newLeaveRequest.startDate,
-          endDate: newLeaveRequest.returnDate,
-          leaveTypeName: leaveType.name,
-          employeePhotoUrl: x.employee!.photoUrl!,
-        });
-      }
-    })
-  ]);
+  for (const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      sendLeaveRequestEmail({
+        requestId: newLeaveRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: String(x.employee.firstName) + ' ' + String(x.employee.lastName),
+        requestDate: newLeaveRequest.createdAt,
+        startDate: newLeaveRequest.startDate,
+        endDate: newLeaveRequest.returnDate,
+        leaveTypeName: leaveType.name,
+        employeePhotoUrl: x.employee.photoUrl,
+      });
+    }
+  }
 
   // Emit event.LeaveRequest.created event
   logger.debug(`Emitting ${events.created} event`);
