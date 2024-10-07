@@ -108,7 +108,7 @@ export async function addReimbursementRequest(
         requestId: newReimbursementRequest.id,
         approverEmail: x.approver.email,
         approverFirstName: x.approver.firstName,
-        employeeFullName: String(x.employee.firstName) + ' ' + String(x.employee.lastName),
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`,
         requestDate: newReimbursementRequest.createdAt,
         employeePhotoUrl: x.employee.photoUrl,
         currencyCode: _currency.currency!.code,

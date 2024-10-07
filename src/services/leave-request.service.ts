@@ -138,7 +138,7 @@ export async function addLeaveRequest(
         requestId: newLeaveRequest.id,
         approverEmail: x.approver.email,
         approverFirstName: x.approver.firstName,
-        employeeFullName: String(x.employee.firstName) + ' ' + String(x.employee.lastName),
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`,
         requestDate: newLeaveRequest.createdAt,
         startDate: newLeaveRequest.startDate,
         endDate: newLeaveRequest.returnDate,

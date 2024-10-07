@@ -41,7 +41,7 @@ interface LeaveRequestDetail {
   startDate: Date;
   endDate: Date;
   leaveTypeName: string;
-  employeePhotoUrl: string | null;
+  employeePhotoUrl?: string | null;
 }
 
 interface ReimbursementRequestDetail {
@@ -50,7 +50,7 @@ interface ReimbursementRequestDetail {
   approverEmail: string;
   employeeFullName: string;
   requestDate: Date;
-  employeePhotoUrl: string | null;
+  employeePhotoUrl?: string | null;
   currencyCode: string;
   amount: Decimal;
 }
@@ -67,16 +67,11 @@ export async function sendLeaveRequestEmail(
   const emailBody = StringUtil.render(leaveRequestTemplate, {
     approverFirstName: data.approverFirstName,
     employeeFullName: data.employeeFullName,
-    requestDate: data.requestDate
-      && dayjs(data.requestDate).format('MMM DD YYYY'),
-    startDate: data.startDate
-      && dayjs(data.startDate).format('MMM DD YYYY'),
-    endDate: data.endDate
-      && dayjs(data.endDate).format('MMM DD YYYY'),
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    startDate: dayjs(data.startDate).format('MMM DD YYYY'),
+    endDate: dayjs(data.endDate).format('MMM DD YYYY'),
     leaveTypeName: data.leaveTypeName,
-    employeePhotoUrl: data.employeePhotoUrl 
-      ? data.employeePhotoUrl 
-      : config.templates.defaultPhotoUrl,
+    employeePhotoUrl: data.employeePhotoUrl || config.templates.defaultPhotoUrl,
     actionUrl: link,
     date: dayjs(new Date()).format('MMM DD YYYY')
   });
@@ -111,11 +106,8 @@ export async function sendReimbursementRequestEmail(
   const emailBody = StringUtil.render(reimbursementRequestTemplate, {
     approverFirstName: data.approverFirstName ?? 'User',
     employeeFullName: data.employeeFullName,
-    requestDate: data.requestDate
-      && dayjs(data.requestDate).format('MMM DD YYYY'),
-    employeePhotoUrl: data.employeePhotoUrl 
-      ? data.employeePhotoUrl 
-      : config.templates.defaultPhotoUrl,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    employeePhotoUrl: data.employeePhotoUrl || config.templates.defaultPhotoUrl,
     currencyCode: data.currencyCode,
     amount: data.amount,
     actionUrl: link,
