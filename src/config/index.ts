@@ -7,6 +7,10 @@ export default {
   logLevel: process.env.LOG_LEVEL,
   logRetentionDays: parseInt(process.env.LOG_RETENTION_DAYS || '14'),
   convertActiveCurrenciesOnly: process.env.CONVERT_ACTIVE_CURRENCIES_ONLY === 'true',
+  templates: {
+    leaveRequestPath: process.env.LEAVE_REQUEST_TEMPLATE_PATH || '',
+    reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
+  },
   log: {
     level: process.env.LOG_LEVEL,
     rootDirectory: process.env.LOG_ROOT_DIRECTORY || './logs/',
@@ -33,6 +37,11 @@ export default {
   },
   topics: {
     getCountryById: process.env.TOPIC_API_GET_COUNTRY_BY_ID,
+    notifications: process.env.TOPIC_NOTIFICATIONS,
+  },
+  authUrls: {
+    leaveRequest: process.env.LEAVE_REQUEST_URL || '',
+    reimbursementRequest: process.env.REIMBURSEMENT_REQUEST_URL || '',
   },
   rpc: {
     serverAddress: process.env.RPC_SERVER_ADDRESS || 'localhost:50000',
@@ -44,7 +53,12 @@ export default {
       organization: process.env.RPC_ORGANIZATION_SERVICE_URL,
     },
   },
-
+  notifications: {
+    emailSender: process.env.NOTIFICATION_EMAIL_SENDER || 'notifications@akatua.lucidarray.dev',
+    leaveRequestSubject: process.env.LEAVE_REQUEST_SUBJECT || 'Akatua Leave Request',
+    // eslint-disable-next-line max-len
+    reimbursementRequestSubject: process.env.REIMBURSEMENT_REQUEST_SUBJECT || 'Akatua Reimbursement Request',
+  },
   cron: {
     cronSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
     manualStatementRequestSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
