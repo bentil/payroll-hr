@@ -63,7 +63,7 @@ export async function sendLeaveRequestEmail(
 ): Promise<void> {
   const logger = _logger.child({ method: 'sendLeaveRequestEmail' });
   const link = new URL(config.actionUrls.leaveRequest);
-  link.searchParams.append('id', String(data.requestId));
+  link.searchParams.append('id', `${data.requestId}`);
   const emailBody = StringUtil.render(leaveRequestTemplate, {
     approverFirstName: data.approverFirstName,
     employeeFullName: data.employeeFullName,
@@ -107,7 +107,7 @@ export async function sendReimbursementRequestEmail(
   const logger = _logger.child({ method: 'sendReimbursementRequestEmail' });
   const link = new URL(config.actionUrls.reimbursementRequest);
   // eslint-disable-next-line quotes
-  link.searchParams.append('id', `$data.requestId`);
+  link.searchParams.append('id', `${data.requestId}`);
   const emailBody = StringUtil.render(reimbursementRequestTemplate, {
     approverFirstName: data.approverFirstName ?? 'User',
     employeeFullName: data.employeeFullName,
