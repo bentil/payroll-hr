@@ -1,6 +1,7 @@
 import {
   LEAVE_REQUEST_STATUS,
   LeaveRequest,
+  LeaveType,
   Prisma,
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
@@ -36,6 +37,9 @@ import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import { validate } from './leave-type.service';
 import * as employeeService from './employee.service';
+import * as leaveTypeService from './leave-type.service';
+import { getEmployeeApproversWithDefaults } from './employee-approver.service';
+import { sendLeaveRequestEmail } from '../utils/notification.util';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -61,13 +65,14 @@ export async function addLeaveRequest(
       message: 'You are not allowed to create for another employee'
     });
   }
-  let validateData, leaveSummary, employee;
+  let validateData, leaveSummary, employee, leaveType: LeaveType;
   // VALIDATION
   try {
-    [validateData, leaveSummary, employee] = await Promise.all([
+    [validateData, leaveSummary, employee, leaveType] = await Promise.all([
       validate(leaveTypeId, employeeId),
       getEmployeeLeaveTypeSummary(employeeId, leaveTypeId),
-      employeeService.getEmployee(employeeId, { includeCompany: true })
+      employeeService.getEmployee(employeeId, { includeCompany: true }),
+      leaveTypeService.getLeaveTypeById(leaveTypeId)
     ]);
   } catch (err) {
     logger.warn('Validating Employee[%s] and/or LeaveType[%s] failed', 
@@ -120,6 +125,27 @@ export async function addLeaveRequest(
       message: (err as Error).message,
       cause: err
     });
+  }
+
+  const approvers = await getEmployeeApproversWithDefaults({
+    employeeId,
+    approvalType: 'leave'
+  });
+  
+  for (const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      sendLeaveRequestEmail({
+        requestId: newLeaveRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+        requestDate: newLeaveRequest.createdAt,
+        startDate: newLeaveRequest.startDate,
+        endDate: newLeaveRequest.returnDate,
+        leaveTypeName: leaveType.name,
+        employeePhotoUrl: x.employee.photoUrl,
+      });
+    }
   }
 
   // Emit event.LeaveRequest.created event

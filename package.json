@@ -36,6 +36,7 @@
     "@joi/date": "^2.1.0",
     "@prisma/client": "^5.4.2",
     "cls-rtracer": "^2.6.3",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "joi": "^17.11.0",

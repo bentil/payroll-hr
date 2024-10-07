@@ -31,12 +31,20 @@ export async function createOrUpdateCompanyCurrency(
   return companyCurrency;
 }
 
-export async function getCompanyCurrency(id: number): Promise<CompanyCurrency> {
+export async function getCompanyCurrency(
+  id: number,
+  options?: {
+    includeCurrency?: boolean;
+  }
+): Promise<CompanyCurrencyEvent> {
   logger.debug('Getting details for CompanyCurrency[%s]', id);
-  let companyCurrency: CompanyCurrency | null;
+  let companyCurrency: CompanyCurrencyEvent | null;
 
   try {
-    companyCurrency = await repository.findOne({ id });
+    companyCurrency = await repository.findOne(
+      { id },
+      options?.includeCurrency ? { currency: true } : undefined,
+    );
   } catch (err) {
     logger.warn('Getting CompanyCurrency[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });

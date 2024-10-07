@@ -437,14 +437,14 @@ router.delete(
 // ### LEAVE REQUEST ROUTES
 router.post(
   '/leave-requests',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(CREATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.addNewLeaveRequest
 );
 
 router.patch(
   '/leave-requests/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(UPDATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.updateLeaveRequest
 );
@@ -457,13 +457,13 @@ router.get(
 
 router.get(
   '/leave-requests/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   leaveReqV1Controller.getLeaveRequest
 );
 
 router.delete(
   '/leave-requests/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   leaveReqV1Controller.deleteLeaveRequest
 );
 
@@ -476,13 +476,13 @@ router.post(
 
 router.post(
   '/leave-requests/:id/cancel',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   leaveReqV1Controller.cancelLeaveRequest
 );
 
 router.patch(
   '/leave-requests/:id/number-of-days',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(ADJUST_DAYS_SCHEMA),
   leaveReqV1Controller.adjustDays
 );
