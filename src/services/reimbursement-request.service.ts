@@ -1,5 +1,4 @@
 import { 
-  CompanyCurrency,
   REIMBURESEMENT_REQUEST_STATUS, 
   ReimbursementRequest 
 } from '@prisma/client';
@@ -35,6 +34,9 @@ import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { EmployeeDto } from '../repositories/employee.repository';
+import { getEmployeeApproversWithDefaults } from './employee-approver.service';
+import { sendReimbursementRequestEmail } from '../utils/notification.util';
+import { CompanyCurrencyEvent } from '../domain/events/company-currency.event';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -48,17 +50,17 @@ const events = {
 export async function addReimbursementRequest(
   payload: CreateReimbursementRequestDto,
 ): Promise<ReimbursementRequest> {
-  const { employeeId, currencyId } = payload;
+  const { employeeId, currencyId, amount } = payload;
   
   logger.debug(
     'Validating Employee[%s], parent & CompanyCurrency[%s]',
     employeeId, currencyId
   );
-  let _employee: EmployeeDto, _currency: CompanyCurrency;
+  let _employee: EmployeeDto, _currency: CompanyCurrencyEvent;
   try {
     [_employee, _currency] = await Promise.all([
       employeeService.getEmployee(employeeId, { includeCompany: true }),
-      currencyService.getCompanyCurrency(currencyId)
+      currencyService.getCompanyCurrency(currencyId, { includeCurrency: true })
     ]);
   } catch (err) {
     logger.warn(
@@ -93,6 +95,26 @@ export async function addReimbursementRequest(
       message: (err as Error).message,
       cause: err
     });
+  }
+
+  const approvers = await getEmployeeApproversWithDefaults({
+    employeeId,
+    approvalType: 'leave'
+  });
+  
+  for(const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      sendReimbursementRequestEmail({
+        requestId: newReimbursementRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+        requestDate: newReimbursementRequest.createdAt,
+        employeePhotoUrl: x.employee.photoUrl,
+        currencyCode: _currency.currency!.code,
+        amount
+      });
+    }
   }
 
   // Emit event.ReimbursementRequest.created event

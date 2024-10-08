@@ -23,8 +23,10 @@ export async function createOrUpdate(
 
 export async function findOne(
   whereUniqueInput: Prisma.CompanyCurrencyWhereUniqueInput,
+  include?: Prisma.CompanyCurrencyInclude
 ): Promise<CompanyCurrency | null> {
   return prisma.companyCurrency.findUnique({
     where: whereUniqueInput,
+    include
   });
 }
