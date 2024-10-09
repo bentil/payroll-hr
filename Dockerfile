@@ -34,6 +34,7 @@ RUN npm ci --omit=dev
 # Copy required files from src_builder stage
 COPY --from=src_builder /app/dist /app
 COPY --from=src_builder /app/prisma /app/prisma
+COPY --from=src_builder /app/templates /app/templates
 
 # Install Prisma client and run script to generate model files
 RUN npm install prisma -g \
