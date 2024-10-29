@@ -34,6 +34,7 @@ export class QueryGrievanceReportDto {
   reportingEmployeeId?: number;
   grievanceTypeId?: number;
   reportDate?: Date;
+  reportedEmployeeId?: number[];
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   page: number = 1;

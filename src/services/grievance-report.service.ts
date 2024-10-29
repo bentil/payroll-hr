@@ -136,9 +136,11 @@ export async function getGrievanceReports(
     grievanceTypeId,
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
+    reportedEmployeeId,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  console.log(reportedEmployeeId);
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {
@@ -146,10 +148,20 @@ export async function getGrievanceReports(
     result = await grievanceReportRepository.find({
       skip,
       take,
-      where: { companyId, reportDate, reportingEmployeeId, grievanceTypeId, createdAt: {
-        gte: createdAtGte && new Date(createdAtGte),
-        lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
-      } },
+      where: { 
+        companyId, 
+        reportDate, 
+        reportingEmployeeId, 
+        grievanceTypeId, 
+        grievanceReportedEmployees: {
+          some: {
+            reportedEmployeeId: { in: reportedEmployeeId } 
+          }
+        },
+        createdAt: {
+          gte: createdAtGte && new Date(createdAtGte),
+          lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+        } },
       orderBy: orderByInput,
       includeRelations: true
     });
