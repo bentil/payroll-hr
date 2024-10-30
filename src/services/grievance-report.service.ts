@@ -140,7 +140,6 @@ export async function getGrievanceReports(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-  console.log(reportedEmployeeId);
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {

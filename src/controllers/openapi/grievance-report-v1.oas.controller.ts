@@ -54,21 +54,10 @@ export class GrievanceReportV1Controller {
    */
   @Get()
   public async getGrievanceReports(
-    @Queries() { reportedEmployeeId, ...dtoData }: QueryGrievanceReportDto
+    @Queries() query: QueryGrievanceReportDto
   ): Promise<ApiSuccessResponse<GrievanceReport[]>> {
-    const reportedEmployeeIds: number[] = [];
-    if (reportedEmployeeId) {
-      for (const employeeId of reportedEmployeeId) {
-        reportedEmployeeIds.push(+employeeId);
-      }
-    }
-    this.logger.debug('Received request to get GrievanceReport(s) matching query', { 
-      ...dtoData, reportedEmployeeId 
-    });
-    const { data, pagination } = await grievanceReportService.getGrievanceReports({
-      ...dtoData,
-      reportedEmployeeId: reportedEmployeeIds
-    });
+    this.logger.debug('Received request to get GrievanceReport(s) matching query', { query });
+    const { data, pagination } = await grievanceReportService.getGrievanceReports(query);
     this.logger.info('Returning %d GrievanceReport(s) that matched the query', data.length);
     return { data, pagination };
   }

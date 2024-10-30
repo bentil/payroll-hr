@@ -59,7 +59,7 @@ export const UPDATE_GRIEVANCE_REPORT_SCHEMA = Joi.object({
 export const QUERY_GRIEVANCE_REPORT_SCHEMA = Joi.object({
   companyId: Joi.number(),
   reportingEmployeeId: Joi.number(),
-  reportedEmployeeId: Joi.array(),
+  reportedEmployeeId: Joi.array().items(joi.number()),
   grievanceTypeId: Joi.number(),
   'createdAt.gte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
