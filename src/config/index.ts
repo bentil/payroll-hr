@@ -60,18 +60,9 @@ export default {
     // eslint-disable-next-line max-len
     reimbursementRequestSubject: process.env.REIMBURSEMENT_REQUEST_SUBJECT || 'Akatua Reimbursement Request',
   },
-  cron: {
-    cronSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
-    manualStatementRequestSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
-    periodicStatementRequestSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
-    sendPeriodicStatementRequestSchedule: process.env.CRON_SCHEDULE || '0 0 * * *',
-  },
-  dates: {
-    gracePeriodReminderLimit: (process.env.GRACE_PERIOD_REMINDER_LIMIT || 1) as number,
-    invoicePaymentGracePeriodInDays: (process.env.INVOICE_PAYMENT_GRACE_PERIOD_IN_DAYS ||
-      5) as number,
-    invoicePaymentNotifyPeriodInDays: (process.env.INVOICE_PAYMENT_NOTIFY_PERIOD_IN_DAYS ||
-      5) as number,
+  messages: {
+    serverError: process.env.SERVER_ERROR_MESSAGE || 'An error occurred while processing request',
+    permissionError: process.env.PERMISSION_ERROR_MESSAGE || 'Permissions check faiiled',
   },
   statementRequestBatchSize: (process.env.STATEMENT_REQUEST_BATCH_SIZE || 1000) as number,
   reportNumberLength: parseInt(process.env.SMS_OTP_LENGTH || '6', 10),
