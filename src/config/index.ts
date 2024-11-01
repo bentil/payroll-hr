@@ -62,7 +62,7 @@ export default {
   },
   messages: {
     serverError: process.env.SERVER_ERROR_MESSAGE || 'An error occurred while processing request',
-    permissionError: process.env.PERMISSION_ERROR_MESSAGE || 'Permissions check faiiled',
+    permissionError: process.env.PERMISSION_ERROR_MESSAGE || 'Permissions check failed',
   },
   statementRequestBatchSize: (process.env.STATEMENT_REQUEST_BATCH_SIZE || 1000) as number,
   reportNumberLength: parseInt(process.env.SMS_OTP_LENGTH || '6', 10),
