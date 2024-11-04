@@ -807,7 +807,7 @@ router.post(
 
 router.get(
   '/announcements',
-  authenticateUser({ category: [UserCategory.HR], permissions: 'announcements:read' }),
+  authenticateUser({ category: [UserCategory.HR], permissions: 'announcements:write' }),
   validateRequestQuery(QUERY_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.getAnnouncements
 );
@@ -821,7 +821,7 @@ router.get(
 
 router.get(
   '/announcements/search',
-  authenticateUser({ category: [UserCategory.HR], permissions: 'announcements:read' }),
+  authenticateUser({ category: [UserCategory.HR], permissions: 'announcements:write' }),
   validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.searchAnnouncements
 );
@@ -835,7 +835,7 @@ router.get(
 
 router.get(
   '/announcements/:id',
-  authenticateUser({ isEmployee: true, permissions: 'announcements:read' }),
+  authenticateUser({ isEmployee: true, permissions: 'announcements:write' }),
   announcementV1Controller.getAnnouncement
 );
 

@@ -123,9 +123,8 @@ export function authenticateUser(
 export function authenticatePlatformUser(
   options?: { permissions?: string | string[] | string[][] }
 ): RequestHandler[] {
-  const { permissions = [] } = options || {};
   return [
-    ...authenticateUser({ permissions: options?.permissions }),
+    ...authenticateUser(),
     (req: Request, _res: Response, next: NextFunction) => {
       if (!req.user) {
         throw new UnauthorizedError({});
@@ -135,7 +134,7 @@ export function authenticatePlatformUser(
 
       next();
     },
-    guard.check(permissions)
+    guard.check(options?.permissions || [])
   ];
 }
 
