@@ -16,6 +16,7 @@ export interface AuthorizedUser {
   platformUser: boolean;
   sessionId?: string;
   superviseeIds?: number[];
+  permissions: string[];
 }
 
 export function isAuthorizedUser(obj: any): obj is AuthorizedUser {
@@ -25,5 +26,6 @@ export function isAuthorizedUser(obj: any): obj is AuthorizedUser {
     && 'organizationRoleId' in obj
     && 'category' in obj
     && 'companyIds' in obj
+    && 'permissions' in obj
     && 'platformUser' in obj;
 }
