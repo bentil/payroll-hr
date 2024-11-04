@@ -26,5 +26,6 @@ export function isAuthorizedUser(obj: any): obj is AuthorizedUser {
     && 'organizationRoleId' in obj
     && 'category' in obj
     && 'companyIds' in obj
+    && 'permissions' in obj
     && 'platformUser' in obj;
 }
