@@ -66,7 +66,7 @@ import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
 // eslint-disable-next-line max-len
 import * as companyLevelLeavePackageV1Controller from '../controllers/company-level-leave-package-v1.api';
 import * as grievanceTypeV1Controller from '../controllers/grievance-type-v1.api.controller';
-import * as grievnceReportV1Controller from '../controllers/grievance-report-v1.api.controller';
+import * as grievanceReportV1Controller from '../controllers/grievance-report-v1.api.controller';
 // eslint-disable-next-line max-len
 import * as reportedEmployeesV1Controller from '../controllers/grievance-reported-employee-v1.api.controller';
 // eslint-disable-next-line max-len
@@ -144,35 +144,41 @@ router.use(authenticateClient);
 
 router.post(
   '/grievance-types',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   validateRequestBody(CREATE_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.addNewGrievanceType
 );
 
 router.get(
   '/grievance-types',
+  authenticateUser(),
   validateRequestQuery(QUERY_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.getGrievanceTypes
 );
 
 router.get(
   '/grievance-types/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.searchGrievanceTypes
 );
 
 router.get(
   '/grievance-types/:id',
+  authenticateUser(),
   grievanceTypeV1Controller.getGrievanceType
 );
 
 router.patch(
   '/grievance-types/:id',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   validateRequestBody(UPDATE_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.updateGrievanceType
 );
 
 router.delete(
   '/grievance-types/:id',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   grievanceTypeV1Controller.deleteGrievanceType
 );
 
@@ -182,47 +188,54 @@ router.post(
   '/grievance-reports',
   authenticateUser(),
   validateRequestBody(CREATE_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.addNewGrievanceReport
+  grievanceReportV1Controller.addNewGrievanceReport
 );
 
 router.get(
   '/grievance-reports',
+  authenticateUser(),
   validateRequestQuery(QUERY_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.getGrievanceReports
+  grievanceReportV1Controller.getGrievanceReports
 );
 
 router.get(
   '/grievance-reports/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.searchGrievanceReports
+  grievanceReportV1Controller.searchGrievanceReports
 );
 
 router.get(
   '/grievance-reports/:id',
-  grievnceReportV1Controller.getGrievanceReport
+  authenticateUser(),
+  grievanceReportV1Controller.getGrievanceReport
 );
 
 router.patch(
   '/grievance-reports/:id',
+  authenticateUser(),
   validateRequestBody(UPDATE_GRIEVANCE_REPORT_SCHEMA),
-  grievnceReportV1Controller.updateGrievanceReport
+  grievanceReportV1Controller.updateGrievanceReport
 );
 
 router.delete(
   '/grievance-reports/:id',
-  grievnceReportV1Controller.deleteGrievanceReport
+  authenticateUser(),
+  grievanceReportV1Controller.deleteGrievanceReport
 );
 
 // ### REPORTED EMPLOYEES ROUTES
 
 router.post(
   '/grievance-reports/:reportId/reported-employees',
+  authenticateUser(),
   validateRequestBody(CREATE_GRIEVANCE_REPORTED_EMPLOYEE_SCHEMA),
   reportedEmployeesV1Controller.addNewReportedEmployee
 );
 
 router.delete(
   '/grievance-reports/:reportId/reported-employees/:employeeId',
+  authenticateUser(),
   reportedEmployeesV1Controller.deleteReportedEmployee
 );
 
@@ -230,35 +243,41 @@ router.delete(
 
 router.post(
   '/disciplinary-action-types',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   validateRequestBody(CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.addNewDisciplinaryActionType
 );
 
 router.get(
   '/disciplinary-action-types',
+  authenticateUser(),
   validateRequestQuery(QUERY_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/:id',
+  authenticateUser(),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionType
 );
 
 router.patch(
   '/disciplinary-action-types/:id',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   validateRequestBody(UPDATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.updateDisciplinaryActionType
 );
 
 router.delete(
   '/disciplinary-action-types/:id',
+  authenticateUser({ permissions: 'company_configs:conduct:write' }),
   disciplinaryActionTypeV1Controller.deleteDisciplinaryActionType
 );
 
@@ -266,35 +285,41 @@ router.delete(
 
 router.post(
   '/disciplinary-actions',
+  authenticateUser(),
   validateRequestBody(CREATE_DISCIPLINARY_ACTION_SCHEMA),
   disciplinaryActionV1Controller.addNewDisciplinaryAction
 );
 
 router.get(
   '/disciplinary-actions',
+  authenticateUser(),
   validateRequestQuery(QUERY_DISCIPLINARY_ACTION_SCHEMA),
   disciplinaryActionV1Controller.getDisciplinaryActions
 );
 
 router.get(
   '/disciplinary-actions/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_SCHEMA),
   disciplinaryActionV1Controller.searchDisciplinaryAction
 );
 
 router.get(
   '/disciplinary-actions/:id',
+  authenticateUser(),
   disciplinaryActionV1Controller.getDisciplinaryAction
 );
 
 router.patch(
   '/disciplinary-actions/:id',
+  authenticateUser(),
   validateRequestBody(UPDATE_DISCIPLINARY_ACTION_SCHEMA),
   disciplinaryActionV1Controller.updateDisciplinaryAction
 );
 
 router.delete(
   '/disciplinary-actions/:id',
+  authenticateUser(),
   disciplinaryActionV1Controller.deleteDisciplinaryAction
 );
 
@@ -302,24 +327,27 @@ router.delete(
 
 router.post(
   '/company-level-leave-packages',
-  authenticateUser(),
+  authenticateUser({ permissions: 'company_configs:leave:write' }),
   validateRequestBody(CREATE_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA),
   companyLevelLeavePackageV1Controller.addCompanyLevelLeavePackage
 );
 
 router.get(
   '/company-level-leave-packages',
+  authenticateUser(),
   validateRequestQuery(QUERY_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA),
   companyLevelLeavePackageV1Controller.listCompanyLevelLeavePackages
 );
 
 router.get(
   '/company-level-leave-packages/:id',
+  authenticateUser(),
   companyLevelLeavePackageV1Controller.getCompanyLevelLeavePackageById
 );
 
 router.delete(
   '/company-level-leave-packages/:id',
+  authenticateUser({ permissions: 'company_configs:leave:write' }),
   companyLevelLeavePackageV1Controller.deleteCompanyLevelLeavePackage
 );
 
@@ -327,36 +355,41 @@ router.delete(
 
 router.post(
   '/leave-packages',
-  authenticateUser(),
+  authenticateUser({ permissions: 'company_configs:leave:write' }),
   validateRequestBody(CREATE_LEAVE_PACKAGE_SCHEMA),
   leavePackageV1Controller.addLeavePackage
 );
 
 router.patch(
   '/leave-packages/:id',
+  authenticateUser({ permissions: 'company_configs:leave:write' }),
   validateRequestBody(UPDATE_LEAVE_PACKAGE_SCHEMA),
   leavePackageV1Controller.updateLeavePackage
 );
 router.get(
   '/leave-packages',
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_PACKAGE_SCHEMA),
   leavePackageV1Controller.listLeavePackages
 );
 
 router.get(
   '/leave-packages/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_LEAVE_PACKAGE_SCHEMA),
   leavePackageV1Controller.searchLeavePackages
 );
 
 router.get(
   '/leave-packages/:id',
+  authenticateUser(),
   validateRequestQuery(INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA),
   leavePackageV1Controller.getLeavePackageById
 );
 
 router.delete(
   '/leave-packages/:id',
+  authenticateUser({ permissions: 'company_configs:leave:write' }),
   leavePackageV1Controller.deleteLeavePackage
 );
 
@@ -364,42 +397,47 @@ router.delete(
 
 router.post(
   '/leave-types',
+  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
   validateRequestBody(CREATE_LEAVE_TYPE_SCHEMA),
-  authenticatePlatformUser(),
   leaveTypeV1Controller.addLeaveType
 );
 
 router.patch(
   '/leave-types/:id',
+  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
   validateRequestBody(UPDATE_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.updateLeaveType
 );
 router.get(
   '/leave-types',
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.listLeaveTypes
 );
 
 router.get(
   '/leave-types/applicable',
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.listApplicableLeaveTypes
 );
 
 router.get(
   '/leave-types/search',
+  authenticateUser(),
   validateRequestQuery(SEARCH_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.searchLeaveTypes
 );
 
 router.get(
   '/leave-types/:id',
+  authenticateUser(),
   leaveTypeV1Controller.getLeaveTypeById
 );
 
 router.delete(
   '/leave-types/:id',
-  authenticatePlatformUser(),
+  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
   leaveTypeV1Controller.deleteLeaveType
 );
 
@@ -407,30 +445,33 @@ router.delete(
 
 router.post(
   '/leave-plans',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(CREATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.addNewLeavePlan
 );
 
 router.patch(
   '/leave-plans/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestBody(UPDATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.updateLeavePlan
 );
 router.get(
   '/leave-plans',
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.getLeavePlans
 );
 
 router.get(
   '/leave-plans/:id',
+  authenticateUser({ isEmployee: true }),
   leavePlanV1Controller.getLeavePlan
 );
 
 router.delete(
   '/leave-plans/:id',
+  authenticateUser({ isEmployee: true }),
   leavePlanV1Controller.deleteLeavePlan
 );
 
@@ -450,7 +491,7 @@ router.patch(
 );
 router.get(
   '/leave-requests',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.getLeaveRequests
 );
@@ -490,14 +531,17 @@ router.patch(
 // ### Employee Leave Type summary 
 router.post(
   '/employees/:employeeId/leave-types/:leaveTypeId/summary',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   summaryV1Controller.getSummary
 );
 
 // ### Company Tree Node 
 router.post(
   '/payroll-compan(y|ies)/:companyId/tree/nodes',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.addNewCompanyTreeNode
 );
@@ -516,20 +560,29 @@ router.get(
 
 router.patch(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
   treeNodeV1Controller.updateCompanyTreeNode
 );
 
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId/employee',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   treeNodeV1Controller.unlinkEmployee
 );
 
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
   treeNodeV1Controller.deleteCompanyTreeNode
 );
@@ -606,14 +659,20 @@ router.delete(
 
 router.post(
   '/employee-work-times',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   validateRequestBody(CREATE_EMPLOYEE_WORK_TIME_SCHEMA),
   employeeWorkTimeV1Controller.addNewEmployeeWorkTime
 );
 
 router.patch(
   '/employee-work-times/:id',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   validateRequestBody(UPDATE_EMPLOYEE_WORK_TIME_SCHEMA),
   employeeWorkTimeV1Controller.updateEmployeeWorkTime
 );
@@ -632,7 +691,10 @@ router.get(
 
 router.delete(
   '/employee-work-times/:id',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   employeeWorkTimeV1Controller.deleteEmployeeWorkTime
 );
 
@@ -640,14 +702,20 @@ router.delete(
 
 router.post(
   '/employee-overtime-entries',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.addNewEmployeeOvertimeEntry
 );
 
 router.patch(
   '/employee-overtime-entries/:id',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   validateRequestBody(UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA),
   empOvertimeEntryV1Controller.updateEmployeeOvertimeEntry
 );
@@ -666,7 +734,10 @@ router.get(
 
 router.delete(
   '/employee-overtime-entries/:id',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
   empOvertimeEntryV1Controller.deleteEmployeeOvertimeEntry
 );
 
@@ -674,7 +745,10 @@ router.delete(
 
 router.post(
   '/company-document-types',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:information:write' 
+  }),
   validateRequestBody(CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.addCompanyDocumentType
 );
@@ -701,14 +775,20 @@ router.get(
 
 router.patch(
   '/company-document-types/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:information:write'
+  }),
   validateRequestBody(UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.updateCompanyDocumentType
 );
 
 router.delete(
   '/company-document-types/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:information:write'
+  }),
   compDocTypeV1Controller.deleteCompanyDocumentType
 );
 
@@ -751,14 +831,20 @@ router.delete(
 
 router.post(
   '/announcements',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   validateRequestBody(CREATE_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.addNewAnnouncement
 );
 
 router.get(
   '/announcements',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   validateRequestQuery(QUERY_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.getAnnouncements
 );
@@ -772,7 +858,10 @@ router.get(
 
 router.get(
   '/announcements/search',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.searchAnnouncements
 );
@@ -786,27 +875,36 @@ router.get(
 
 router.get(
   '/announcements/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser({ isEmployee: true, permissions: 'announcements:write' }),
   announcementV1Controller.getAnnouncement
 );
 
 router.patch(
   '/announcements/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.updateAnnouncement
 );
 
 router.patch(
   '/announcements/:announcementId/resources/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA),
   announcementV1Controller.updateAnnouncementResource
 );
 
 router.delete(
   '/announcements/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'announcements:write'
+  }),
   announcementV1Controller.deleteAnnouncement
 );
 
@@ -814,7 +912,10 @@ router.delete(
 
 router.post(
   '/employees/:employeeId/approvers',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.addEmployeeApprover
 );
@@ -835,20 +936,29 @@ router.get(
 
 router.patch(
   '/employees/:employeeId/approvers/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestBody(UPDATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.updateEmployeeApprover
 );
 
 router.delete(
   '/employees/:employeeId/approvers/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   employeeApproverV1Controller.deleteEmployeeApprover
 );
 
 router.post(
   '/employees/:employeeId/approvers/preflight',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ 
+    category: [UserCategory.HR],
+    permissions: 'company_configs:hierarchy:write'
+  }),
   validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.employeeApproverPreflight
 );

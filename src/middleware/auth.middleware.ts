@@ -3,9 +3,11 @@ import { UserCategory, isAuthorizedUser } from '../domain/user.domain';
 import { ForbiddenError } from '../errors/http-errors';
 import { UnauthorizedError } from '../errors/unauthorized-errors';
 import { rootLogger } from '../utils/logger';
+import guardFactory from 'express-jwt-permissions';
 // import { getSupervisees } from '../services/company-tree-node.service';
 
 const logger = rootLogger.child({ context: 'AuthMiddleware' });
+const guard = guardFactory();
 export function authenticateClient(req: Request, _res: Response, next: NextFunction) {
   const clientAppKey = req.headers['proxy-authorization'];
   if (!clientAppKey || clientAppKey !== process.env.APP_KEY) {
@@ -15,54 +17,62 @@ export function authenticateClient(req: Request, _res: Response, next: NextFunct
 }
 
 export function authenticateUser(
-  options?: { optional?: boolean, isEmployee?: boolean, category?: UserCategory[] }
-): RequestHandler {
+  options?: { 
+    optional?: boolean, 
+    isEmployee?: boolean, 
+    category?: UserCategory[],
+    permissions?: string | string[] | string[][];
+  }
+): RequestHandler[] {
   //add a checker for employeeId in authUser and throw forbidden error if not employees
-  const optional = options?.optional !== undefined ? options.optional : false;
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const data = req.headers['user-metadata'];
-    if (!data) {
-      if (!optional) {
-        logger.warn('User auth header is missing or blank');
+  const { optional = false, permissions = [] } = options || {};
+  return [
+    (req: Request, _res: Response, next: NextFunction) => {
+      const data = req.headers['user-metadata'];
+      if (!data) {
+        if (!optional) {
+          logger.warn('User auth header is missing or blank');
+          throw new UnauthorizedError({});
+        }
+        return next(); // Skip verification if data not present and auth optional
+      }
+
+      let userData: any;
+      try {
+        userData = JSON.parse(data as string);
+      } catch (err) {
+        logger.warn('Failed to parse user auth header value', { error: err });
         throw new UnauthorizedError({});
       }
-      return next(); // Skip verification if data not present and auth optional
-    }
 
-    let userData: any;
-    try {
-      userData = JSON.parse(data as string);
-    } catch (err) {
-      logger.warn('Failed to parse user auth header value', { error: err });
-      throw new UnauthorizedError({});
-    }
-
-    if (!isAuthorizedUser(userData)) {
-      logger.warn('User auth header value parsed but not a valid AuthorizedUser object');
-      throw new UnauthorizedError({});
-    }
-    req.user = userData;
-
-    if (options?.isEmployee) {
-      if (
-        !req.user.employeeId || 
-        ![UserCategory.EMPLOYEE, UserCategory.HR].includes(req.user.category) 
-      ) {
-        throw new ForbiddenError({});
+      if (!isAuthorizedUser(userData)) {
+        logger.warn('User auth header value parsed but not a valid AuthorizedUser object');
+        throw new UnauthorizedError({});
       }
-    }
+      req.user = userData;
 
-    if (options?.category) {
-      if (
-        !req.user.category || !options.category.includes(req.user.category) 
-      ) {
-        throw new ForbiddenError({});
+      if (options?.isEmployee) {
+        if (
+          !req.user.employeeId || 
+          ![UserCategory.EMPLOYEE, UserCategory.HR].includes(req.user.category) 
+        ) {
+          throw new ForbiddenError({});
+        }
       }
-    }
 
-    authenticateRequest(req);
-    next();
-  };
+      if (options?.category) {
+        if (
+          !req.user.category || !options.category.includes(req.user.category) 
+        ) {
+          throw new ForbiddenError({});
+        }
+      }
+
+      authenticateRequest(req);
+      next();
+    },
+    guard.check(permissions),
+  ];
 }
 
 // export function authenticateUserAsync(
@@ -110,9 +120,11 @@ export function authenticateUser(
 //   };
 // }
 
-export function authenticatePlatformUser(): RequestHandler[] {
+export function authenticatePlatformUser(
+  options?: { permissions?: string | string[] | string[][] }
+): RequestHandler[] {
   return [
-    authenticateUser(),
+    ...authenticateUser(),
     (req: Request, _res: Response, next: NextFunction) => {
       if (!req.user) {
         throw new UnauthorizedError({});
@@ -122,6 +134,7 @@ export function authenticatePlatformUser(): RequestHandler[] {
 
       next();
     },
+    guard.check(options?.permissions || [])
   ];
 }
 
