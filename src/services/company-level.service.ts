@@ -116,3 +116,23 @@ export async function validateCompanyLevels(
     });
   }
 }
+
+export async function deleteCompanyLevel(id: number): Promise<void> {
+  const companyLevel = await repository.findOne({ id });
+  if (!companyLevel) {
+    logger.warn('CompanyLevel[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.COMPANY_LEVEL_NOT_FOUND,
+      message: 'Company level to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting CompanyLevel[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('CompanyLevel[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting CompanyLevel[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

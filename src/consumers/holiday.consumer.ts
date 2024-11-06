@@ -31,4 +31,17 @@ export default class HolidayConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: HolidayEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle Holiday deleted', { data });
+    const { id } = data;
+    try {
+      await holidayService.deleteHoliday(id);
+      logger.info('Holiday[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete Holiday[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

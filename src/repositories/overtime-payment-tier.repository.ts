@@ -55,7 +55,7 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteOvertimePaymentTier(where: Prisma.OvertimePaymentTierWhereUniqueInput) {
+export async function deleteOne(where: Prisma.OvertimePaymentTierWhereUniqueInput) {
   try {
     return await prisma.overtimePaymentTier.delete({ where });
   } catch (err) {

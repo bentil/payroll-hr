@@ -51,3 +51,23 @@ export async function getCurrency(id: number): Promise<Currency> {
   logger.info('Currency[%s] details retrieved!', id);
   return currency;
 }
+
+export async function deleteCurrency(id: number): Promise<void> {
+  const currency = await repository.findOne({ id });
+  if (!currency) {
+    logger.warn('Currency[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.CURRENCY_NOT_FOUND,
+      message: 'Currency to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting Currency[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('Currency[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting Currency[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

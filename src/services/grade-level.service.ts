@@ -113,3 +113,23 @@ export async function validateGradeLevels(
     });
   }
 }
+
+export async function deleteGradeLevel(id: number): Promise<void> {
+  const gradeLevel = await repository.findOne({ id });
+  if (!gradeLevel) {
+    logger.warn('GradeLevel[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.GRADE_LEVEL_NOT_FOUND,
+      message: 'Grade level to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting GradeLevel[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('GradeLevel[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting GradeLevel[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

@@ -3,8 +3,9 @@ import { HolidayEvent } from '../domain/events/holiday.event';
 import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/holiday.repository';
 import { CountQueryObject } from '../domain/dto/holiday.dto';
-import { ServerError } from '../errors/http-errors';
+import { NotFoundError, ServerError } from '../errors/http-errors';
 import { calculateDaysBetweenDates } from '../utils/helpers';
+import { errors } from '../utils/constants';
 
 const logger = rootLogger.child({ context: 'HolidayService' });
 
@@ -82,4 +83,24 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
   }
 
   return nonWorkingDays;
+}
+
+export async function deleteHoliday(id: number): Promise<void> {
+  const holiday = await repository.findOne({ id });
+  if (!holiday) {
+    logger.warn('Holiday[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.HOLIDAY_NOT_FOUND,
+      message: 'Holiday to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting Holiday[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('Holiday[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting Holiday[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
 }
