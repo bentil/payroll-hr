@@ -31,4 +31,17 @@ export default class CompanyLevelConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: CompanyLevelEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle CompanyLevel deleted', { data });
+    const { id } = data;
+    try {
+      await companyLevelService.deleteCompanyLevel(id);
+      logger.info('CompanyLevel[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete CompanyLevel[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

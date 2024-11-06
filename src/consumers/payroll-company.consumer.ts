@@ -34,4 +34,17 @@ export default class PayrollCompanyConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: PayrollCompanyModifiedEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle PayrollCompany deleted', { data });
+    const { id } = data;
+    try {
+      await payrollCompService.deletePayrollCompany(id);
+      logger.info('PayrollCompany[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete PayrollCompany[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

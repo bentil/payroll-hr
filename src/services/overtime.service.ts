@@ -68,7 +68,7 @@ export async function deleteOvertime(id: number): Promise<void> {
 
   logger.debug('Deleting Overtime[%s] from database...', id);
   try {
-    await repository.deleteOvertime({ id });
+    await repository.deleteOne({ id });
     logger.info('Overtime[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting Overtime[%] failed', id);

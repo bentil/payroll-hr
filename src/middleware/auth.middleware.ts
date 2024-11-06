@@ -26,7 +26,7 @@ export function authenticateUser(
 ): RequestHandler[] {
   //add a checker for employeeId in authUser and throw forbidden error if not employees
   const { optional = false, permissions = [] } = options || {};
-  return [
+  const handlers: RequestHandler[] = [
     (req: Request, _res: Response, next: NextFunction) => {
       const data = req.headers['user-metadata'];
       if (!data) {
@@ -71,8 +71,11 @@ export function authenticateUser(
       authenticateRequest(req);
       next();
     },
-    guard.check(permissions),
   ];
+
+  if (!optional) handlers.push(guard.check(permissions));
+
+  return handlers;
 }
 
 // export function authenticateUserAsync(

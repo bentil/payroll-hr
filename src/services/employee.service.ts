@@ -178,3 +178,23 @@ export async function validateEmployee(
   logger.info('Employee[%s] details retrieved!', id);
   return employee;
 }
+
+export async function deleteEmployee(id: number): Promise<void> {
+  const employee = await repository.findOne({ id });
+  if (!employee) {
+    logger.warn('Employee[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_NOT_FOUND,
+      message: 'Employee to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting Employee[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('Employee[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting Employee[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

@@ -31,4 +31,17 @@ export default class CompanyCurrencyConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: CompanyCurrencyEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle CompanyCurrency deleted', { data });
+    const { id } = data;
+    try {
+      await companyCurrencyService.deleteCompanyCurrency(id);
+      logger.info('CompanyCurrency[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete CompanyCurrency[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

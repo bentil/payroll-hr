@@ -1,6 +1,7 @@
 import { CompanyCurrency, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { CompanyCurrencyEvent } from '../domain/events/company-currency.event';
+import { RecordInUse } from '../errors/http-errors';
 
 export async function createOrUpdate(
   { 
@@ -29,4 +30,22 @@ export async function findOne(
     where: whereUniqueInput,
     include
   });
+}
+
+export async function deleteOne(
+  where: Prisma.CompanyCurrencyWhereUniqueInput
+): Promise<CompanyCurrency> {
+  try {
+    return await prisma.companyCurrency.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Company currency is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }

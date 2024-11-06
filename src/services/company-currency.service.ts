@@ -60,3 +60,23 @@ export async function getCompanyCurrency(
   logger.info('CompanyCurrency[%s] details retrieved!', id);
   return companyCurrency;
 }
+
+export async function deleteCompanyCurrency(id: number): Promise<void> {
+  const companyCurrency = await repository.findOne({ id });
+  if (!companyCurrency) {
+    logger.warn('CompanyCurrency[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.COMPANY_CURRENCY_NOT_FOUND,
+      message: 'Company currency to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting CompanyCurrency[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('CompanyCurrency[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting CompanyCurrency[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}

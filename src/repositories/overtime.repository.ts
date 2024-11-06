@@ -47,7 +47,7 @@ export async function find(params: {
   return getListWithPagination(data, { skip, take, totalCount });
 }
 
-export async function deleteOvertime(where: Prisma.OvertimeWhereUniqueInput) {
+export async function deleteOne(where: Prisma.OvertimeWhereUniqueInput) {
   try {
     return await prisma.overtime.delete({ where });
   } catch (err) {
