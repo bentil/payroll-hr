@@ -66,7 +66,7 @@ export async function deleteOvertimePaymentTier(id: number): Promise<void> {
 
   logger.debug('Deleting OvertimePaymentTier[%s] from database...', id);
   try {
-    await repository.deleteOvertimePaymentTier({ id });
+    await repository.deleteOne({ id });
     logger.info('OvertimePaymentTier[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting OvertimePaymentTier[%] failed', id);

@@ -31,4 +31,17 @@ export default class EmployeeConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: EmployeeEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle Employee deleted', { data });
+    const { id } = data;
+    try {
+      await employeeService.deleteEmployee(id);
+      logger.info('Employee[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete Employee[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

@@ -31,4 +31,17 @@ export default class JobTitleConsumer {
       throw err;
     }
   }
+
+  public static async handleDeleted(data: JobTitleEvent): Promise<void> {
+    const logger = _logger.child({ method: 'handleDeleted' });
+    logger.debug('Received event to handle JobTitlle deleted', { data });
+    const { id } = data;
+    try {
+      await jobTitleService.deleteJobTitle(id);
+      logger.info('JobTitle[%s] deleted successfully!', id);
+    } catch (err) {
+      logger.error('Failed to delete JobTitle[%s]', data.id, { error: err });
+      throw err;
+    }
+  }
 }

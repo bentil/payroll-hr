@@ -1,6 +1,6 @@
 import { CompanyLevel, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { AlreadyExistsError } from '../errors/http-errors';
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
 
@@ -76,4 +76,22 @@ export async function update(params: {
     where,
     data
   });
+}
+
+export async function deleteOne(
+  where: Prisma.CompanyLevelWhereUniqueInput
+): Promise<CompanyLevel> {
+  try {
+    return await prisma.companyLevel.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Company level is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }

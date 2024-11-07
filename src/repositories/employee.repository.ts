@@ -1,7 +1,7 @@
 import { Prisma, Employee, GradeLevel, PayrollCompany } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { EmployeeEvent } from '../domain/events/employee.event';
-import { AlreadyExistsError } from '../errors/http-errors';
+import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
 
@@ -106,4 +106,22 @@ export async function update(params: {
     where,
     data
   });
+}
+
+export async function deleteOne(
+  where: Prisma.EmployeeWhereUniqueInput
+): Promise<Employee> {
+  try {
+    return await prisma.employee.delete({ where });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2003') {
+        throw new RecordInUse({
+          message: 'Employee is in use',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
 }

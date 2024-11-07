@@ -124,3 +124,23 @@ export function checkIfNegativeRateAllowedForCompany(options: {
     });
   }
 }
+
+export async function deletePayrollCompany(id: number): Promise<void> {
+  const payrollCompany = await repository.findOne({ id });
+  if (!payrollCompany) {
+    logger.warn('PayrollCompany[%s] to delete does not exist', id);
+    throw new NotFoundError({
+      name: errors.PAYROLL_COMPANY_NOT_FOUND,
+      message: 'Payroll company to delete does not exisit'
+    });
+  }
+
+  logger.debug('Deleting PayrollCompany[%s] from database...', id);
+  try {
+    await repository.deleteOne({ id });
+    logger.info('PayrollCompany[%s] successfully deleted', id);
+  } catch (err) {
+    logger.error('Deleting PayrollCompany[%] failed', id);
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+}
