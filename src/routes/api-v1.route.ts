@@ -1,18 +1,52 @@
 import { Router } from 'express';
-import { validateRequestBody, validateRequestQuery } from '../middleware/request-validations';
-import { 
-  CREATE_GRIEVANCE_TYPE_SCHEMA, 
-  QUERY_GRIEVANCE_TYPE_SCHEMA, 
-  SEARCH_GRIEVANCE_TYPE_SCHEMA,
-  UPDATE_GRIEVANCE_TYPE_SCHEMA
-} from '../domain/request-schema/grievance-type.schema';
-import { 
-  CREATE_GRIEVANCE_REPORTED_EMPLOYEE_SCHEMA,
-  CREATE_GRIEVANCE_REPORT_SCHEMA, 
-  QUERY_GRIEVANCE_REPORT_SCHEMA, 
-  SEARCH_GRIEVANCE_REPORT_SCHEMA,
-  UPDATE_GRIEVANCE_REPORT_SCHEMA
-} from '../domain/request-schema/grievance-report.schema';
+import * as announcementV1Controller from '../controllers/announcement-v1.api.controller';
+import * as compDocTypeV1Controller from '../controllers/company-document-type-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as companyLevelLeavePackageV1Controller from '../controllers/company-level-leave-package-v1.api';
+import * as treeNodeV1Controller from '../controllers/company-tree-node-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary-action-type-v1.api.controller';
+import * as employeeApproverV1Controller from '../controllers/employee-approver-v1.api.controller';
+import * as employeeDocumentV1Controller from '../controllers/employee-document-v1.api.controller';
+import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-entry-v1.api.controller';
+import * as employeeWorkTimeV1Controller from '../controllers/employee-work-time-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
+import * as grievanceReportV1Controller from '../controllers/grievance-report-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as reportedEmployeesV1Controller from '../controllers/grievance-reported-employee-v1.api.controller';
+import * as grievanceTypeV1Controller from '../controllers/grievance-type-v1.api.controller';
+import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
+import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
+import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
+import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
+import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
+import {
+  CREATE_ANNOUNCEMENT_SCHEMA, 
+  QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
+  QUERY_ANNOUNCEMENT_SCHEMA, 
+  SEARCH_ANNOUNCEMENT_SCHEMA, 
+  UPDATE_ANNOUNCEMENT_SCHEMA,
+  UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
+} from '../domain/request-schema/announcement.schema';
+import {
+  CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA,
+  UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
+} from '../domain/request-schema/company-document-type.schema';
+import {
+  CREATE_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA,
+  QUERY_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA
+} from '../domain/request-schema/company-level-leave-package.schema';
+import {
+  CHECK_IF_SUPERVISEE_SCHEMA,
+  CREATE_COMPANY_TREE_NODE_SCHEMA,
+  DELETE_COMPANY_NODE_SCHEMA,
+  UPDATE_COMPANY_TREE_NODE_SCHEMA,
+} from '../domain/request-schema/company-tree-node.schema';
 import {
   CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA,
   QUERY_DISCIPLINARY_ACTION_TYPE_SCHEMA,
@@ -26,23 +60,45 @@ import {
   SEARCH_DISCIPLINARY_ACTION_SCHEMA
 } from '../domain/request-schema/disciplinary-action.schema';
 import {
-  CREATE_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA,
-  QUERY_COMPANY_LEVEL_LEAVE_PACKAGE_SCHEMA
-} from '../domain/request-schema/company-level-leave-package.schema';
+  CREATE_EMPLOYEE_APPROVER_SCHEMA, 
+  GET_ONE_EMPLOYEE_APPROVER_SCHEMA, 
+  QUERY_EMPLOYEE_APPROVER_SCHEMA, 
+  UPDATE_EMPLOYEE_APPROVER_SCHEMA 
+} from '../domain/request-schema/employee-approver.schema';
+import {
+  CREATE_EMPLOYEE_DOCUMENT_SCHEMA,
+  QUERY_EMPLOYEE_DOCUMENT_SCHEMA,
+  UPDATE_EMPLOYEE_DOCUMENT_SCHEMA,
+} from '../domain/request-schema/employee-document.schema';
+import {
+  CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA,
+  QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA, 
+  UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA 
+} from '../domain/request-schema/employee-overtime-entry.schema';
+import {
+  CREATE_EMPLOYEE_WORK_TIME_SCHEMA, 
+  QUERY_EMPLOYEE_WORK_TIME_SCHEMA, 
+  UPDATE_EMPLOYEE_WORK_TIME_SCHEMA
+} from '../domain/request-schema/employee-work-time.schema';
+import {
+  CREATE_GRIEVANCE_REPORTED_EMPLOYEE_SCHEMA,
+  CREATE_GRIEVANCE_REPORT_SCHEMA, 
+  QUERY_GRIEVANCE_REPORT_SCHEMA, 
+  SEARCH_GRIEVANCE_REPORT_SCHEMA,
+  UPDATE_GRIEVANCE_REPORT_SCHEMA
+} from '../domain/request-schema/grievance-report.schema';
+import {
+  CREATE_GRIEVANCE_TYPE_SCHEMA, 
+  QUERY_GRIEVANCE_TYPE_SCHEMA, 
+  SEARCH_GRIEVANCE_TYPE_SCHEMA,
+  UPDATE_GRIEVANCE_TYPE_SCHEMA
+} from '../domain/request-schema/grievance-type.schema';
 import {
   CREATE_LEAVE_PACKAGE_SCHEMA,
   UPDATE_LEAVE_PACKAGE_SCHEMA,
   QUERY_LEAVE_PACKAGE_SCHEMA,
   SEARCH_LEAVE_PACKAGE_SCHEMA
 } from '../domain/request-schema/leave-package.schema';
-import {
-  CREATE_LEAVE_TYPE_SCHEMA,
-  UPDATE_LEAVE_TYPE_SCHEMA,
-  QUERY_LEAVE_TYPE_SCHEMA,
-  SEARCH_LEAVE_TYPE_SCHEMA,
-  INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA,
-  QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA
-} from '../domain/request-schema/leave-type.schema';
 import {
   CREATE_LEAVE_PLAN_SCHEMA,
   UPDATE_LEAVE_PLAN_SCHEMA,
@@ -56,41 +112,14 @@ import {
   ADJUST_DAYS_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
-  CHECK_IF_SUPERVISEE_SCHEMA,
-  CREATE_COMPANY_TREE_NODE_SCHEMA,
-  DELETE_COMPANY_NODE_SCHEMA,
-  UPDATE_COMPANY_TREE_NODE_SCHEMA,
-} from '../domain/request-schema/company-tree-node.schema';
-import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
-import * as leavePackageV1Controller from '../controllers/leave-package-v1.api';
-// eslint-disable-next-line max-len
-import * as companyLevelLeavePackageV1Controller from '../controllers/company-level-leave-package-v1.api';
-import * as grievanceTypeV1Controller from '../controllers/grievance-type-v1.api.controller';
-import * as grievanceReportV1Controller from '../controllers/grievance-report-v1.api.controller';
-// eslint-disable-next-line max-len
-import * as reportedEmployeesV1Controller from '../controllers/grievance-reported-employee-v1.api.controller';
-// eslint-disable-next-line max-len
-import * as disciplinaryActionTypeV1Controller from '../controllers/disciplinary-action-type-v1.api.controller';
-// eslint-disable-next-line max-len
-import * as disciplinaryActionV1Controller from '../controllers/disciplinary-action-v1.api.controller';
-import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.controller';
-import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
-import * as summaryV1Controller from '../controllers/employee-leave-type-summary-v1.api.controller';
-import * as treeNodeV1Controller from '../controllers/company-tree-node-v1.api.controller';
-import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
-import * as employeeWorkTimeV1Controller from '../controllers/employee-work-time-v1.api.controller';
-// eslint-disable-next-line max-len
-import * as empOvertimeEntryV1Controller from '../controllers/employee-overtime-entry-v1.api.controller';
-import * as compDocTypeV1Controller from '../controllers/company-document-type-v1.api.controller';
-import * as employeeDocumentV1Controller from '../controllers/employee-document-v1.api.controller';
-import * as announcementV1Controller from '../controllers/announcement-v1.api.controller';
-import * as employeeApproverV1Controller from '../controllers/employee-approver-v1.api.controller';
-import { 
-  authenticateClient,
-  authenticatePlatformUser, 
-  authenticateUser 
-} from '../middleware/auth.middleware';
-import { 
+  CREATE_LEAVE_TYPE_SCHEMA,
+  UPDATE_LEAVE_TYPE_SCHEMA,
+  QUERY_LEAVE_TYPE_SCHEMA,
+  SEARCH_LEAVE_TYPE_SCHEMA,
+  INCLUDE_COMPANY_LEVELS_QUERY_SCHEMA,
+  QUERY_APPLICABLE_LEAVE_TYPE_SCHEMA
+} from '../domain/request-schema/leave-type.schema';
+import {
   COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA,
   CREATE_REIMBURSEMENT_REQUEST_SCHEMA, 
   CREATE_REIMBURSEMENT_RESPONSE_SCHEMA, 
@@ -99,42 +128,16 @@ import {
   SEARCH_REIMBURSEMENT_REQUEST_SCHEMA, 
   UPDATE_REIMBURSEMENT_REQUEST_SCHEMA 
 } from '../domain/request-schema/reimbursement-request.schema';
-import { 
-  CREATE_EMPLOYEE_WORK_TIME_SCHEMA, 
-  QUERY_EMPLOYEE_WORK_TIME_SCHEMA, 
-  UPDATE_EMPLOYEE_WORK_TIME_SCHEMA
-} from '../domain/request-schema/employee-work-time.schema';
-import { 
-  CREATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA,
-  QUERY_EMPLOYEE_OVERTIME_ENTRY_SCHEMA, 
-  UPDATE_EMPLOYEE_OVERTIME_ENTRY_SCHEMA 
-} from '../domain/request-schema/employee-overtime-entry.schema';
-import {
-  CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
-  QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA,
-  SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA,
-  UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA,
-} from '../domain/request-schema/company-document-type.schema';
-import {
-  CREATE_EMPLOYEE_DOCUMENT_SCHEMA,
-  QUERY_EMPLOYEE_DOCUMENT_SCHEMA,
-  UPDATE_EMPLOYEE_DOCUMENT_SCHEMA,
-} from '../domain/request-schema/employee-document.schema';
 import { UserCategory } from '../domain/user.domain';
-import { 
-  CREATE_ANNOUNCEMENT_SCHEMA, 
-  QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
-  QUERY_ANNOUNCEMENT_SCHEMA, 
-  SEARCH_ANNOUNCEMENT_SCHEMA, 
-  UPDATE_ANNOUNCEMENT_SCHEMA,
-  UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA
-} from '../domain/request-schema/announcement.schema';
-import { 
-  CREATE_EMPLOYEE_APPROVER_SCHEMA, 
-  GET_ONE_EMPLOYEE_APPROVER_SCHEMA, 
-  QUERY_EMPLOYEE_APPROVER_SCHEMA, 
-  UPDATE_EMPLOYEE_APPROVER_SCHEMA 
-} from '../domain/request-schema/employee-approver.schema';
+import {
+  authenticateClient,
+  authenticatePlatformUser, 
+  authenticateUser 
+} from '../middleware/auth.middleware';
+import {
+  validateRequestBody,
+  validateRequestQuery
+} from '../middleware/request-validation.middleware';
 
 
 const router = Router();
@@ -397,14 +400,14 @@ router.delete(
 
 router.post(
   '/leave-types',
-  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
+  authenticatePlatformUser({ permissions: 'platform_configs:statutory:write' }),
   validateRequestBody(CREATE_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.addLeaveType
 );
 
 router.patch(
   '/leave-types/:id',
-  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
+  authenticatePlatformUser({ permissions: 'platform_configs:statutory:write' }),
   validateRequestBody(UPDATE_LEAVE_TYPE_SCHEMA),
   leaveTypeV1Controller.updateLeaveType
 );
@@ -437,7 +440,7 @@ router.get(
 
 router.delete(
   '/leave-types/:id',
-  authenticatePlatformUser({ permissions: 'company_configs:leave:write' }),
+  authenticatePlatformUser({ permissions: 'platform_configs:statutory:write' }),
   leaveTypeV1Controller.deleteLeaveType
 );
 

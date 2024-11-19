@@ -24,7 +24,6 @@ export function validateRequestBody(schema: ObjectSchema) {
     req.body = value;
     next();
   };
-
 }
 
 export function validateRequestQuery(schema: ObjectSchema) {
