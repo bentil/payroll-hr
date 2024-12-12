@@ -16,6 +16,7 @@ export class ChildNode {
 export class UpdateCompanyTreeNodeDto {
   parentId?: number;
   employeeId?: number;
+  jobTitleId?: number;
 }
 
 export enum CompanyTreeNodeOrderBy {
