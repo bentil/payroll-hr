@@ -22,6 +22,12 @@ export async function findOne(
   });
 }
 
+export async function findFirst(
+  where: Prisma.JobTitleWhereInput,
+): Promise<JobTitle | null> {
+  return prisma.jobTitle.findFirst({ where });
+}
+
 export async function deleteOne(
   where: Prisma.JobTitleWhereUniqueInput
 ): Promise<JobTitle> {

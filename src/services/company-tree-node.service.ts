@@ -22,7 +22,7 @@ import { errors } from '../utils/constants';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { validateEmployee } from './employee.service';
-import { getJobTitle } from './job-title.service';
+import { validateJobTitle } from './job-title.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -86,7 +86,7 @@ export async function addCompanyTreeNode(
       employeeId
         ? validateEmployee(employeeId, authUser, { companyId })
         : Promise.resolve(undefined),
-      getJobTitle(jobTitleId)
+      validateJobTitle(jobTitleId, { companyId })
     ]);
     if (parentId && !parent) {
       throw new NotFoundError({
@@ -121,7 +121,7 @@ export async function addCompanyTreeNode(
         child.employeeId
           ? validateEmployee(child.employeeId, authUser, { companyId })
           : Promise.resolve(undefined),
-        getJobTitle(child.jobTitleId),
+        validateJobTitle(child.jobTitleId, { companyId }),
         child.employeeId
           ? repository.findFirst({ employeeId: child.employeeId, companyId })
           : Promise.resolve(null),
@@ -308,7 +308,7 @@ export async function updateCompanyTreeNode(
         ? validateEmployee(employeeId, authUser, { companyId })
         : Promise.resolve(undefined),
       jobTitleId
-        ? getJobTitle(jobTitleId)
+        ? validateJobTitle(jobTitleId, { companyId })
         : Promise.resolve(undefined)
     ]);
     if (existingNode) {
