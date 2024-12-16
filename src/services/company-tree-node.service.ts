@@ -355,6 +355,7 @@ export async function updateCompanyTreeNode(
     data: {
       employee: employeeId ? { connect: { id: employeeId } } : undefined,
       parent: parentId ? { connect: { id: parentId } } : undefined,
+      jobTitle: jobTitleId ? { connect: { id: jobTitleId } } : undefined,
     },
     include: { employee: true, jobTitle: true }
   });
