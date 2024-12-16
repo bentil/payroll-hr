@@ -73,3 +73,28 @@ export async function deleteJobTitle(id: number): Promise<void> {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 }
+
+export async function validateJobTitle(
+  id: number,
+  options: { companyId: number }
+): Promise<JobTitle> {
+  const { companyId } = options;
+  logger.debug('Getting details for JobTitle[%s]', id);
+  let jobTitle: JobTitle | null;
+
+  try {
+    jobTitle = await repository.findFirst({ id, companyId });
+  } catch (err) {
+    logger.warn('Getting JobTitle[%s] failed', id);
+    throw new ServerError({ message: (err as Error).message });
+  }
+
+  if (!jobTitle) {
+    throw new NotFoundError({
+      name: errors.JOB_TITLE_NOT_FOUND,
+      message: 'Job title does not exist'
+    });
+  }
+
+  return jobTitle;
+}
