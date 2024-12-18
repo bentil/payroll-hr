@@ -22,7 +22,7 @@ import { errors } from '../utils/constants';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { validateEmployee } from './employee.service';
-import { getJobTitle } from './job-title.service';
+import { validateJobTitle } from './job-title.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -86,7 +86,7 @@ export async function addCompanyTreeNode(
       employeeId
         ? validateEmployee(employeeId, authUser, { companyId })
         : Promise.resolve(undefined),
-      getJobTitle(jobTitleId)
+      validateJobTitle(jobTitleId, { companyId })
     ]);
     if (parentId && !parent) {
       throw new NotFoundError({
@@ -121,7 +121,7 @@ export async function addCompanyTreeNode(
         child.employeeId
           ? validateEmployee(child.employeeId, authUser, { companyId })
           : Promise.resolve(undefined),
-        getJobTitle(child.jobTitleId),
+        validateJobTitle(child.jobTitleId, { companyId }),
         child.employeeId
           ? repository.findFirst({ employeeId: child.employeeId, companyId })
           : Promise.resolve(null),
@@ -271,7 +271,7 @@ export async function updateCompanyTreeNode(
   updateData: UpdateCompanyTreeNodeDto,
   authUser: AuthorizedUser,
 ): Promise<CompanyTreeNodeDto> {
-  const { parentId, employeeId } = updateData;
+  const { parentId, employeeId, jobTitleId } = updateData;
   logger.debug('Finding CompanyTreeNode[%s] to update', nodeId);
 
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
@@ -297,7 +297,7 @@ export async function updateCompanyTreeNode(
     parentId, employeeId
   );
   try {
-    const [existingNode, parent, _employee] = await Promise.all([
+    const [existingNode, parent, _employee, jobTitle] = await Promise.all([
       employeeId
         ? repository.findFirst({ employeeId, companyId })
         : Promise.resolve(null),
@@ -307,6 +307,9 @@ export async function updateCompanyTreeNode(
       employeeId
         ? validateEmployee(employeeId, authUser, { companyId })
         : Promise.resolve(undefined),
+      jobTitleId
+        ? validateJobTitle(jobTitleId, { companyId })
+        : Promise.resolve(undefined)
     ]);
     if (existingNode) {
       logger.warn(
@@ -322,6 +325,14 @@ export async function updateCompanyTreeNode(
         message: 'Parent node does not exist'
       });
     }
+
+    if (jobTitleId && !jobTitle) {
+      throw new NotFoundError({
+        name: errors.JOB_TITLE_NOT_FOUND,
+        message: 'Job title does not exist'
+      });
+    }
+    
   } catch (err) {
     logger.warn(
       'Validating ParentNode[%s], Employee[%s] or unlinked node',
@@ -344,6 +355,7 @@ export async function updateCompanyTreeNode(
     data: {
       employee: employeeId ? { connect: { id: employeeId } } : undefined,
       parent: parentId ? { connect: { id: parentId } } : undefined,
+      jobTitle: jobTitleId ? { connect: { id: jobTitleId } } : undefined,
     },
     include: { employee: true, jobTitle: true }
   });

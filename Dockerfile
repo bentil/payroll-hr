@@ -1,6 +1,8 @@
 ### SRC BUILD STAGE
 FROM node:18-alpine AS src_builder
 
+RUN apk update && apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy early on to prevent reinstalling dependencies when code (and not dependency config) changes
@@ -20,6 +22,8 @@ RUN npm run db:generate \
 
 ### FINAL STAGE
 FROM node:18-alpine
+
+RUN apk update && apk add --no-cache openssl
 
 ENV NODE_ENV=production
 WORKDIR /app
