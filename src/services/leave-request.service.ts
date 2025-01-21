@@ -54,15 +54,26 @@ export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
   authUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
-  const { employeeId, leaveTypeId } = payload;
-  const { employeeId: reqEmployeeId } = authUser;
-  if (reqEmployeeId !== employeeId) {
+  const { employeeId, leaveTypeId, startDate } = payload;
+  const { employeeId: reqEmployeeId, category } = authUser;
+  if ((reqEmployeeId !== employeeId) && (category !== UserCategory.HR)) {
     logger.warn(
-      'LeaveRequest was not created by Employee[%s]. Create rejected',
+      'LeaveRequest was not created by Employee[%s] or an HR employee. Create rejected',
       employeeId
     );
     throw new ForbiddenError({
-      message: 'You are not allowed to create for another employee'
+      message: 'You are not allowed to create for another employee if not HR'
+    });
+  }
+  const currentDate = new Date().getTime();
+  const leaveStartDate = new Date(startDate).getTime();
+  if (leaveStartDate < currentDate && category !== UserCategory.HR) {
+    logger.warn(
+      'LeaveRequest can not start before today. Create rejected',
+      employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to create a leave with this start date'
     });
   }
   let validateData, leaveSummary, employee, leaveType: LeaveType;
