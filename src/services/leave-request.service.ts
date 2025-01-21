@@ -20,6 +20,7 @@ import {
   FailedDependencyError,
   ForbiddenError,
   HttpError,
+  InputError,
   InvalidStateError,
   NotFoundError,
   RequirementNotMetError,
@@ -62,7 +63,7 @@ export async function addLeaveRequest(
       employeeId
     );
     throw new ForbiddenError({
-      message: 'You are not allowed to create for another employee if not HR'
+      message: 'You are not allowed to create leave request for another employee'
     });
   }
   const currentDate = new Date().getTime();
@@ -72,8 +73,8 @@ export async function addLeaveRequest(
       'LeaveRequest can not start before today. Create rejected',
       employeeId
     );
-    throw new ForbiddenError({
-      message: 'You are not allowed to create a leave with this start date'
+    throw new InputError({
+      message: 'You can not create a leave with a start date in the past'
     });
   }
   let validateData, leaveSummary, employee, leaveType: LeaveType;
