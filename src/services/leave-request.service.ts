@@ -74,7 +74,7 @@ export async function addLeaveRequest(
       employeeId
     );
     throw new InputError({
-      message: 'You can not create a leave with a start date in the past'
+      message: 'You can not create a leave request with a start date in the past'
     });
   }
   let validateData, leaveSummary, employee, leaveType: LeaveType;
