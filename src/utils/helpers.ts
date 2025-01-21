@@ -341,3 +341,79 @@ export async function applyApprovalScopeToQuery(
 
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
+
+export async function applyPrivacyScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>,
+  options?: { extendAdminCategories?: UserCategory[]; },
+): Promise<ScopedQuery> {
+  const { employeeId, category, companyIds } = user;
+  const { extendAdminCategories } = options || {};
+  const {
+    reportingEmployeeId,
+    companyId: qCompanyId,
+    queryMode,
+    ...query
+  } = queryParams;
+
+  let superviseeIds: number[] = [];
+  if (!extendAdminCategories?.includes(category) && !employeeId) {
+    logger.warn('employeeId not present in AuthUser object');
+    throw new UnauthorizedError({});
+  } else if (employeeId) {
+    try {
+      const supervisees = await getSupervisees(employeeId);
+      superviseeIds = supervisees.map(e => e.id);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+    }
+    
+  }
+
+  const hasAdminCategory = (
+    category === UserCategory.HR || extendAdminCategories?.includes(category)
+  );
+  let authorized = false;
+  const scopeQuery = {
+    employeeId,
+    employee: { companyId: qCompanyId ? qCompanyId : { in: companyIds } },
+    private: true,
+  } as { [key: string]: any, employeeId?: { in: number[] } | number };
+
+  if (reportingEmployeeId) {
+    if (
+      hasAdminCategory
+      || employeeId === reportingEmployeeId
+      || superviseeIds.includes(reportingEmployeeId)
+    ) {
+      scopeQuery.employeeId = reportingEmployeeId;
+      authorized = true;
+    }
+  } else {
+    authorized = true;
+    switch (queryMode) {
+      case RequestQueryMode.SUPERVISEES:
+        scopeQuery.employeeId = { in: superviseeIds };
+        break;
+      case RequestQueryMode.ALL:
+        if (hasAdminCategory) {
+          scopeQuery.employeeId = undefined;
+        } else {
+          scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+        }
+        break;
+      case RequestQueryMode.SELF:
+      default:
+        scopeQuery.employeeId = employeeId!;
+        break;
+    }
+  }
+
+  if (!authorized) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+
+  return { scopedQuery: { ...query, ...scopeQuery } };
+}

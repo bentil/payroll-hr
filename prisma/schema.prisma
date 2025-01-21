@@ -140,6 +140,7 @@ model GrievanceReport {
   reportingEmployeeId Int       @map("reporting_employee_id") @db.UnsignedInt()
   reportDate          DateTime  @map("report_date")
   note                String    @db.Text()
+  private           Boolean    @default(false)
   createdAt           DateTime  @default(now()) @map("created_at")
   modifiedAt          DateTime? @updatedAt @map("modified_at")
 
@@ -194,6 +195,8 @@ model DisciplinaryAction {
   grievanceReportId Int?      @map("grievance_report_id") @db.UnsignedInt()
   notes             String    @db.Text()
   actionDate        DateTime  @map("action_date")
+  actionEndDate     DateTime?  @map("action_end_date")
+  private           Boolean    @default(false)
   createdAt         DateTime  @default(now()) @map("created_at")
   modifiedAt        DateTime? @updatedAt @map("modified_at")
 

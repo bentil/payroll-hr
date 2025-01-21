@@ -27,7 +27,7 @@ export async function getGrievanceReports(
 ): Promise<void> {
   try {
     const response = await controller.getGrievanceReports(
-      req.query as unknown as QueryGrievanceReportDto,
+      req.query as unknown as QueryGrievanceReportDto, req
     );
     res.json(response);
   } catch (err) {

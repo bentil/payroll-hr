@@ -124,7 +124,8 @@ export async function addGrievanceReport(
 }
 
 export async function getGrievanceReports(
-  query: QueryGrievanceReportDto
+  query: QueryGrievanceReportDto,
+  authorizedUser: AuthorizedUser,
 ): Promise<ListWithPagination<GrievanceReportDto>> {
   const {
     page,
@@ -137,9 +138,13 @@ export async function getGrievanceReports(
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
     reportedEmployeeId,
+    queryMode
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyPrivacyScopeToQuery(
+    authorizedUser, { reportingEmployeeId, companyId, queryMode }
+  );
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {
@@ -148,9 +153,8 @@ export async function getGrievanceReports(
       skip,
       take,
       where: { 
-        companyId, 
+        ...scopedQuery,
         reportDate, 
-        reportingEmployeeId, 
         grievanceTypeId, 
         grievanceReportedEmployees: {
           some: {

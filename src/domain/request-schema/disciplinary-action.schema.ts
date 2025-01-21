@@ -3,6 +3,7 @@ import config from '../../config';
 import { DisciplinaryActionOrderBy } from '../dto/disciplinary-action.dto';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -38,6 +39,10 @@ export const CREATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   actionDate: joi.date()
     .required()
     .format(['YYYY-MM-DD']),
+  actionEndDate: joi.date()
+    .optional()
+    .format(['YYYY-MM-DD']),
+  private: Joi.boolean().optional(),
 });
 ///change date format from / to -
 export const UPDATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
@@ -50,7 +55,8 @@ export const UPDATE_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   actionDate: joi.date()
     .optional()
     .format(['YYYY-MM-DD']),
-}).or('actionTypeId', 'grievanceReportId', 'notes', 'actionDate');
+  private: Joi.boolean().optional(),
+}).or('actionTypeId', 'grievanceReportId', 'notes', 'actionDate', 'private');
 
 export const QUERY_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
   companyId: Joi.number(),
@@ -61,6 +67,8 @@ export const QUERY_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
     .format('YYYY-MM-DD').utc().raw(),
   'actionDate.lte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
   page: Joi.number()
     .optional()
     .min(1)

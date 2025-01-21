@@ -3,6 +3,7 @@ import { GrievanceReportOrderBy } from '../dto/grievance-report.dto';
 import Joi from 'joi';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -35,7 +36,8 @@ export const CREATE_GRIEVANCE_REPORT_SCHEMA = Joi.object({
       'any.required': 'note field is required'
     }),
   reportedEmployeeId: Joi.array()
-    .optional()
+    .optional(),
+  private: Joi.boolean().optional(),
 });
 
 export const CREATE_GRIEVANCE_REPORTED_EMPLOYEE_SCHEMA = Joi.object({
@@ -51,9 +53,10 @@ export const UPDATE_GRIEVANCE_REPORT_SCHEMA = Joi.object({
     .less('now')
     .format(['YYYY-MM-DD']),
   note: Joi.string()
-    .optional()
+    .optional(),
+  private: Joi.boolean().optional(),
 }).or(
-  'grievanceTypeId', 'reportDate', 'note'
+  'grievanceTypeId', 'reportDate', 'note', 'private'
 );
 
 export const QUERY_GRIEVANCE_REPORT_SCHEMA = Joi.object({
@@ -65,6 +68,8 @@ export const QUERY_GRIEVANCE_REPORT_SCHEMA = Joi.object({
     .format('YYYY-MM-DD').utc().raw(),
   'createdAt.lte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
   page: Joi.number()
     .optional()
     .min(1)

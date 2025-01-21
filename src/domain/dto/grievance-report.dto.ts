@@ -5,6 +5,7 @@ import {
   PayrollCompany 
 } from '@prisma/client';
 import config from '../../config';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateGrievanceReportDto {
   companyId!: number;
@@ -14,12 +15,14 @@ export class CreateGrievanceReportDto {
   reportDate!: Date;
   note!: string;
   reportedEmployeeId?: number[];
+  private?: boolean;
 }
 
 export class UpdateGrievanceReportDto {
   grievanceTypeId?: number;
   reportDate?: Date;
   note?: string;
+  private?: boolean;
 }
 
 export interface GrievanceReportDto extends GrievanceReport {
@@ -37,6 +40,7 @@ export class QueryGrievanceReportDto {
   reportedEmployeeId?: number[];
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
+  queryMode?: RequestQueryMode;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_DESC;

@@ -54,10 +54,11 @@ export class GrievanceReportV1Controller {
    */
   @Get()
   public async getGrievanceReports(
-    @Queries() query: QueryGrievanceReportDto
+    @Queries() query: QueryGrievanceReportDto, 
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<GrievanceReport[]>> {
     this.logger.debug('Received request to get GrievanceReport(s) matching query', { query });
-    const { data, pagination } = await grievanceReportService.getGrievanceReports(query);
+    const { data, pagination } = await grievanceReportService.getGrievanceReports(query, req.user!);
     this.logger.info('Returning %d GrievanceReport(s) that matched the query', data.length);
     return { data, pagination };
   }

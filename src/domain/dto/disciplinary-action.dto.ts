@@ -6,6 +6,7 @@ import {
   PayrollCompany 
 } from '@prisma/client';
 import config from '../../config';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateDisciplinaryActionDto {
   companyId!: number;
@@ -15,6 +16,8 @@ export class CreateDisciplinaryActionDto {
   grievanceReportId?: number;
   notes!: string;
   actionDate!: Date;
+  actionEndDate?: Date;
+  private?: boolean;
 }
 
 export class UpdateDisciplinaryActionDto {
@@ -22,6 +25,7 @@ export class UpdateDisciplinaryActionDto {
   grievanceReportId?: number;
   notes?: string;
   actionDate?: Date;
+  private?: boolean;
 }
 
 export interface DisciplinaryActionDto extends DisciplinaryAction{
@@ -49,6 +53,7 @@ export class QueryDisciplinaryActionDto {
   grievanceReportId?: number;
   'actionDate.gte'?: string;
   'actionDate.lte'?: string;
+  queryMode?: RequestQueryMode;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: DisciplinaryActionOrderBy = DisciplinaryActionOrderBy.CREATED_AT_DESC;
