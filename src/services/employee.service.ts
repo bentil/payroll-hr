@@ -55,7 +55,8 @@ export async function createOrUpdateEmployee(
     reemployed: data.reemployed,
     resident: data.resident,
     unionMember: data.unionMember,
-    statusLastModifiedAt: data.statusLastModifiedAt
+    statusLastModifiedAt: data.statusLastModifiedAt,
+    pensioner: data.pensioner,
   });
   logger.info('Employee[%s] saved', data.id);
 
