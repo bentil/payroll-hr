@@ -25,7 +25,6 @@ export const CREATE_LEAVE_REQUEST_SCHEMA = Joi.object({
     }),
   startDate: joi.date()
     .required()
-    .greater(Date.now())
     .format(['YYYY-MM-DD']),
   returnDate: joi.date()
     .required()
