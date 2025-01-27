@@ -15,7 +15,7 @@ export async function addNewDisciplinaryAction(
   next: NextFunction
 ): Promise<void> {
   try {
-    const response = await controller.addDisciplinaryAction(req.body);
+    const response = await controller.addDisciplinaryAction(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);
@@ -58,7 +58,7 @@ export async function updateDisciplinaryAction(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.updateDisciplinaryAction(+id, req.body);
+    const response = await controller.updateDisciplinaryAction(+id, req.body, req);
     res.json(response);
   } catch (err) {
     next(err);

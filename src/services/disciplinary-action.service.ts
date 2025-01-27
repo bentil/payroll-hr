@@ -36,7 +36,8 @@ const events = {
 } as const;
 
 export async function addDisciplinaryAction(
-  creatData: CreateDisciplinaryActionDto
+  creatData: CreateDisciplinaryActionDto,
+  authorizedUser: AuthorizedUser
 ): Promise<DisciplinaryActionDto> {
   const { companyId, employeeId, grievanceReportId, actionTypeId } = creatData;
 
@@ -47,7 +48,7 @@ export async function addDisciplinaryAction(
       payrollCompanyService.getPayrollCompany(companyId),
       employeeService.getEmployee(employeeId),
       grievanceReportId
-        ? grievanceReportService.getGrievanceReport(grievanceReportId)
+        ? grievanceReportService.getGrievanceReport(grievanceReportId, authorizedUser)
         : undefined,
       actionTypeService.getDisciplinaryActionType(actionTypeId)
     ]);
@@ -222,7 +223,8 @@ export async function searchDisciplinaryActions(
 
 export async function updateDisciplinaryAction(
   id: number, 
-  updateData: UpdateDisciplinaryActionDto
+  updateData: UpdateDisciplinaryActionDto,
+  authorizedUser: AuthorizedUser
 ): Promise<DisciplinaryActionDto> {
   const { grievanceReportId, actionTypeId } = updateData;
   const disciplinaryAction = await repository.findOne({ id });
@@ -238,11 +240,11 @@ export async function updateDisciplinaryAction(
   try {
     if (grievanceReportId && actionTypeId) {
       await Promise.all([
-        grievanceReportService.getGrievanceReport(grievanceReportId),
+        grievanceReportService.getGrievanceReport(grievanceReportId, authorizedUser),
         actionTypeService.getDisciplinaryActionType(actionTypeId)
       ]);
     } else if (grievanceReportId) {
-      await grievanceReportService.getGrievanceReport(grievanceReportId);
+      await grievanceReportService.getGrievanceReport(grievanceReportId, authorizedUser);
     } else if (actionTypeId) {
       await actionTypeService.getDisciplinaryActionType(actionTypeId);
     }

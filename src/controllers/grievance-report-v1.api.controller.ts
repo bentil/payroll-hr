@@ -42,7 +42,7 @@ export async function getGrievanceReport(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.getGrievanceReport(+id);
+    const response = await controller.getGrievanceReport(+id, req);
     res.json(response);
   } catch (err) {
     next(err);

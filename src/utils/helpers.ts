@@ -347,14 +347,16 @@ export async function applyPrivacyScopeToQuery(
   queryParams: Record<string, any>,
   options?: { extendAdminCategories?: UserCategory[]; },
 ): Promise<ScopedQuery> {
-  const { employeeId, category, companyIds } = user;
+  const { employeeId, category } = user;
   const { extendAdminCategories } = options || {};
   const {
     reportingEmployeeId,
-    companyId: qCompanyId,
     queryMode,
+    companyId,
     ...query
   } = queryParams;
+
+  await applyCompanyScopeToQuery(user, { companyId });
 
   let superviseeIds: number[] = [];
   if (!extendAdminCategories?.includes(category) && !employeeId) {
@@ -376,37 +378,35 @@ export async function applyPrivacyScopeToQuery(
     category === UserCategory.HR || extendAdminCategories?.includes(category)
   );
   let authorized = false;
-  const scopeQuery = {
-    employeeId,
-    employee: { companyId: qCompanyId ? qCompanyId : { in: companyIds } },
-    private: true,
-  } as { [key: string]: any, employeeId?: { in: number[] } | number };
+  const scopeQuery = { } as { [key: string]: any, employeeId?: { in: number[] } | number };
 
-  if (reportingEmployeeId) {
-    if (
-      hasAdminCategory
-      || employeeId === reportingEmployeeId
-      || superviseeIds.includes(reportingEmployeeId)
-    ) {
-      scopeQuery.employeeId = reportingEmployeeId;
-      authorized = true;
-    }
+  if (
+    hasAdminCategory
+    || employeeId === reportingEmployeeId
+  ) {
+    scopeQuery.private = undefined;
+    authorized = true;
   } else {
     authorized = true;
     switch (queryMode) {
       case RequestQueryMode.SUPERVISEES:
-        scopeQuery.employeeId = { in: superviseeIds };
+        scopeQuery.reportingEmployeeId = { in: superviseeIds };
+        scopeQuery.private = false;
         break;
       case RequestQueryMode.ALL:
         if (hasAdminCategory) {
-          scopeQuery.employeeId = undefined;
+          scopeQuery.reportingEmployeeId = undefined;
         } else {
-          scopeQuery.employeeId = { in: [...superviseeIds, employeeId!] };
+          scopeQuery.OR = [
+            { reportingEmployeeId: { in: [ ...superviseeIds, employeeId! ] }, private: false },
+            { reportingEmployeeId: employeeId!, private: true }
+          ];
         }
         break;
       case RequestQueryMode.SELF:
       default:
-        scopeQuery.employeeId = employeeId!;
+        scopeQuery.reportingEmployeeId = employeeId!;
+        scopeQuery.private = undefined;
         break;
     }
   }

@@ -75,10 +75,11 @@ export class GrievanceReportV1Controller {
     details: [],
   })
   public async getGrievanceReport(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<GrievanceReport>> {
     this.logger.debug('Received request to get grievanceReport[%s]', id);
-    const grievanceReport = await grievanceReportService.getGrievanceReport(id);
+    const grievanceReport = await grievanceReportService.getGrievanceReport(id, req.user!);
     return { data: grievanceReport };
   }
 

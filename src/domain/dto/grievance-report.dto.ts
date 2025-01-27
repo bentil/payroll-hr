@@ -48,6 +48,7 @@ export class QueryGrievanceReportDto {
 
 export class SearchGrievanceReportDto {
   q?: string;
+  queryMode?: RequestQueryMode;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_DESC;

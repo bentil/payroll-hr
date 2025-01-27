@@ -39,10 +39,11 @@ export class DisciplinaryActionV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addDisciplinaryAction(
-    @Body() createData: CreateDisciplinaryActionDto
+    @Body() createData: CreateDisciplinaryActionDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction>> {
     this.logger.debug('Received request to add DisciplinaryAction', { data: createData, });
-    const disciplinaryAction = await service.addDisciplinaryAction(createData);
+    const disciplinaryAction = await service.addDisciplinaryAction(createData, req.user!);
     return { data: disciplinaryAction };
   }
 
@@ -102,10 +103,13 @@ export class DisciplinaryActionV1Controller {
   })
   public async updateDisciplinaryAction(
     @Path('id') id: number,
-    @Body() updateDto: UpdateDisciplinaryActionDto
+    @Body() updateDto: UpdateDisciplinaryActionDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction>> {
     this.logger.debug('Received request to update DisciplinaryAction[%s]', id);
-    const updateDisciplinaryAction = await service.updateDisciplinaryAction(id, updateDto);
+    const updateDisciplinaryAction = await service.updateDisciplinaryAction(
+      id, updateDto, req.user!
+    );
     this.logger.info('DisciplinaryAction[%s] updated successfully!', id);
     return { data: updateDisciplinaryAction };
   }

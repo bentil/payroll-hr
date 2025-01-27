@@ -12,9 +12,10 @@ import {
   SearchGrievanceReportDto,
   GrievanceReportDto,
 } from '../domain/dto/grievance-report.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
   NotFoundError, 
   ServerError 
@@ -29,6 +30,7 @@ import * as dateutil from '../utils/date.util';
 import { generateGrievanceReportNumber } from '../utils/generator.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
+import { getSupervisees } from './company-tree-node.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -105,6 +107,7 @@ export async function addGrievanceReport(
         reportDate: creatData.reportDate,
         reportNumber,
         note: creatData.note,
+        private: creatData.private,
       }, true);
     logger.info('GreivanceReport[%s] added successfully!', newGrievanceReport.id);
   } catch (err) {
@@ -143,9 +146,8 @@ export async function getGrievanceReports(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyPrivacyScopeToQuery(
-    authorizedUser, { reportingEmployeeId, companyId, queryMode }
+    authorizedUser, { queryMode, reportingEmployeeId, companyId }
   );
-
   let result: ListWithPagination<GrievanceReportDto>;
   try {
     logger.debug('Finding GrievanceReport(s) that matched query', { query });
@@ -180,7 +182,11 @@ export async function getGrievanceReports(
   return result;
 }
 
-export async function getGrievanceReport(id: number): Promise<GrievanceReportDto> {
+export async function getGrievanceReport(
+  id: number,
+  authorizedUser: AuthorizedUser
+): Promise<GrievanceReportDto> {
+  const { category, employeeId } = authorizedUser;
   logger.debug('Getting details for GrievanceReport[%s]', id);
   let grievanceReport: GrievanceReportDto | null;
 
@@ -197,10 +203,50 @@ export async function getGrievanceReport(id: number): Promise<GrievanceReportDto
       message: 'Grievance report does not exist'
     });
   }
+  let superviseeIds : number[] = [];
+  if (employeeId){
+    try {
+      const supervisees = await getSupervisees(employeeId);
+      superviseeIds = supervisees.map(e => e.id);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+    }
+  }
+  
+  if (grievanceReport.private) {
+    if (
+      category !== UserCategory.HR && employeeId !== grievanceReport.reportingEmployeeId
+      && superviseeIds.includes(grievanceReport.reportingEmployeeId)
+    ) {
+      logger.warn(
+        'GrievanceReport was not created by Employee[%s] nor is employee an HR employee',
+        employeeId
+      );
+      throw new ForbiddenError({
+        message: 'You are not allowed to view this grievance report'
+      });
+    }
+  } else {
+    if (
+      category !== UserCategory.HR && employeeId !== grievanceReport.reportingEmployeeId
+      && !superviseeIds.includes(grievanceReport.reportingEmployeeId)
+    ) {
+      logger.warn(
+        'GrievanceReport was not created by Employee[%s] nor employee an HR employee or supervisor',
+        employeeId
+      );
+      throw new ForbiddenError({
+        message: 'You are not allowed to view this grievance report'
+      });
+    }
+  }
 
   logger.info('GrievanceReport[%s] details retrieved!', id);
   return grievanceReport;
 }
+  
 
 export async function searchGrievanceReports(
   query: SearchGrievanceReportDto,
@@ -210,11 +256,12 @@ export async function searchGrievanceReports(
     q: searchParam,
     page,
     limit: take,
+    queryMode,
     orderBy,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
+  const { scopedQuery } = await helpers.applyPrivacyScopeToQuery(authUser, { queryMode });
 
   let result: ListWithPagination<GrievanceReportDto>;
   try {
