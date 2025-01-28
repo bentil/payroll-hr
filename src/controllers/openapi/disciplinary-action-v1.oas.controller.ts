@@ -55,12 +55,13 @@ export class DisciplinaryActionV1Controller {
    */
   @Get()
   public async getDisciplinaryActions(
-    @Queries() query: QueryDisciplinaryActionDto
+    @Queries() query: QueryDisciplinaryActionDto,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction[]>> {
     this.logger.debug(
       'Received request to get DisciplinaryAction(s) matching query', { query }
     );
-    const { data, pagination } = await service.getDisciplinaryActions(query);
+    const { data, pagination } = await service.getDisciplinaryActions(query, req.user!);
     this.logger.info('Returning %d DisciplinaryAction(s) that matched the query', data.length);
     return { data, pagination };
   }
@@ -77,10 +78,11 @@ export class DisciplinaryActionV1Controller {
     details: [],
   })
   public async getDisciplinaryAction(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<DisciplinaryAction>> {
     this.logger.debug('Received request to get disciplinaryAction[%s]', id);
-    const disciplinaryAction = await service.getDisciplinaryAction(id);
+    const disciplinaryAction = await service.getDisciplinaryAction(id, req.user!);
     return { data: disciplinaryAction };
   }
 

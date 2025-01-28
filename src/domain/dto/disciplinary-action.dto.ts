@@ -61,6 +61,7 @@ export class QueryDisciplinaryActionDto {
 
 export class SearchDisciplinaryActionDto {
   q?: string;
+  queryMode?: RequestQueryMode;
   page = 1;
   limit: number = config.pagination.limit;
   orderBy: DisciplinaryActionOrderBy = DisciplinaryActionOrderBy.CREATED_AT_DESC;

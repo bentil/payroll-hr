@@ -7,9 +7,10 @@ import {
   SearchDisciplinaryActionDto,
   DisciplinaryActionDto,
 } from '../domain/dto/disciplinary-action.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError, 
+  ForbiddenError, 
   HttpError, 
   NotFoundError, 
   ServerError 
@@ -25,6 +26,7 @@ import * as dateutil from '../utils/date.util';
 import { generateDisciplinaryActionNumber } from '../utils/generator.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
+import { getSupervisees } from './company-tree-node.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -74,7 +76,8 @@ export async function addDisciplinaryAction(
       actionTypeId,
       actionNumber,
       actionDate: creatData.actionDate,
-      notes: creatData.notes
+      notes: creatData.notes,
+      private: creatData.private
     },
     { 
       actionType: true, 
@@ -100,7 +103,8 @@ export async function addDisciplinaryAction(
 }
 
 export async function getDisciplinaryActions(
-  query: QueryDisciplinaryActionDto
+  query: QueryDisciplinaryActionDto,
+  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionDto>> {
   const {
     page,
@@ -110,11 +114,15 @@ export async function getDisciplinaryActions(
     employeeId,
     actionTypeId,
     grievanceReportId,
+    queryMode,
     'actionDate.gte': actionDateGte,
     'actionDate.lte': actionDateLte,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyPrivacyScopeToQuery(
+    authorizedUser, { employeeId, companyId, queryMode }, { disciplinaryAction: true }
+  );
 
   let result: ListWithPagination<DisciplinaryAction>;
   try {
@@ -122,10 +130,15 @@ export async function getDisciplinaryActions(
     result = await repository.find({
       skip,
       take,
-      where: { companyId, employeeId, actionTypeId, grievanceReportId, actionDate: {
-        gte: actionDateGte && new Date(actionDateGte),
-        lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
-      } },
+      where: { 
+        ...scopedQuery,
+        actionTypeId,
+        grievanceReportId, 
+        actionDate: {
+          gte: actionDateGte && new Date(actionDateGte),
+          lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
+        } 
+      },
       orderBy: orderByInput,
       includeRelations: true
     });
@@ -145,7 +158,11 @@ export async function getDisciplinaryActions(
   return result;
 } 
 
-export async function getDisciplinaryAction(id: number): Promise<DisciplinaryActionDto> {
+export async function getDisciplinaryAction(
+  id: number,
+  authUser: AuthorizedUser
+): Promise<DisciplinaryActionDto> {
+  const { employeeId, category } = authUser;
   logger.debug('Getting details for DisciplinaryAction[%s]', id);
   let disciplinaryAction: DisciplinaryAction | null;
 
@@ -162,6 +179,46 @@ export async function getDisciplinaryAction(id: number): Promise<DisciplinaryAct
       message: 'Disciplinary action does not exist'
     });
   }
+  let superviseeIds : number[] = [];
+  if (employeeId){
+    try {
+      const supervisees = await getSupervisees(employeeId);
+      superviseeIds = supervisees.map(e => e.id);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+    }
+  }
+  
+  if (disciplinaryAction.private) {
+    if (
+      category !== UserCategory.HR && employeeId !== disciplinaryAction.employeeId
+      && superviseeIds.includes(disciplinaryAction.employeeId)
+    ) {
+      logger.warn(
+        'DisciplinaryAction was not created by Employee[%s] nor is employee an HR employee',
+        employeeId
+      );
+      throw new ForbiddenError({
+        message: 'You are not allowed to view this disciplinary action'
+      });
+    }
+  } else {
+    if (
+      category !== UserCategory.HR && employeeId !== disciplinaryAction.employeeId
+      && !superviseeIds.includes(disciplinaryAction.employeeId)
+    ) {
+      logger.warn(
+        'DisciplinaryAction was not created by Employee[%s]'+ 
+        ' nor employee an HR employee or supervisor',
+        employeeId
+      );
+      throw new ForbiddenError({
+        message: 'You are not allowed to view this disciplinary action'
+      });
+    }
+  }
 
   logger.info('DisciplinaryAction[%s] details retrieved!', id);
   return disciplinaryAction;
@@ -175,11 +232,14 @@ export async function searchDisciplinaryActions(
     q: searchParam,
     page,
     limit: take,
+    queryMode,
     orderBy,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
+  const { scopedQuery } = await helpers.applyPrivacyScopeToQuery(
+    authUser, { queryMode }, { disciplinaryAction: true }
+  );
 
   let result: ListWithPagination<DisciplinaryAction>;
   try {
