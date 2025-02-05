@@ -179,8 +179,11 @@ export async function updateLeavePlan(
       company: true,
     },
   );
-  const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
-  const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
+  if (!employee) {
+    throw new NotFoundError({ message: 'Employee does not exist or has no grade level' });
+  }
+  const considerPublicHolidayAsWorkday = employee.company?.considerPublicHolidayAsWorkday;
+  const considerWeekendAsWorkday = employee.company?.considerWeekendAsWorkday;
 
   if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
