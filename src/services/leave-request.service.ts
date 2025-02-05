@@ -313,26 +313,15 @@ export async function updateLeaveRequest(
       'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s]',
       leaveTypeId, employeeId
     );
-    try {
-      const validateData = await validate(leaveTypeId, employeeId);
-      leavePackageId = validateData.leavePackageId;
-      considerPublicHolidayAsWorkday = validateData.considerPublicHolidayAsWorkday;
-      considerWeekendAsWorkday = validateData.considerWeekendAsWorkday;
-      logger.info(
-        'Obtained applicable LeavePackage of LeaveType[%s] for Employee[%s]',
-        leaveTypeId, employeeId
-      );
-    } catch (err) {
-      logger.warn(
-        'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s] failed',
-        leaveTypeId, employeeId, { error: err }
-      );
-      if (err instanceof HttpError) throw err;
-      throw new FailedDependencyError({
-        message: 'Failed to get applicable leave package',
-        cause: err
-      });
-    }
+    const validateData = await validate(leaveTypeId, employeeId);
+    leavePackageId = validateData.leavePackageId;
+    considerPublicHolidayAsWorkday = validateData.considerPublicHolidayAsWorkday;
+    considerWeekendAsWorkday = validateData.considerWeekendAsWorkday;
+    logger.info(
+      'Obtained applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+      leaveTypeId, employeeId
+    );
+    
   } else {
     const employee = await employeeRepository.findOne(
       { id: employeeId },

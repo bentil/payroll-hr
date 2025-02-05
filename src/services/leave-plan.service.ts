@@ -8,9 +8,7 @@ import {
 } from '../domain/dto/leave-plan.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
-  FailedDependencyError, 
   ForbiddenError, 
-  HttpError, 
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
@@ -37,21 +35,10 @@ export async function addLeavePlan(
   payload: CreateLeavePlanDto
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
-  let validateData;
   
   // VALIDATION
-  try {
-    validateData = await validate(leaveTypeId, employeeId);
-  } catch (err) {
-    logger.warn('Validating Employee[%s] and/or LeaveTypeId[%s] fialed', 
-      employeeId, leaveTypeId
-    );
-    if (err instanceof HttpError) throw err;
-    throw new FailedDependencyError({
-      message: 'Dependency check failed',
-      cause: err
-    });
-  }
+  const validateData = await validate(leaveTypeId, employeeId);
+  
   logger.info('LeavePackage for Employee[%s] and LeaveTypeId[%s] exists', employeeId, leaveTypeId);
 
   const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
@@ -180,7 +167,7 @@ export async function updateLeavePlan(
     },
   );
   if (!employee) {
-    logger.warn('Employee does not exist');
+    logger.warn('Employee[%s] does not exist', employeeId);
     throw new NotFoundError({ message: 'Employee does not exist' });
   }
   const considerPublicHolidayAsWorkday = employee.company?.considerPublicHolidayAsWorkday;
@@ -204,17 +191,8 @@ export async function updateLeavePlan(
 
   let leavePackageId: number | undefined;
   if (leaveTypeId) {
-    try {
-      const leavePackage = await validate(leaveTypeId);
-      leavePackageId = leavePackage.leavePackageId;
-    } catch (err) {
-      logger.warn('Getting LeaveTypeId[%s] failed', leaveTypeId);
-      if (err instanceof HttpError) throw err;
-      throw new FailedDependencyError({
-        message: 'Dependency check failed',
-        cause: err
-      });
-    }
+    const leavePackage = await validate(leaveTypeId);
+    leavePackageId = leavePackage.leavePackageId;
   } else {
     logger.warn('LeaveType does not exist');
     throw new NotFoundError({ message: 'Leave package does not exist' });
