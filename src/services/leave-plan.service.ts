@@ -8,7 +8,9 @@ import {
 } from '../domain/dto/leave-plan.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
+  FailedDependencyError,
   ForbiddenError, 
+  HttpError, 
   NotFoundError, 
   ServerError 
 } from '../errors/http-errors';
@@ -37,12 +39,17 @@ export async function addLeavePlan(
   const { employeeId, leaveTypeId } = payload;
   
   // VALIDATION
-  const validateData = await validate(leaveTypeId, employeeId);
-  
-  logger.info('LeavePackage for Employee[%s] and LeaveTypeId[%s] exists', employeeId, leaveTypeId);
+  const validateData = await validate({ leaveTypeId, employeeId });
+  logger.info(
+    'LeavePackage for Employee[%s] and LeaveTypeId[%s] exists',
+    employeeId, leaveTypeId
+  );
 
-  const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
-
+  const {
+    leavePackageId,
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+  } = validateData;
 
   const numberOfDays = await countWorkingDays({ 
     startDate: payload.intendedStartDate, 
@@ -157,23 +164,36 @@ export async function updateLeavePlan(
   const { intendedStartDate, intendedReturnDate } = remainingData;
   const { employeeId } = authorizedUser;
 
-  const leavePlan = await leavePlanRepository.findOne({ id }, true);
+  logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
+  let leavePlan: LeavePlanDto | null,
+    employee: employeeRepository.EmployeeDto | null;
+  try {
+    [leavePlan, employee] = await Promise.all([
+      leavePlanRepository.findOne({ id }, true),
+      employeeRepository.findOne(
+        { id: employeeId },
+        { company: true },
+      ),
+    ]);
+  } catch (err) {
+    logger.error(
+      'Getting LeavePlan[%s] & Employee[%s] failed',
+      id, employeeId, { error: (err as Error).stack }
+    );
+    if (err instanceof HttpError) throw err;
+    throw new FailedDependencyError({
+      message: 'Dependency check(s) failed',
+      cause: err,
+    });
+  }
 
-  const employee = await employeeRepository.findOne(
-    { id: employeeId },
-    {
-      majorGradeLevel: { include: { companyLevel: true } },
-      company: true,
-    },
-  );
   if (!employee) {
     logger.warn('Employee[%s] does not exist', employeeId);
-    throw new NotFoundError({ message: 'Employee does not exist' });
-  }
-  const considerPublicHolidayAsWorkday = employee.company?.considerPublicHolidayAsWorkday;
-  const considerWeekendAsWorkday = employee.company?.considerWeekendAsWorkday;
-
-  if (!leavePlan) {
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_NOT_FOUND,
+      message: 'Employee does not exist'
+    });
+  } else if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_PLAN_NOT_FOUND,
@@ -188,14 +208,16 @@ export async function updateLeavePlan(
       message: 'You are not allowed to perform this action'
     });
   }
+  logger.info('LeavePlan[%s] & Employee[%s] validated!', id, employeeId);
 
+  const {
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+  } = employee.company || {};
   let leavePackageId: number | undefined;
   if (leaveTypeId) {
-    const leavePackage = await validate(leaveTypeId);
+    const leavePackage = await validate({ leaveTypeId, employeeId });
     leavePackageId = leavePackage.leavePackageId;
-  } else {
-    logger.warn('LeaveType does not exist');
-    throw new NotFoundError({ message: 'Leave package does not exist' });
   }
   
   let numberOfDays: number | undefined;

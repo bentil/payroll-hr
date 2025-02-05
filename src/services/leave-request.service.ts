@@ -14,7 +14,11 @@ import {
   RequestQueryMode,
   UpdateLeaveRequestDto,
 } from '../domain/dto/leave-request.dto';
-import { EmployeLeaveTypeSummary } from '../domain/dto/leave-type.dto';
+import {
+  EmployeLeaveTypeSummary,
+  ValidationReturnObject
+} from '../domain/dto/leave-type.dto';
+import { EmployeeDto } from '../domain/events/employee.event';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError,
@@ -34,13 +38,12 @@ import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
+import { sendLeaveRequestEmail } from '../utils/notification.util';
+import { getEmployeeApproversWithDefaults } from './employee-approver.service';
+import * as employeeService from './employee.service';
 import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
-import { validate } from './leave-type.service';
-import * as employeeService from './employee.service';
 import * as leaveTypeService from './leave-type.service';
-import { getEmployeeApproversWithDefaults } from './employee-approver.service';
-import { sendLeaveRequestEmail } from '../utils/notification.util';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -77,11 +80,14 @@ export async function addLeaveRequest(
       message: 'You can not create a leave request with a start date in the past'
     });
   }
-  let validateData, leaveSummary, employee, leaveType: LeaveType;
-  // VALIDATION
+
+  let validateData: ValidationReturnObject,
+    leaveSummary: EmployeLeaveTypeSummary,
+    employee: EmployeeDto,
+    leaveType: LeaveType;
   try {
     [validateData, leaveSummary, employee, leaveType] = await Promise.all([
-      validate(leaveTypeId, employeeId),
+      leaveTypeService.validate({ leaveTypeId, employeeId }),
       getEmployeeLeaveTypeSummary(employeeId, leaveTypeId),
       employeeService.getEmployee(employeeId, { includeCompany: true }),
       leaveTypeService.getLeaveTypeById(leaveTypeId)
@@ -306,14 +312,18 @@ export async function updateLeaveRequest(
   }
 
   // Obtain applicable leave package for new leave type id
-  let leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday ;
-
+  let leavePackageId: number | undefined,
+    considerPublicHolidayAsWorkday: boolean | undefined,
+    considerWeekendAsWorkday: boolean | undefined;
   if (leaveTypeId) {
     logger.debug(
       'Fetching applicable LeavePackage of LeaveType[%s] for Employee[%s]',
       leaveTypeId, employeeId
     );
-    const validateData = await validate(leaveTypeId, employeeId);
+    const validateData = await leaveTypeService.validate({
+      leaveTypeId,
+      employeeId,
+    });
     leavePackageId = validateData.leavePackageId;
     considerPublicHolidayAsWorkday = validateData.considerPublicHolidayAsWorkday;
     considerWeekendAsWorkday = validateData.considerWeekendAsWorkday;
@@ -321,7 +331,6 @@ export async function updateLeaveRequest(
       'Obtained applicable LeavePackage of LeaveType[%s] for Employee[%s]',
       leaveTypeId, employeeId
     );
-    
   } else {
     const employee = await employeeRepository.findOne(
       { id: employeeId },
