@@ -180,7 +180,8 @@ export async function updateLeavePlan(
     },
   );
   if (!employee) {
-    throw new NotFoundError({ message: 'Employee does not exist or has no grade level' });
+    logger.warn('Employee does not exist');
+    throw new NotFoundError({ message: 'Employee does not exist' });
   }
   const considerPublicHolidayAsWorkday = employee.company?.considerPublicHolidayAsWorkday;
   const considerWeekendAsWorkday = employee.company?.considerWeekendAsWorkday;
@@ -207,13 +208,16 @@ export async function updateLeavePlan(
       const leavePackage = await validate(leaveTypeId);
       leavePackageId = leavePackage.leavePackageId;
     } catch (err) {
-      logger.warn('Getting LeaveTypeId[%s] fialed', leaveTypeId);
+      logger.warn('Getting LeaveTypeId[%s] failed', leaveTypeId);
       if (err instanceof HttpError) throw err;
       throw new FailedDependencyError({
         message: 'Dependency check failed',
         cause: err
       });
     }
+  } else {
+    logger.warn('LeaveType does not exist');
+    throw new NotFoundError({ message: 'Leave package does not exist' });
   }
   
   let numberOfDays: number | undefined;
