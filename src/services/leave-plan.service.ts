@@ -166,7 +166,8 @@ export async function updateLeavePlan(
   updateData: UpdateLeavePlanDto,
   authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
-  const { leaveTypeId, intendedStartDate, intendedReturnDate } = updateData;
+  const { leaveTypeId, ...remainingData } = updateData;
+  const { intendedStartDate, intendedReturnDate } = remainingData;
   const { employeeId } = authorizedUser;
 
   const leavePlan = await leavePlanRepository.findOne({ id }, true);
@@ -242,7 +243,7 @@ export async function updateLeavePlan(
     data: { 
       numberOfDays, 
       leavePackage: leavePackageId? { connect: { id: leavePackageId } } : undefined,
-      ...updateData 
+      ...remainingData 
     }, 
     includeRelations: true
   });

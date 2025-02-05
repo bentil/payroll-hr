@@ -245,15 +245,17 @@ export async function validate(
   employeeId?: number
 ): Promise<ValidationReturnObject> {
   ///add a consumer for grade level, add the relation grade
-  let leavePackage: CompanyLevelLeavePackage | null;
-  const employee = await employeeRepository.findOne(
-    { id: employeeId },
-    {
-      majorGradeLevel: { include: { companyLevel: true } },
-      company: true,
-    },
-  );
+  let leavePackage: CompanyLevelLeavePackage | null = null, 
+    employee: employeeRepository.EmployeeDto | null = null;
+
   if (employeeId) {
+    employee = await employeeRepository.findOne(
+      { id: employeeId },
+      {
+        majorGradeLevel: { include: { companyLevel: true } },
+        company: true,
+      },
+    );
     if (employee?.majorGradeLevel?.companyLevelId) {
       try {
         leavePackage = await compLevelLeavePackageRepository.findFirst({
