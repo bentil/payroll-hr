@@ -8,7 +8,7 @@ import {
 } from '../domain/dto/leave-plan.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
-  FailedDependencyError, 
+  FailedDependencyError,
   ForbiddenError, 
   HttpError, 
   NotFoundError, 
@@ -37,25 +37,19 @@ export async function addLeavePlan(
   payload: CreateLeavePlanDto
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
-  let validateData;
   
   // VALIDATION
-  try {
-    validateData = await validate(leaveTypeId, employeeId);
-  } catch (err) {
-    logger.warn('Validating Employee[%s] and/or LeaveTypeId[%s] fialed', 
-      employeeId, leaveTypeId
-    );
-    if (err instanceof HttpError) throw err;
-    throw new FailedDependencyError({
-      message: 'Dependency check failed',
-      cause: err
-    });
-  }
-  logger.info('LeavePackage for Employee[%s] and LeaveTypeId[%s] exists', employeeId, leaveTypeId);
+  const validateData = await validate({ leaveTypeId, employeeId });
+  logger.info(
+    'LeavePackage for Employee[%s] and LeaveTypeId[%s] exists',
+    employeeId, leaveTypeId
+  );
 
-  const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
-
+  const {
+    leavePackageId,
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+  } = validateData;
 
   const numberOfDays = await countWorkingDays({ 
     startDate: payload.intendedStartDate, 
@@ -166,22 +160,40 @@ export async function updateLeavePlan(
   updateData: UpdateLeavePlanDto,
   authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
-  const { leaveTypeId, intendedStartDate, intendedReturnDate } = updateData;
+  const { leaveTypeId, ...remainingData } = updateData;
+  const { intendedStartDate, intendedReturnDate } = remainingData;
   const { employeeId } = authorizedUser;
 
-  const leavePlan = await leavePlanRepository.findOne({ id }, true);
+  logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
+  let leavePlan: LeavePlanDto | null,
+    employee: employeeRepository.EmployeeDto | null;
+  try {
+    [leavePlan, employee] = await Promise.all([
+      leavePlanRepository.findOne({ id }, true),
+      employeeRepository.findOne(
+        { id: employeeId },
+        { company: true },
+      ),
+    ]);
+  } catch (err) {
+    logger.error(
+      'Getting LeavePlan[%s] & Employee[%s] failed',
+      id, employeeId, { error: (err as Error).stack }
+    );
+    if (err instanceof HttpError) throw err;
+    throw new FailedDependencyError({
+      message: 'Dependency check(s) failed',
+      cause: err,
+    });
+  }
 
-  const employee = await employeeRepository.findOne(
-    { id: employeeId },
-    {
-      majorGradeLevel: { include: { companyLevel: true } },
-      company: true,
-    },
-  );
-  const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
-  const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
-
-  if (!leavePlan) {
+  if (!employee) {
+    logger.warn('Employee[%s] does not exist', employeeId);
+    throw new NotFoundError({
+      name: errors.EMPLOYEE_NOT_FOUND,
+      message: 'Employee does not exist'
+    });
+  } else if (!leavePlan) {
     logger.warn('LeavePlan[%s] to update does not exist', id);
     throw new NotFoundError({
       name: errors.LEAVE_PLAN_NOT_FOUND,
@@ -196,20 +208,16 @@ export async function updateLeavePlan(
       message: 'You are not allowed to perform this action'
     });
   }
+  logger.info('LeavePlan[%s] & Employee[%s] validated!', id, employeeId);
 
+  const {
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+  } = employee.company || {};
   let leavePackageId: number | undefined;
   if (leaveTypeId) {
-    try {
-      const leavePackage = await validate(leaveTypeId);
-      leavePackageId = leavePackage.leavePackageId;
-    } catch (err) {
-      logger.warn('Getting LeaveTypeId[%s] fialed', leaveTypeId);
-      if (err instanceof HttpError) throw err;
-      throw new FailedDependencyError({
-        message: 'Dependency check failed',
-        cause: err
-      });
-    }
+    const leavePackage = await validate({ leaveTypeId, employeeId });
+    leavePackageId = leavePackage.leavePackageId;
   }
   
   let numberOfDays: number | undefined;
@@ -242,7 +250,7 @@ export async function updateLeavePlan(
     data: { 
       numberOfDays, 
       leavePackage: leavePackageId? { connect: { id: leavePackageId } } : undefined,
-      ...updateData 
+      ...remainingData 
     }, 
     includeRelations: true
   });

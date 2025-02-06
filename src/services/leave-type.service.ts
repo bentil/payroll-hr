@@ -18,8 +18,9 @@ import * as compLevelLeavePackageRepository from '../repositories/company-level-
 import * as employeeRepository from '../repositories/employee.repository';
 import * as repository from '../repositories/leave-type';
 import { ListWithPagination } from '../repositories/types';
-import { rootLogger } from '../utils/logger';
+import { errors } from '../utils/constants';
 import * as helpers from '../utils/helpers';
+import { rootLogger } from '../utils/logger';
 
 
 const logger = rootLogger.child({ context: 'LeaveTypeService' });
@@ -240,12 +241,17 @@ export async function deleteLeaveType(id: number): Promise<LeaveType> {
   }
 }
 
-export async function validate(
-  leaveTypeId: number, 
-  employeeId?: number
-): Promise<ValidationReturnObject> {
+export async function validate(params: {
+  leaveTypeId: number;
+  employeeId: number;
+}): Promise<ValidationReturnObject> {
   ///add a consumer for grade level, add the relation grade
-  let leavePackage: CompanyLevelLeavePackage | null;
+  const { leaveTypeId, employeeId } = params;
+  logger.debug(
+    'Getting LeavePackage of LeaveType[%s] for Employee[%s]',
+    leaveTypeId, employeeId
+  );
+  
   const employee = await employeeRepository.findOne(
     { id: employeeId },
     {
@@ -253,42 +259,45 @@ export async function validate(
       company: true,
     },
   );
-  if (employeeId) {
-    if (employee?.majorGradeLevel?.companyLevelId) {
-      try {
-        leavePackage = await compLevelLeavePackageRepository.findFirst({
-          leavePackage: { leaveTypeId },
-          companyLevelId: employee?.majorGradeLevel?.companyLevelId
-        });
-      } catch (err) {
-        logger.warn('Getting LeavePackage for Employee[%s] with MajorGradeLevel[%s] failed',
-          employee, employee.majorGradeLevelId, { error: (err as Error).stack });
-        throw new ServerError({ message: (err as Error).message, cause: err });
-      }
-    } else {
-      throw new NotFoundError({ message: 'Employee does not exist or has no grade level' });
-    }
-  } else {
+  
+  let levelLeavePackage: CompanyLevelLeavePackage | null = null;
+  if (employee?.majorGradeLevel?.companyLevelId) {
     try {
-      leavePackage = await compLevelLeavePackageRepository.findFirst({
+      levelLeavePackage = await compLevelLeavePackageRepository.findFirst({
         leavePackage: { leaveTypeId },
+        companyLevelId: employee?.majorGradeLevel?.companyLevelId
       });
     } catch (err) {
-      logger.warn('Getting LeavePackage failed', { error: (err as Error).stack });
+      logger.warn(
+        'Getting LeavePackage for Employee[%s] with MajorGradeLevel[%s] failed',
+        employee, employee.majorGradeLevelId, { error: (err as Error).stack }
+      );
       throw new ServerError({ message: (err as Error).message, cause: err });
     }
+  } else {
+    throw new NotFoundError({
+      message: 'Employee does not exist or has no grade level'
+    });
   }
 
-  if (!leavePackage) {
-    logger.warn('LeavePackage does not exist for Employee[%s] or LeaveType[%s]',
-      employee, leaveTypeId);
-    throw new NotFoundError({ 
+  if (!levelLeavePackage) {
+    logger.warn(
+      'LeavePackage of LeaveType[%s] does not exist for Employee[%s]',
+      leaveTypeId, employeeId
+    );
+    throw new NotFoundError({
+      name: errors.LEAVE_PACKAGE_NOT_FOUND,
       message: 'No applicable leave package found' 
     });
   }
+  logger.info(
+    'LeavePackage[%s] of LeaveType[%s] found for Employee[%s]',
+    levelLeavePackage.leavePackageId, leaveTypeId, employeeId
+  );
+
   return { 
-    leavePackageId: leavePackage.leavePackageId, 
-    considerPublicHolidayAsWorkday: employee?.company?.considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday: employee?.company?.considerWeekendAsWorkday
+    leavePackageId: levelLeavePackage.leavePackageId, 
+    considerPublicHolidayAsWorkday: employee.company?.considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday: employee.company?.considerWeekendAsWorkday
   };
 } 
