@@ -24,7 +24,7 @@ export async function getLeavePlans(
 ): Promise<void> {
   try {
     const response = await controller.getLeavePlans(
-      req.query as unknown as QueryLeavePlanDto,
+      req.query as unknown as QueryLeavePlanDto, req
     );
     res.json(response);
   } catch (err) {
@@ -39,7 +39,7 @@ export async function getLeavePlan(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.getLeavePlan(+id);
+    const response = await controller.getLeavePlan(+id, req);
     res.json(response);
   } catch (err) {
     next(err);

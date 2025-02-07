@@ -23,6 +23,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
 import { validate } from './leave-type.service';
+import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -89,7 +90,8 @@ export async function addLeavePlan(
 }
 
 export async function getLeavePlans(
-  query: QueryLeavePlanDto
+  query: QueryLeavePlanDto,
+  authorizedUser: AuthorizedUser
 ): Promise<ListWithPagination<LeavePlanDto>> {
   const {
     page,
@@ -104,6 +106,9 @@ export async function getLeavePlans(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { employeeId, queryMode: RequestQueryMode.ALL }
+  );
 
   let result: ListWithPagination<LeavePlanDto>;
   try {
@@ -111,13 +116,18 @@ export async function getLeavePlans(
     result = await leavePlanRepository.find({
       skip,
       take,
-      where: { employeeId, leavePackageId, intendedStartDate: {
-        gte: intendedStartDateGte && new Date(intendedStartDateGte),
-        lt: intendedStartDateLte && dateutil.getDate(new Date(intendedStartDateLte), { days: 1 }),
-      }, intendedReturnDate: {
-        gte: intendedReturnDateGte && new Date(intendedReturnDateGte),
-        lt: intendedReturnDateLte && dateutil.getDate(new Date(intendedReturnDateLte), { days: 1 }),
-      } },
+      where: { 
+        ...scopedQuery, 
+        leavePackageId, 
+        intendedStartDate: {
+          gte: intendedStartDateGte && new Date(intendedStartDateGte),
+          lt: intendedStartDateLte && dateutil.getDate(new Date(intendedStartDateLte), { days: 1 }),
+        }, intendedReturnDate: {
+          gte: intendedReturnDateGte && new Date(intendedReturnDateGte),
+          lt: intendedReturnDateLte 
+            && dateutil.getDate(new Date(intendedReturnDateLte), { days: 1 }),
+        } 
+      },
       orderBy: orderByInput,
       includeRelations: true
     });
@@ -133,12 +143,18 @@ export async function getLeavePlans(
   return result;
 } 
 
-export async function getLeavePlan(id: number): Promise<LeavePlanDto> {
+export async function getLeavePlan(
+  id: number,
+  authorizedUser: AuthorizedUser
+): Promise<LeavePlanDto> {
   logger.debug('Getting details for LeavePlan[%s]', id);
   let leavePlan: LeavePlanDto | null;
+  const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
+    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+  );
 
   try {
-    leavePlan = await leavePlanRepository.findOne({ id }, true);
+    leavePlan = await leavePlanRepository.findOne({ id, ...scopedQuery }, true);
   } catch (err) {
     logger.warn('Getting LeavePlan[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
