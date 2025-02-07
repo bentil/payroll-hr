@@ -71,7 +71,10 @@ export async function addLeavePlan(
 
   let newLeavePlan: LeavePlan;
   try {
-    newLeavePlan = await leavePlanRepository.create(creatData, true);
+    newLeavePlan = await leavePlanRepository.create(
+      creatData, 
+      { employee: true, leavePackage: { include: { leaveType: true } } }
+    );
     logger.info('LeavePlan[%s] added successfully!', newLeavePlan.id);
   } catch (err) {
     logger.error('Adding LeavePlan failed', { error: err });
@@ -130,7 +133,12 @@ export async function getLeavePlans(
         } 
       },
       orderBy: orderByInput,
-      includeRelations: true
+      include: { 
+        employee: true, 
+        leavePackage: {
+          include: { leaveType: true }
+        } 
+      }
     });
     logger.info('Found %d LeavePlan(s) that matched query', result.data.length, { query });
   } catch (err) {
@@ -155,7 +163,15 @@ export async function getLeavePlan(
   );
 
   try {
-    leavePlan = await leavePlanRepository.findOne({ id, ...scopedQuery }, true);
+    leavePlan = await leavePlanRepository.findOne(
+      { id, ...scopedQuery },
+      { 
+        employee: true, 
+        leavePackage: {
+          include: { leaveType: true }
+        } 
+      }
+    );
   } catch (err) {
     logger.warn('Getting LeavePlan[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -186,7 +202,15 @@ export async function updateLeavePlan(
     employee: employeeRepository.EmployeeDto | null;
   try {
     [leavePlan, employee] = await Promise.all([
-      leavePlanRepository.findOne({ id }, true),
+      leavePlanRepository.findOne(
+        { id },
+        { 
+          employee: true, 
+          leavePackage: {
+            include: { leaveType: true }
+          } 
+        }
+      ),
       employeeRepository.findOne(
         { id: employeeId },
         { company: true },
@@ -269,7 +293,12 @@ export async function updateLeavePlan(
       leavePackage: leavePackageId? { connect: { id: leavePackageId } } : undefined,
       ...remainingData 
     }, 
-    includeRelations: true
+    include: { 
+      employee: true, 
+      leavePackage: {
+        include: { leaveType: true }
+      } 
+    }
   });
   logger.info('Update(s) to LeavePlan[%s] persisted successfully!', id);
 
