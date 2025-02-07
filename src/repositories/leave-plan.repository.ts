@@ -17,7 +17,7 @@ export async function create(
   { 
     employeeId, leavePackageId, ...dtoData 
   }: CreateLeavePlanObject,
-  includeRelations?: boolean,
+  include?: Prisma.LeavePlanInclude,
 ): Promise<LeavePlanDto> {
   const data: Prisma.LeavePlanCreateInput = {
     ...dtoData,
@@ -27,9 +27,7 @@ export async function create(
   try {
     return await prisma.leavePlan.create({ 
       data,
-      include: includeRelations 
-        ?  { employee: true, leavePackage: { include: { leaveType: true } } }
-        : undefined
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -46,12 +44,12 @@ export async function create(
 
 
 export async function findOne(
-  whereUniqueInput: Prisma.LeavePlanWhereUniqueInput, includeRelations?: boolean,
+  whereUniqueInput: Prisma.LeavePlanWhereUniqueInput, 
+  include?: Prisma.LeavePlanInclude,
 ): Promise<LeavePlanDto | null> {
   return await prisma.leavePlan.findUnique({
     where: whereUniqueInput,
-    include: includeRelations 
-      ? { employee: true, leavePackage: { include: { leaveType: true } } } : undefined
+    include
   });
 }
 
@@ -60,20 +58,12 @@ export async function find(params: {
   take?: number,
   where?: Prisma.LeavePlanWhereInput,
   orderBy?: Prisma.LeavePlanOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean,
+  include?: Prisma.LeavePlanInclude,
 }): Promise<ListWithPagination<LeavePlanDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.leavePlan.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations ? { employee: true, leavePackage: {
-        include: { leaveType: true }
-      } } : undefined
-    }),
+    prisma.leavePlan.findMany(params),
     paginate ? prisma.leavePlan.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
 
@@ -83,17 +73,10 @@ export async function find(params: {
 export async function update(params: {
   where: Prisma.LeavePlanWhereUniqueInput,
   data: Prisma.LeavePlanUpdateInput,
-  includeRelations?: boolean
+  include?: Prisma.LeavePlanInclude,
 }) {
-  const { where, data, includeRelations } = params;
   try {
-    return await prisma.leavePlan.update({ 
-      where, 
-      data,
-      include: includeRelations 
-        ? { employee: true, leavePackage: { include: { leaveType: true } } } 
-        : undefined
-    });
+    return await prisma.leavePlan.update(params);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {

@@ -3,6 +3,7 @@ import { LeavePlanOrderBy } from '../dto/leave-plan.dto';
 import Joi from 'joi';
 import joiDate from '@joi/date';
 import coreJoi from 'joi';
+import { RequestQueryMode } from '../dto/leave-request.dto';
 
 const joi = coreJoi.extend(joiDate) as typeof coreJoi;
 
@@ -60,6 +61,8 @@ export const QUERY_LEAVE_PLAN_SCHEMA = Joi.object({
     .format('YYYY-MM-DD').utc().raw(),
   'intendedReturnDate.lte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
   page: Joi.number()
     .optional()
     .min(1)
