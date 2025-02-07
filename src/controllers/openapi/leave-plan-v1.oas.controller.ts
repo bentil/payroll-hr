@@ -53,10 +53,11 @@ export class LeavePlanV1Controller {
    */
   @Get()
   public async getLeavePlans(
-    @Queries() query: QueryLeavePlanDto
+    @Queries() query: QueryLeavePlanDto,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<LeavePlan[]>> {
     this.logger.debug('Received request to get LeavePlan(s) matching query', { query });
-    const { data, pagination } = await LeavePlanService.getLeavePlans(query);
+    const { data, pagination } = await LeavePlanService.getLeavePlans(query, req.user!);
     this.logger.info('Returning %d LeavePlan(s) that matched the query', data.length);
     return { data, pagination };
   }
@@ -73,10 +74,11 @@ export class LeavePlanV1Controller {
     details: [],
   })
   public async getLeavePlan(
-    @Path('id') id: number
+    @Path('id') id: number,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<LeavePlan>> {
     this.logger.debug('Received request to get leavePlan[%s]', id);
-    const leavePlan = await LeavePlanService.getLeavePlan(id);
+    const leavePlan = await LeavePlanService.getLeavePlan(id, req.user!);
     return { data: leavePlan };
   }
 
