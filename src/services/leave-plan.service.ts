@@ -103,11 +103,12 @@ export async function getLeavePlans(
     'intendedStartDate.lte': intendedStartDateLte,
     'intendedReturnDate.gte': intendedReturnDateGte,
     'intendedReturnDate.lte': intendedReturnDateLte,
+    queryMode,
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    authorizedUser, { employeeId, queryMode: RequestQueryMode.ALL }
+    authorizedUser, { employeeId, queryMode }
   );
 
   let result: ListWithPagination<LeavePlanDto>;

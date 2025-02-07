@@ -1,5 +1,6 @@
 import { Employee, LeavePackage, LeavePlan } from '@prisma/client';
 import config from '../../config';
+import { RequestQueryMode } from './leave-request.dto';
 
 export class CreateLeavePlanDto{
   employeeId!: number;
@@ -34,6 +35,7 @@ export class QueryLeavePlanDto {
   'intendedStartDate.lte'?: string;
   'intendedReturnDate.gte'?: string;
   'intendedReturnDate.lte'?: string;
+  queryMode?: RequestQueryMode;
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: LeavePlanOrderBy = LeavePlanOrderBy.CREATED_AT_DESC;
