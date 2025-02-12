@@ -7,6 +7,7 @@ import {
 import { KafkaService } from '../components/kafka.component';
 import {
   AdjustDaysDto,
+  ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
   LeaveRequestDto,
   LeaveResponseInputDto,
@@ -44,6 +45,7 @@ import * as employeeService from './employee.service';
 import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import * as leaveTypeService from './leave-type.service';
+import * as leavePlanService from './leave-plan.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -709,4 +711,107 @@ export async function adjustDays(
   logger.info(`${events.modified} event emitted successfully!`);
 
   return adjustedLeaveRequest;
+}
+
+export async function  convertLeavePlanToRequest(
+  convertData: ConvertLeavePlanToRequestDto,
+  authorizedUser: AuthorizedUser
+): Promise<LeaveRequestDto> {
+  const { leavePlanId } = convertData;
+  const { employeeId } = authorizedUser;
+  logger.debug('Finding leavePlan[%s] to convert', leavePlanId);
+  const leavePlan = await leavePlanService.getLeavePlan(leavePlanId, authorizedUser);
+  if (!leavePlan) {
+    logger.warn('LeavePlan[%s] to convert does not exist', leavePlanId);
+    throw new NotFoundError({
+      name: errors.LEAVE_PLAN_NOT_FOUND,
+      message: 'Leave plan does not exist'
+    });
+  }
+  
+  if (employeeId && employeeId !== leavePlan.employeeId) {
+    logger.warn(
+      'LeavePlan[%s] cannot be converted by Employee[%s]. Conversion rejected',
+      leavePlanId, employeeId
+    );
+    throw new ForbiddenError({
+      message: 'You are not allowed to perform this action'
+    });
+  }
+
+  const { leavePackage, intendedStartDate, intendedReturnDate, comment } = leavePlan;
+  const leaveTypeId = leavePackage!.leaveTypeId;
+  const [employee, validateData, leaveType] = await Promise.all([
+    employeeService.getEmployee(leavePlan.employeeId, { includeCompany: true }),
+    leaveTypeService.validate({ leaveTypeId, employeeId: leavePlan.employeeId }),
+    leaveTypeService.getLeaveTypeById(leaveTypeId)
+  ]);
+  const { numberOfDaysLeft } = await getEmployeeLeaveTypeSummary(leavePlan.employeeId, leaveTypeId);
+  const numberOfDays = await countWorkingDays({ 
+    startDate: intendedStartDate, 
+    endDate: intendedReturnDate, 
+    includeHolidays: validateData.considerPublicHolidayAsWorkday,
+    includeWeekends: validateData.considerWeekendAsWorkday 
+  });
+  
+
+  if (numberOfDays > numberOfDaysLeft) {
+    logger.warn('Number of days requested is more than number of days left for this leave');
+    throw new RequirementNotMetError({
+      name: errors.LEAVE_QUOTA_EXCEEDED,
+      message: `You have ${numberOfDaysLeft} day(s) left for this leave type`
+    });
+
+  }
+
+  const createData: leaveRequestRepository.CreateLeaveRequestObject = {
+    employeeId: leavePlan.employeeId,
+    leavePackageId: leavePlan.leavePackageId,
+    startDate: intendedStartDate,
+    returnDate: intendedReturnDate,
+    comment,
+    numberOfDays,
+    approvalsRequired: employee.company!.leaveRequestApprovalsRequired
+  };
+
+  logger.debug('Converting LeavePlan[%s] to LeaveRequest', leavePlanId);
+  const newLeaveRequest = await leaveRequestRepository.convertLeavePlanToRequest(
+    createData, leavePlan.leavePackageId
+  );
+  logger.info(
+    'LeavePlan[%s] converted to LeaveRequest[%s] successfully!', leavePlanId, newLeaveRequest.id
+  );
+
+  if (newLeaveRequest) {
+    logger.debug('Deleting LeavePlan[%s]', leavePlanId);
+    await leavePlanService.deleteLeavePlan(leavePlanId);
+  }
+
+  const approvers = await getEmployeeApproversWithDefaults({
+    employeeId: leavePlan.employeeId,
+    approvalType: 'leave'
+  });
+  
+  for (const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      sendLeaveRequestEmail({
+        requestId: newLeaveRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+        requestDate: newLeaveRequest.createdAt,
+        startDate: newLeaveRequest.startDate,
+        endDate: newLeaveRequest.returnDate,
+        leaveTypeName: leaveType.name,
+        employeePhotoUrl: x.employee.photoUrl,
+      });
+    }
+  }
+
+  // Emit event.LeaveRequest.created event
+  logger.debug(`Emitting ${events.created} event`);
+  kafkaService.send(events.created, newLeaveRequest);
+  logger.info(`${events.created} event created successfully!`);
+
+  return newLeaveRequest;
 }

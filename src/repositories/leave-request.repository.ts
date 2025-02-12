@@ -290,3 +290,42 @@ export async function adjustDays(params: {
     throw err;
   }
 }
+
+export async function convertLeavePlanToRequest(
+  { 
+    employeeId, leavePackageId, ...dtoData 
+  }: CreateLeaveRequestObject,
+  leavePlanId: number,
+  includeRelations?: boolean,
+): Promise<LeaveRequestDto> {
+  const data: Prisma.LeaveRequestCreateInput = {
+    ...dtoData,
+    employee: { connect: { id: employeeId } },
+    leavePackage: { connect: { id: leavePackageId } },
+  };
+  try {
+    return await prisma.$transaction(async txn => {
+      const leavePlan = await txn.leavePlan.findUnique({ where: { id: leavePlanId } });
+      if (leavePlan) {
+        await txn.leavePlan.delete({ where: { id: leavePlanId } });
+      }
+
+      return await txn.leaveRequest.create({ 
+        data,
+        include: includeRelations 
+          ?  { employee: true, leavePackage: { include: { leaveType: true } } }
+          : undefined
+      });
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        throw new AlreadyExistsError({
+          message: 'Leave request already exists',
+          cause: err
+        });
+      }
+    }
+    throw err;
+  }
+}

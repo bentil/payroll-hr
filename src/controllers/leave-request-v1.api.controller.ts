@@ -115,3 +115,16 @@ export async function adjustDays(
     next(err);
   }
 }
+
+export async function convertLeavePlan(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  try {
+    const response = await controller.convertLeavePlan(req.body, req);
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+}

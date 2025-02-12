@@ -20,6 +20,7 @@ import {
   UpdateLeaveRequestDto,
   LeaveResponseInputDto,
   AdjustDaysDto,
+  ConvertLeavePlanToRequestDto,
 } from '../../domain/dto/leave-request.dto';
 import * as leaveReqService from '../../services/leave-request.service';
 import { rootLogger } from '../../utils/logger';
@@ -201,6 +202,23 @@ export class LeaveRequestV1Controller {
     const updateLeaveRequest = await leaveReqService.adjustDays(id, req.user!, updateDto);
     this.logger.info('Number of days for LeaveRequest[%s] adjusted successfully!', id);
     return { data: updateLeaveRequest };
+  }
+
+  /**
+   * Convert a LeavePlant to LeaveRequest
+   *
+   * @param convertData Request body
+   * @returns API response
+   */
+  @Post('/convert-plan')
+  @SuccessResponse(201, 'Created')
+  public async convertLeavePlan(
+    @Body() convertData: ConvertLeavePlanToRequestDto, 
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<LeaveRequest>> {
+    this.logger.debug('Received request to add LeaveRequest', { data: convertData, });
+    const leaveRequest = await leaveReqService.convertLeavePlanToRequest(convertData, req.user!);
+    return { data: leaveRequest };
   }
 
 }

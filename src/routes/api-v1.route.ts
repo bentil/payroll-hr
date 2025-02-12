@@ -110,6 +110,7 @@ import {
   QUERY_LEAVE_REQUEST_SCHEMA,
   CREATE_LEAVE_RESPONSE_SCHEMA,
   ADJUST_DAYS_SCHEMA,
+  CONVERT_LEAVE_PLAN_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -529,6 +530,13 @@ router.patch(
   authenticateUser({ isEmployee: true }),
   validateRequestBody(ADJUST_DAYS_SCHEMA),
   leaveReqV1Controller.adjustDays
+);
+
+router.post(
+  '/leave-requests/convert-plan',
+  authenticateUser({ isEmployee: true }),
+  validateRequestBody(CONVERT_LEAVE_PLAN_SCHEMA),
+  leaveReqV1Controller.convertLeavePlan
 );
 
 // ### Employee Leave Type summary 

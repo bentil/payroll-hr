@@ -116,3 +116,11 @@ export const ADJUST_DAYS_SCHEMA = Joi.object({
       'any.required': 'comment field is required'
     })
 });
+
+export const CONVERT_LEAVE_PLAN_SCHEMA = Joi.object({
+  leavePlanId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Leave type id must be a number'
+    }),
+});
