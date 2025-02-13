@@ -137,7 +137,10 @@ export async function addLeaveRequest(
 
   let newLeaveRequest: LeaveRequest;
   try {
-    newLeaveRequest = await leaveRequestRepository.create(createData, true);
+    newLeaveRequest = await leaveRequestRepository.create(
+      createData, 
+      { employee: true, leavePackage: { include: { leaveType: true } } }
+    );
     logger.info('LeaveRequest[%s] added successfully!', newLeaveRequest.id);
   } catch (err) {
     logger.error('Adding LeaveRequest failed', { error: err });
@@ -746,7 +749,9 @@ export async function  convertLeavePlanToRequest(
     leaveTypeService.validate({ leaveTypeId, employeeId: leavePlan.employeeId }),
     leaveTypeService.getLeaveTypeById(leaveTypeId)
   ]);
-  const { numberOfDaysLeft } = await getEmployeeLeaveTypeSummary(leavePlan.employeeId, leaveTypeId);
+  const { numberOfDaysLeft } = await getEmployeeLeaveTypeSummary(
+    leavePlan.employeeId, leaveTypeId
+  );
   const numberOfDays = await countWorkingDays({ 
     startDate: intendedStartDate, 
     endDate: intendedReturnDate, 
@@ -776,16 +781,12 @@ export async function  convertLeavePlanToRequest(
 
   logger.debug('Converting LeavePlan[%s] to LeaveRequest', leavePlanId);
   const newLeaveRequest = await leaveRequestRepository.convertLeavePlanToRequest(
-    createData, leavePlan.leavePackageId
+    { ...createData, leavePlanId },
+    { employee: true, leavePackage: { include: { leaveType: true } } }
   );
   logger.info(
     'LeavePlan[%s] converted to LeaveRequest[%s] successfully!', leavePlanId, newLeaveRequest.id
   );
-
-  if (newLeaveRequest) {
-    logger.debug('Deleting LeavePlan[%s]', leavePlanId);
-    await leavePlanService.deleteLeavePlan(leavePlanId);
-  }
 
   const approvers = await getEmployeeApproversWithDefaults({
     employeeId: leavePlan.employeeId,

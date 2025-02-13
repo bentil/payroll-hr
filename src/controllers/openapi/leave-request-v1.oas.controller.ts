@@ -205,7 +205,7 @@ export class LeaveRequestV1Controller {
   }
 
   /**
-   * Convert a LeavePlant to LeaveRequest
+   * Convert a LeavePlan to LeaveRequest
    *
    * @param convertData Request body
    * @returns API response
@@ -216,7 +216,9 @@ export class LeaveRequestV1Controller {
     @Body() convertData: ConvertLeavePlanToRequestDto, 
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<LeaveRequest>> {
-    this.logger.debug('Received request to add LeaveRequest', { data: convertData, });
+    this.logger.debug(
+      'Received request to convert LeavePlan to LeaveRequest', { data: convertData, }
+    );
     const leaveRequest = await leaveReqService.convertLeavePlanToRequest(convertData, req.user!);
     return { data: leaveRequest };
   }

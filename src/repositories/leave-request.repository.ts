@@ -34,7 +34,7 @@ export async function create(
   { 
     employeeId, leavePackageId, ...dtoData 
   }: CreateLeaveRequestObject,
-  includeRelations?: boolean,
+  include?: Prisma.LeaveRequestInclude,
 ): Promise<LeaveRequestDto> {
   const data: Prisma.LeaveRequestCreateInput = {
     ...dtoData,
@@ -44,9 +44,7 @@ export async function create(
   try {
     return await prisma.leaveRequest.create({ 
       data,
-      include: includeRelations 
-        ?  { employee: true, leavePackage: { include: { leaveType: true } } }
-        : undefined
+      include
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -63,13 +61,11 @@ export async function create(
 
 export async function findOne(
   whereUniqueInput: Prisma.LeaveRequestWhereUniqueInput,
-  includeRelations?: boolean,
+  include?: Prisma.LeaveRequestInclude,
 ): Promise<LeaveRequestDto | null> {
   return await prisma.leaveRequest.findUnique({
     where: whereUniqueInput,
-    include: includeRelations 
-      ? { employee: true, leavePackage: { include: { leaveType: true } } }
-      : undefined
+    include
   });
 }
 
@@ -294,27 +290,22 @@ export async function adjustDays(params: {
 export async function convertLeavePlanToRequest(
   { 
     employeeId, leavePackageId, ...dtoData 
-  }: CreateLeaveRequestObject,
-  leavePlanId: number,
-  includeRelations?: boolean,
+  }: CreateLeaveRequestObject &  { leavePlanId: number },
+  include?: Prisma.LeaveRequestInclude,
 ): Promise<LeaveRequestDto> {
+  const { leavePlanId, ...remainingData } = dtoData;
   const data: Prisma.LeaveRequestCreateInput = {
-    ...dtoData,
+    ...remainingData,
     employee: { connect: { id: employeeId } },
     leavePackage: { connect: { id: leavePackageId } },
   };
   try {
     return await prisma.$transaction(async txn => {
-      const leavePlan = await txn.leavePlan.findUnique({ where: { id: leavePlanId } });
-      if (leavePlan) {
-        await txn.leavePlan.delete({ where: { id: leavePlanId } });
-      }
+      await txn.leavePlan.delete({ where: { id: leavePlanId } });
 
       return await txn.leaveRequest.create({ 
         data,
-        include: includeRelations 
-          ?  { employee: true, leavePackage: { include: { leaveType: true } } }
-          : undefined
+        include
       });
     });
   } catch (err) {
