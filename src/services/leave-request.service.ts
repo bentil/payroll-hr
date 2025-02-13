@@ -253,7 +253,7 @@ export async function getLeaveRequests(
 //Access to deal with on supervisor stuff
 export async function getLeaveRequest(
   id: number,
-  authorizedUser: AuthorizedUser
+  authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { id, queryMode: RequestQueryMode.ALL }
@@ -716,29 +716,23 @@ export async function adjustDays(
   return adjustedLeaveRequest;
 }
 
-export async function  convertLeavePlanToRequest(
+export async function convertLeavePlanToRequest(
   convertData: ConvertLeavePlanToRequestDto,
   authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
   const { leavePlanId } = convertData;
-  const { employeeId } = authorizedUser;
+  
   logger.debug('Finding leavePlan[%s] to convert', leavePlanId);
-  const leavePlan = await leavePlanService.getLeavePlan(leavePlanId, authorizedUser);
+  const leavePlan = await leavePlanService.getLeavePlan(
+    leavePlanId,
+    authorizedUser,
+    { queryMode: RequestQueryMode.SELF }
+  );
   if (!leavePlan) {
     logger.warn('LeavePlan[%s] to convert does not exist', leavePlanId);
     throw new NotFoundError({
       name: errors.LEAVE_PLAN_NOT_FOUND,
       message: 'Leave plan does not exist'
-    });
-  }
-  
-  if (employeeId && employeeId !== leavePlan.employeeId) {
-    logger.warn(
-      'LeavePlan[%s] cannot be converted by Employee[%s]. Conversion rejected',
-      leavePlanId, employeeId
-    );
-    throw new ForbiddenError({
-      message: 'You are not allowed to perform this action'
     });
   }
 
