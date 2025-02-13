@@ -78,3 +78,7 @@ export class AdjustDaysDto {
   count!: number;
   comment!: string;
 }
+
+export class ConvertLeavePlanToRequestDto {
+  leavePlanId!: number;
+}
