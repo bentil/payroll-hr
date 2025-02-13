@@ -7,6 +7,7 @@ import {
 import { KafkaService } from '../components/kafka.component';
 import {
   AdjustDaysDto,
+  ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
   LeaveRequestDto,
   LeaveResponseInputDto,
@@ -44,6 +45,7 @@ import * as employeeService from './employee.service';
 import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import * as leaveTypeService from './leave-type.service';
+import * as leavePlanService from './leave-plan.service';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -135,7 +137,10 @@ export async function addLeaveRequest(
 
   let newLeaveRequest: LeaveRequest;
   try {
-    newLeaveRequest = await leaveRequestRepository.create(createData, true);
+    newLeaveRequest = await leaveRequestRepository.create(
+      createData, 
+      { employee: true, leavePackage: { include: { leaveType: true } } }
+    );
     logger.info('LeaveRequest[%s] added successfully!', newLeaveRequest.id);
   } catch (err) {
     logger.error('Adding LeaveRequest failed', { error: err });
@@ -248,7 +253,7 @@ export async function getLeaveRequests(
 //Access to deal with on supervisor stuff
 export async function getLeaveRequest(
   id: number,
-  authorizedUser: AuthorizedUser
+  authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, { id, queryMode: RequestQueryMode.ALL }
@@ -709,4 +714,99 @@ export async function adjustDays(
   logger.info(`${events.modified} event emitted successfully!`);
 
   return adjustedLeaveRequest;
+}
+
+export async function convertLeavePlanToRequest(
+  convertData: ConvertLeavePlanToRequestDto,
+  authorizedUser: AuthorizedUser
+): Promise<LeaveRequestDto> {
+  const { leavePlanId } = convertData;
+  
+  logger.debug('Finding leavePlan[%s] to convert', leavePlanId);
+  const leavePlan = await leavePlanService.getLeavePlan(
+    leavePlanId,
+    authorizedUser,
+    { queryMode: RequestQueryMode.SELF }
+  );
+  if (!leavePlan) {
+    logger.warn('LeavePlan[%s] to convert does not exist', leavePlanId);
+    throw new NotFoundError({
+      name: errors.LEAVE_PLAN_NOT_FOUND,
+      message: 'Leave plan does not exist'
+    });
+  }
+
+  const { leavePackage, intendedStartDate, intendedReturnDate, comment } = leavePlan;
+  const leaveTypeId = leavePackage!.leaveTypeId;
+  const [employee, validateData, leaveType] = await Promise.all([
+    employeeService.getEmployee(leavePlan.employeeId, { includeCompany: true }),
+    leaveTypeService.validate({ leaveTypeId, employeeId: leavePlan.employeeId }),
+    leaveTypeService.getLeaveTypeById(leaveTypeId)
+  ]);
+  const { numberOfDaysLeft } = await getEmployeeLeaveTypeSummary(
+    leavePlan.employeeId, leaveTypeId
+  );
+  const numberOfDays = await countWorkingDays({ 
+    startDate: intendedStartDate, 
+    endDate: intendedReturnDate, 
+    includeHolidays: validateData.considerPublicHolidayAsWorkday,
+    includeWeekends: validateData.considerWeekendAsWorkday 
+  });
+  
+
+  if (numberOfDays > numberOfDaysLeft) {
+    logger.warn('Number of days requested is more than number of days left for this leave');
+    throw new RequirementNotMetError({
+      name: errors.LEAVE_QUOTA_EXCEEDED,
+      message: `You have ${numberOfDaysLeft} day(s) left for this leave type`
+    });
+
+  }
+
+  const createData: leaveRequestRepository.CreateLeaveRequestObject = {
+    employeeId: leavePlan.employeeId,
+    leavePackageId: leavePlan.leavePackageId,
+    startDate: intendedStartDate,
+    returnDate: intendedReturnDate,
+    comment,
+    numberOfDays,
+    approvalsRequired: employee.company!.leaveRequestApprovalsRequired
+  };
+
+  logger.debug('Converting LeavePlan[%s] to LeaveRequest', leavePlanId);
+  const newLeaveRequest = await leaveRequestRepository.convertLeavePlanToRequest(
+    { ...createData, leavePlanId },
+    { employee: true, leavePackage: { include: { leaveType: true } } }
+  );
+  logger.info(
+    'LeavePlan[%s] converted to LeaveRequest[%s] successfully!', leavePlanId, newLeaveRequest.id
+  );
+
+  const approvers = await getEmployeeApproversWithDefaults({
+    employeeId: leavePlan.employeeId,
+    approvalType: 'leave'
+  });
+  
+  for (const x of approvers) {
+    if (x.approver && x.approver.email && x.employee) {
+      sendLeaveRequestEmail({
+        requestId: newLeaveRequest.id,
+        approverEmail: x.approver.email,
+        approverFirstName: x.approver.firstName,
+        employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+        requestDate: newLeaveRequest.createdAt,
+        startDate: newLeaveRequest.startDate,
+        endDate: newLeaveRequest.returnDate,
+        leaveTypeName: leaveType.name,
+        employeePhotoUrl: x.employee.photoUrl,
+      });
+    }
+  }
+
+  // Emit event.LeaveRequest.created event
+  logger.debug(`Emitting ${events.created} event`);
+  kafkaService.send(events.created, newLeaveRequest);
+  logger.info(`${events.created} event created successfully!`);
+
+  return newLeaveRequest;
 }

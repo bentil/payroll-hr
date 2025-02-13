@@ -6,6 +6,7 @@ import {
   QueryLeavePlanDto,
   UpdateLeavePlanDto,
 } from '../domain/dto/leave-plan.dto';
+import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
   FailedDependencyError,
@@ -23,7 +24,6 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
 import { validate } from './leave-type.service';
-import { RequestQueryMode } from '../domain/dto/leave-request.dto';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -154,12 +154,14 @@ export async function getLeavePlans(
 
 export async function getLeavePlan(
   id: number,
-  authorizedUser: AuthorizedUser
+  authorizedUser: AuthorizedUser,
+  options?: { queryMode?: RequestQueryMode }
 ): Promise<LeavePlanDto> {
   logger.debug('Getting details for LeavePlan[%s]', id);
   let leavePlan: LeavePlanDto | null;
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+    authorizedUser,
+    { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL }
   );
 
   try {
