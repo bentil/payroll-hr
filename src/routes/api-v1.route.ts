@@ -23,6 +23,7 @@ import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.control
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
+import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -139,6 +140,7 @@ import {
   validateRequestBody,
   validateRequestQuery
 } from '../middleware/request-validation.middleware';
+import validate from '../middleware/upload.validation';
 
 
 const router = Router();
@@ -972,6 +974,17 @@ router.post(
   }),
   validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.employeeApproverPreflight
+);
+
+// UPLOAD ROUTES
+router.post(
+  '/payroll-companies/:companyId/uploads/leave-requests',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:write' 
+  }),
+  validate('leave_requests'),
+  uploadV1Controller.uploadLeaveRequests
 );
 
 export default router;

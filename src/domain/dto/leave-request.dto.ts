@@ -82,3 +82,33 @@ export class AdjustDaysDto {
 export class ConvertLeavePlanToRequestDto {
   leavePlanId!: number;
 }
+
+export class UploadLeaveRequestViaSpreadsheetDto {
+  rowNumber?: number;
+  companyId!: number;
+  employeeNumber!: string;
+  leaveTypeCode!: string;
+  startDate!: Date;
+  returnDate!: Date;
+  comment?: string;
+  notifyApprovers!: 'Yes' | 'No';
+}
+
+export class UploadLeaveRequestCheckedRecords {
+  employeeId!: number;
+  leavePackageId!: number;
+}
+
+export class UploadLeaveRequestResponse {
+  successful!: {
+    leaveRequestId?: number;
+    rowNumber?: number;
+  }[];
+  failed!: {
+    rowNumber?: number;
+    errors: {
+      column: string;
+      reason: string;
+    }[]
+  }[];
+}

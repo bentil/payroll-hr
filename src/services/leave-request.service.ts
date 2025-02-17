@@ -14,6 +14,9 @@ import {
   QueryLeaveRequestDto,
   RequestQueryMode,
   UpdateLeaveRequestDto,
+  UploadLeaveRequestCheckedRecords,
+  UploadLeaveRequestResponse,
+  UploadLeaveRequestViaSpreadsheetDto,
 } from '../domain/dto/leave-request.dto';
 import {
   EmployeLeaveTypeSummary,
@@ -46,7 +49,9 @@ import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import * as leaveTypeService from './leave-type.service';
 import * as leavePlanService from './leave-plan.service';
-
+import * as leaveTypeRepository from '../repositories/leave-type';
+import * as companyRepository from '../repositories/payroll-company.repository';
+import Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -55,6 +60,7 @@ const events = {
   modified: 'event.LeaveRequest.modified',
   deleted: 'event.LeaveRequest.deleted',
 } as const;
+const workbook = new Excel.Workbook();
 
 export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
@@ -810,3 +816,338 @@ export async function convertLeavePlanToRequest(
 
   return newLeaveRequest;
 }
+
+export async function uploadLeaveRequests(
+  companyId: number, 
+  uploadedExcelFile: Express.Multer.File,
+  authorizedUser: AuthorizedUser
+): Promise<UploadLeaveRequestResponse> {
+  const { category } = authorizedUser;
+  if (category !== UserCategory.HR && category !== UserCategory.OPERATIONS) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+
+  const company = await companyRepository.findFirst({ id: companyId });
+
+  if (!company) {
+    logger.warn('Company[%s] does not exist', companyId);
+    throw new NotFoundError({ message: 'Company does not exist' });
+  }
+
+  const successful: UploadLeaveRequestResponse['successful'] = [];
+  const failed: UploadLeaveRequestResponse['failed'] = [];
+
+  try {
+    const collectedRows: UploadLeaveRequestViaSpreadsheetDto[] = [];
+    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer);
+    const worksheet = sheet.getWorksheet('leave_requests');
+    if (!worksheet) {
+      throw new NotFoundError({
+        message: 'Work sheet with data not availble'
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let noRows = -1;
+    worksheet.eachRow({ includeEmpty: false }, function() {
+      noRows += 1;
+    });
+
+    worksheet.eachRow(((row: Excel.Row, rowNumber: number) => {
+      const handleNull = (index: number) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        return row?.values[index] || null;
+      };
+
+      if (row.hasValues && Array.isArray(row.values)) {
+
+        if (rowNumber !== 1) {
+          const payload: UploadLeaveRequestViaSpreadsheetDto = {
+            companyId,
+            rowNumber,
+            employeeNumber: handleNull(1),
+            leaveTypeCode: handleNull(2),
+            startDate: handleNull(3),
+            returnDate: handleNull(4),
+            comment: handleNull(5),
+            notifyApprovers: handleNull(6),
+          };
+
+          collectedRows.push(payload);
+        }
+      }
+    }));
+
+    for (const collectedRow of collectedRows) {
+      const rowNumber = collectedRow.rowNumber;   
+
+      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow);
+
+      if (!validation.issues.length) {
+        const checkedRecords = validation.checkedRecords;
+        const record = createLeaveRequestPayloadStructure(collectedRow, checkedRecords);
+
+        const numberOfDays = await countWorkingDays({ 
+          startDate: collectedRow.startDate, 
+          endDate: collectedRow.returnDate, 
+          includeHolidays: validation.includeHolidays,
+          includeWeekends: validation.includeWeekends 
+        });
+      
+        if (numberOfDays > validation.numberOfDaysLeft) {
+          logger.warn('Number of days requested is more than number of days left for this leave');
+          throw new RequirementNotMetError({
+            name: errors.LEAVE_QUOTA_EXCEEDED,
+            message: `You have ${validation.numberOfDaysLeft} day(s) left for this leave type`
+          });
+      
+        }
+        
+        const newBonus = await leaveRequestRepository.create({
+          ...record.leaveReqeust,
+          numberOfDays,
+          approvalsRequired: validation.approvalsRequired
+        });
+
+        if (newBonus) {
+          successful.push({
+            leaveRequestId: newBonus.id,
+            rowNumber: collectedRow.rowNumber,
+          });
+        }
+      } else {
+        failed.push({ rowNumber, errors: validation.issues, });
+      }
+    }
+  } catch (err) {
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  return { successful, failed };
+}
+
+const handleLeaveRequestSpreadSheetValidation =
+  async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+    const response = {
+      checkedRecords: {
+        leavePackageId: 0,
+        employeeId: 0
+      },
+      issues: [] as {
+          reason: string,
+          column: string,
+      }[]
+    };
+
+    const extraDataObject = {
+      includeHolidays: false,
+      includeWeekends: false,
+      numberOfDaysLeft: 0,
+      approvalsRequired: 0
+    };
+
+    let employeeId: number;
+
+    const expectedColumns = [
+      {
+        name: 'employeeNumber', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (!data.employeeNumber) {
+            return false;
+          }
+
+          const employee: EmployeeDto | null= await employeeRepository.findFirst(
+            {
+              employeeNumber: data.employeeNumber,
+              companyId: data.companyId
+            },
+            {
+              company: true
+            }
+          );
+
+          if (!employee) {
+            return {
+              error: {
+                column: 'employeeNumber',
+                reason: 'This employee does not exists'
+              },
+            };
+          }
+          employeeId = employee.id;
+          console.log('first', employee);
+          const value = employee.company!.leaveRequestApprovalsRequired;
+          console.log(value);
+          extraDataObject.approvalsRequired = value;
+
+          return { id: employee.id, column: 'employeeId' };
+        }
+      },
+      {
+        name: 'leaveTypeCode', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (!data.leaveTypeCode)  {
+            return {
+              error: {
+                column: 'code',
+                reason: 'Leave type code is required'
+              },
+            };
+          }
+          const leaveType = await leaveTypeRepository.findFirst({
+            code: data.leaveTypeCode,
+          });
+
+          if (!leaveType) {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'This leave type does not exists'
+              },
+            };
+          }
+          
+          const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = 
+            await leaveTypeService.validate({ 
+              leaveTypeId: leaveType?.id, 
+              employeeId 
+            });
+          extraDataObject.includeHolidays = considerPublicHolidayAsWorkday 
+            ? considerPublicHolidayAsWorkday 
+            : false;
+          extraDataObject.includeWeekends = considerWeekendAsWorkday 
+            ? considerWeekendAsWorkday 
+            : false;
+          const leaveTypeSumary = await getEmployeeLeaveTypeSummary(employeeId, leaveType.id);
+          extraDataObject.numberOfDaysLeft = leaveTypeSumary.numberOfDaysLeft;
+
+          if (leavePackageId)  {
+            return { id: leavePackageId, column: 'leavePackageId' };
+          } else {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'No applicable leave package found'
+              },
+            };
+          }
+        }
+      },
+      {
+        name: 'startDate', type: 'date', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (data.startDate) {
+            if (!helpers.isValidDate(data.startDate)) {
+              return {
+                error: {
+                  column: 'startDate',
+                  reason: 'Date provided is not valid'
+                },
+              };
+            }
+          } else {
+            return {
+              error: {
+                column: 'periodStartDate',
+                reason: 'Start date is required'
+              },
+            };
+          }
+
+          return false;
+        }
+      },
+      {
+        name: 'returnDate', type: 'date', required: false,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (data.returnDate) {
+            if (!helpers.isValidDate(data.returnDate)) {
+              return {
+                error: {
+                  column: 'returnDate',
+                  reason: 'Date provided is not valid'
+                },
+              };
+            }
+          }
+
+          return false;
+        }
+      },
+      {
+        name: 'notifyApprovers', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          const expected = ['no', 'yes'];
+          const prorate = data?.notifyApprovers?.toLowerCase();
+          if (!expected.includes(prorate)) {
+            return {
+              error: {
+                column: 'notifyApprovers',
+                reason: `Notify approvers has to be one of the following options. ${
+                  JSON.stringify(expected)
+                }`
+              },
+            };
+          }
+
+          return { id: prorate === 'yes', column: 'prorate' };
+        }
+      }
+    ];
+
+    for (const expectedColumn of expectedColumns) {
+
+      const columnName = expectedColumn.name;
+      const columnValue = 
+        data?.[expectedColumn.name as keyof UploadLeaveRequestViaSpreadsheetDto] || null;
+
+      if (columnValue && expectedColumn.type === 'date') {
+        (data as any)[expectedColumn.name as keyof UploadLeaveRequestViaSpreadsheetDto] = 
+          new Date(columnValue);
+      }
+
+      if (!columnValue && expectedColumn.required) {
+        response.issues.push({
+          column: columnName,
+          reason: `${columnName} is required`,
+        });
+      }
+      if (!['date'].includes(expectedColumn.type)) {
+        if (columnValue && typeof columnValue !== expectedColumn.type) {
+          response.issues.push({
+            column: columnName,
+            reason: `Expected ${expectedColumn.type} but got ${typeof columnValue}`
+          });
+        }
+      }
+
+      const executeValidator = await expectedColumn.validate(data);
+      if (executeValidator && ('error' in executeValidator) ) {
+        response.issues.push(executeValidator.error as any);
+      }
+
+      if ( executeValidator && ('id' in executeValidator) 
+        && executeValidator?.column) {
+        const key = executeValidator.column, value = executeValidator.id;
+        response.checkedRecords = { ...response.checkedRecords, [key]: value };
+      }
+
+    }
+
+    
+    return { ...response, ...extraDataObject };
+  };
+
+const createLeaveRequestPayloadStructure = (
+  collectedRow: UploadLeaveRequestViaSpreadsheetDto, 
+  checkedRecords: UploadLeaveRequestCheckedRecords
+) => {
+  const leaveRequestCreatePayload = {
+    employeeId: checkedRecords.employeeId,
+    leavePackageId: checkedRecords.leavePackageId,
+    startDate: collectedRow.startDate,
+    returnDate: collectedRow.returnDate,
+    comment: collectedRow.comment ? collectedRow.comment : '',
+  };
+  return { leaveReqeust: leaveRequestCreatePayload };
+};

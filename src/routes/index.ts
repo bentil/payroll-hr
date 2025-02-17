@@ -2,6 +2,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 
 import v1Router from './api-v1.route';
+import { serveLeaveRequestTemplate } from '../controllers/system.api';
 
 const appRouter = Router();
 
@@ -26,5 +27,10 @@ if (process.env.NODE_ENV !== 'production') {
     }
   );
 }
+
+appRouter.get(
+  '/templates/uploads/leave_requests.xlsx',
+  serveLeaveRequestTemplate
+);
 
 export default appRouter;
