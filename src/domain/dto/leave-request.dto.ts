@@ -97,6 +97,8 @@ export class UploadLeaveRequestViaSpreadsheetDto {
 export class UploadLeaveRequestCheckedRecords {
   employeeId!: number;
   leavePackageId!: number;
+  numberOfDays!: number;
+  approvalsRequired!: number;
 }
 
 export class UploadLeaveRequestResponse {

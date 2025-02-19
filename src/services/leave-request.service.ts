@@ -881,33 +881,13 @@ export async function uploadLeaveRequests(
     for (const collectedRow of collectedRows) {
       const rowNumber = collectedRow.rowNumber;   
 
-      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow);
+      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow, companyId);
 
       if (!validation.issues.length) {
         const checkedRecords = validation.checkedRecords;
         const record = createLeaveRequestPayloadStructure(collectedRow, checkedRecords);
-
-        const numberOfDays = await countWorkingDays({ 
-          startDate: collectedRow.startDate, 
-          endDate: collectedRow.returnDate, 
-          includeHolidays: validation.includeHolidays,
-          includeWeekends: validation.includeWeekends 
-        });
-      
-        if (numberOfDays > validation.numberOfDaysLeft) {
-          logger.warn('Number of days requested is more than number of days left for this leave');
-          throw new RequirementNotMetError({
-            name: errors.LEAVE_QUOTA_EXCEEDED,
-            message: `You have ${validation.numberOfDaysLeft} day(s) left for this leave type`
-          });
-      
-        }
         
-        const newBonus = await leaveRequestRepository.create({
-          ...record.leaveReqeust,
-          numberOfDays,
-          approvalsRequired: validation.approvalsRequired
-        });
+        const newBonus = await leaveRequestRepository.create(record.leaveReqeust);
 
         if (newBonus) {
           successful.push({
@@ -927,11 +907,13 @@ export async function uploadLeaveRequests(
 }
 
 const handleLeaveRequestSpreadSheetValidation =
-  async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+  async (data: UploadLeaveRequestViaSpreadsheetDto, companyId: number) => {
     const response = {
       checkedRecords: {
         leavePackageId: 0,
-        employeeId: 0
+        employeeId: 0,
+        numberOfDays: 0,
+        approvalsRequired: 0,
       },
       issues: [] as {
           reason: string,
@@ -939,12 +921,10 @@ const handleLeaveRequestSpreadSheetValidation =
       }[]
     };
 
-    const extraDataObject = {
-      includeHolidays: false,
-      includeWeekends: false,
-      numberOfDaysLeft: 0,
-      approvalsRequired: 0
-    };
+    let  includeHolidays: boolean | undefined,
+      includeWeekends: boolean | undefined,
+      numberOfDaysLeft: number | undefined,
+      approvalsRequired: number | undefined;
 
     let employeeId: number;
 
@@ -956,10 +936,10 @@ const handleLeaveRequestSpreadSheetValidation =
             return false;
           }
 
-          const employee: EmployeeDto | null= await employeeRepository.findFirst(
+          const employee: EmployeeDto | null = await employeeRepository.findFirst(
             {
               employeeNumber: data.employeeNumber,
-              companyId: data.companyId
+              companyId
             },
             {
               company: true
@@ -973,14 +953,13 @@ const handleLeaveRequestSpreadSheetValidation =
                 reason: 'This employee does not exists'
               },
             };
-          }
-          employeeId = employee.id;
-          console.log('first', employee);
-          const value = employee.company!.leaveRequestApprovalsRequired;
-          console.log(value);
-          extraDataObject.approvalsRequired = value;
+          } else {
+            employeeId = employee.id;
+            approvalsRequired = employee.company!.leaveRequestApprovalsRequired;
 
-          return { id: employee.id, column: 'employeeId' };
+            return { id: employee.id, column: 'employeeId' };
+          }
+          
         }
       },
       {
@@ -1006,22 +985,36 @@ const handleLeaveRequestSpreadSheetValidation =
               },
             };
           }
-          
-          const { leavePackageId, considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = 
+          let validateData: ValidationReturnObject;
+          try {
+            validateData = 
             await leaveTypeService.validate({ 
               leaveTypeId: leaveType?.id, 
               employeeId 
             });
-          extraDataObject.includeHolidays = considerPublicHolidayAsWorkday 
-            ? considerPublicHolidayAsWorkday 
-            : false;
-          extraDataObject.includeWeekends = considerWeekendAsWorkday 
-            ? considerWeekendAsWorkday 
-            : false;
-          const leaveTypeSumary = await getEmployeeLeaveTypeSummary(employeeId, leaveType.id);
-          extraDataObject.numberOfDaysLeft = leaveTypeSumary.numberOfDaysLeft;
+          } catch (err) {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'No applicable leave package found'
+              },
+            };
+          }
 
-          if (leavePackageId)  {
+          if (validateData)  {
+            const { 
+              considerPublicHolidayAsWorkday, 
+              considerWeekendAsWorkday, 
+              leavePackageId
+            } = validateData;
+            includeHolidays = considerPublicHolidayAsWorkday 
+              ? considerPublicHolidayAsWorkday 
+              : false;
+            includeWeekends = considerWeekendAsWorkday 
+              ? considerWeekendAsWorkday 
+              : false;
+            const leaveTypeSumary = await getEmployeeLeaveTypeSummary(employeeId, leaveType.id);
+            numberOfDaysLeft = leaveTypeSumary.numberOfDaysLeft;
             return { id: leavePackageId, column: 'leavePackageId' };
           } else {
             return {
@@ -1070,8 +1063,26 @@ const handleLeaveRequestSpreadSheetValidation =
               };
             }
           }
+          const numberOfDays = await countWorkingDays({ 
+            startDate: data.startDate, 
+            endDate: data.returnDate, 
+            includeHolidays: includeHolidays,
+            includeWeekends: includeWeekends 
+          });
+        
+          if (numberOfDaysLeft && numberOfDays > numberOfDaysLeft) {
+            logger.warn('Number of days requested is more than number of days left for this leave');
+            return {
+              error: {
+                column: 'returnDate',
+                reason: 'Number of days requested is more than number of days left for this leave'
+              },
+            };
+        
+          } else {
+            return { id: numberOfDays, column: 'numberOfDays' };
+          }
 
-          return false;
         }
       },
       {
@@ -1131,11 +1142,15 @@ const handleLeaveRequestSpreadSheetValidation =
         const key = executeValidator.column, value = executeValidator.id;
         response.checkedRecords = { ...response.checkedRecords, [key]: value };
       }
+      
+      if (approvalsRequired) {
+        response.checkedRecords.approvalsRequired = approvalsRequired;
+      }
 
     }
 
     
-    return { ...response, ...extraDataObject };
+    return response;
   };
 
 const createLeaveRequestPayloadStructure = (
@@ -1148,6 +1163,8 @@ const createLeaveRequestPayloadStructure = (
     startDate: collectedRow.startDate,
     returnDate: collectedRow.returnDate,
     comment: collectedRow.comment ? collectedRow.comment : '',
+    numberOfDays: checkedRecords.numberOfDays,
+    approvalsRequired: checkedRecords.approvalsRequired
   };
   return { leaveReqeust: leaveRequestCreatePayload };
 };
