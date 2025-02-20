@@ -2,6 +2,7 @@ import {
   LEAVE_REQUEST_STATUS,
   LeaveRequest,
   LeaveType,
+  PayrollCompany,
   Prisma,
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
@@ -820,13 +821,7 @@ export async function convertLeavePlanToRequest(
 export async function uploadLeaveRequests(
   companyId: number, 
   uploadedExcelFile: Express.Multer.File,
-  authorizedUser: AuthorizedUser
 ): Promise<UploadLeaveRequestResponse> {
-  const { category } = authorizedUser;
-  if (category !== UserCategory.HR && category !== UserCategory.OPERATIONS) {
-    throw new ForbiddenError({ message: 'User not allowed to perform action' });
-  }
-
   const company = await companyRepository.findFirst({ id: companyId });
 
   if (!company) {
@@ -881,19 +876,48 @@ export async function uploadLeaveRequests(
     for (const collectedRow of collectedRows) {
       const rowNumber = collectedRow.rowNumber;   
 
-      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow, companyId);
+      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow, company);
 
       if (!validation.issues.length) {
         const checkedRecords = validation.checkedRecords;
         const record = createLeaveRequestPayloadStructure(collectedRow, checkedRecords);
         
-        const newBonus = await leaveRequestRepository.create(record.leaveReqeust);
-
-        if (newBonus) {
+        const newLeaveRequest = await leaveRequestRepository.create(record.leaveReqeust);
+      
+        if (newLeaveRequest) {
           successful.push({
-            leaveRequestId: newBonus.id,
+            leaveRequestId: newLeaveRequest.id,
             rowNumber: collectedRow.rowNumber,
           });
+          if (validation.checkedRecords.notifyApprovers === true) {
+            const approvers = await getEmployeeApproversWithDefaults({
+              employeeId: newLeaveRequest.employeeId,
+              approvalType: 'leave'
+            });
+            
+            for (const x of approvers) {
+              if (x.approver && x.approver.email && x.employee) {
+                sendLeaveRequestEmail({
+                  requestId: newLeaveRequest.id,
+                  approverEmail: x.approver.email,
+                  approverFirstName: x.approver.firstName,
+                  employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                  requestDate: newLeaveRequest.createdAt,
+                  startDate: newLeaveRequest.startDate,
+                  endDate: newLeaveRequest.returnDate,
+                  leaveTypeName: checkedRecords.leaveTypeName,
+                  employeePhotoUrl: x.employee.photoUrl,
+                });
+              }
+            }
+            successful.push({
+              approversNotified: true
+            });
+          } else {
+            successful.push({
+              approversNotified: false
+            });
+          }
         }
       } else {
         failed.push({ rowNumber, errors: validation.issues, });
@@ -907,13 +931,15 @@ export async function uploadLeaveRequests(
 }
 
 const handleLeaveRequestSpreadSheetValidation =
-  async (data: UploadLeaveRequestViaSpreadsheetDto, companyId: number) => {
+  async (data: UploadLeaveRequestViaSpreadsheetDto, company: PayrollCompany) => {
     const response = {
       checkedRecords: {
         leavePackageId: 0,
         employeeId: 0,
         numberOfDays: 0,
         approvalsRequired: 0,
+        leaveTypeName: '',
+        notifyApprovers: true,
       },
       issues: [] as {
           reason: string,
@@ -924,7 +950,8 @@ const handleLeaveRequestSpreadSheetValidation =
     let  includeHolidays: boolean | undefined,
       includeWeekends: boolean | undefined,
       numberOfDaysLeft: number | undefined,
-      approvalsRequired: number | undefined;
+      approvalsRequired: number | undefined,
+      leaveTypeName: string | undefined;
 
     let employeeId: number;
 
@@ -939,10 +966,7 @@ const handleLeaveRequestSpreadSheetValidation =
           const employee: EmployeeDto | null = await employeeRepository.findFirst(
             {
               employeeNumber: data.employeeNumber,
-              companyId
-            },
-            {
-              company: true
+              companyId: company.id
             }
           );
 
@@ -955,7 +979,7 @@ const handleLeaveRequestSpreadSheetValidation =
             };
           } else {
             employeeId = employee.id;
-            approvalsRequired = employee.company!.leaveRequestApprovalsRequired;
+            approvalsRequired = company.leaveRequestApprovalsRequired;
 
             return { id: employee.id, column: 'employeeId' };
           }
@@ -985,6 +1009,7 @@ const handleLeaveRequestSpreadSheetValidation =
               },
             };
           }
+          leaveTypeName = leaveType.name;
           let validateData: ValidationReturnObject;
           try {
             validateData = 
@@ -1089,8 +1114,8 @@ const handleLeaveRequestSpreadSheetValidation =
         name: 'notifyApprovers', type: 'string', required: true,
         validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
           const expected = ['no', 'yes'];
-          const prorate = data?.notifyApprovers?.toLowerCase();
-          if (!expected.includes(prorate)) {
+          const notifyApprovers = data.notifyApprovers?.toLowerCase();
+          if (!expected.includes(notifyApprovers)) {
             return {
               error: {
                 column: 'notifyApprovers',
@@ -1101,7 +1126,7 @@ const handleLeaveRequestSpreadSheetValidation =
             };
           }
 
-          return { id: prorate === 'yes', column: 'prorate' };
+          return { id: notifyApprovers === 'yes', column: 'notifyApprovers' };
         }
       }
     ];
@@ -1145,6 +1170,9 @@ const handleLeaveRequestSpreadSheetValidation =
       
       if (approvalsRequired) {
         response.checkedRecords.approvalsRequired = approvalsRequired;
+      }
+      if (leaveTypeName) {
+        response.checkedRecords.leaveTypeName = leaveTypeName;
       }
 
     }

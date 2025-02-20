@@ -1,7 +1,6 @@
 import { 
   Path, 
   Post,
-  Request, 
   Route, 
   Security, 
   Tags, 
@@ -28,9 +27,8 @@ export class UploadV1Controller {
   public async uploadLeaveRequests(
     @Path('companyId') companyId: number,
     @UploadedFile() file: Express.Multer.File,
-    @Request() req: Express.Request
   ): Promise<UploadLeaveRequestResponse> {
     this.logger.debug('About to upload LeaveRequests for the company[%s]', companyId);
-    return await leaveReqeustService.uploadLeaveRequests(companyId, file, req.user!);
+    return await leaveReqeustService.uploadLeaveRequests(companyId, file);
   }
 }

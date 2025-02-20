@@ -99,12 +99,15 @@ export class UploadLeaveRequestCheckedRecords {
   leavePackageId!: number;
   numberOfDays!: number;
   approvalsRequired!: number;
+  leaveTypeName?: string;
+  notifyApprovers?: boolean;
 }
 
 export class UploadLeaveRequestResponse {
   successful!: {
     leaveRequestId?: number;
     rowNumber?: number;
+    approversNotified?: boolean;
   }[];
   failed!: {
     rowNumber?: number;
