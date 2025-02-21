@@ -885,10 +885,6 @@ export async function uploadLeaveRequests(
         const newLeaveRequest = await leaveRequestRepository.create(record.leaveReqeust);
       
         if (newLeaveRequest) {
-          successful.push({
-            leaveRequestId: newLeaveRequest.id,
-            rowNumber: collectedRow.rowNumber,
-          });
           if (validation.checkedRecords.notifyApprovers === true) {
             const approvers = await getEmployeeApproversWithDefaults({
               employeeId: newLeaveRequest.employeeId,
@@ -911,10 +907,14 @@ export async function uploadLeaveRequests(
               }
             }
             successful.push({
+              leaveRequestId: newLeaveRequest.id,
+              rowNumber: collectedRow.rowNumber,
               approversNotified: true
             });
           } else {
             successful.push({
+              leaveRequestId: newLeaveRequest.id,
+              rowNumber: collectedRow.rowNumber,
               approversNotified: false
             });
           }
