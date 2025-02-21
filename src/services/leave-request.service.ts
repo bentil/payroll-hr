@@ -2,6 +2,7 @@ import {
   LEAVE_REQUEST_STATUS,
   LeaveRequest,
   LeaveType,
+  PayrollCompany,
   Prisma,
 } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
@@ -14,6 +15,9 @@ import {
   QueryLeaveRequestDto,
   RequestQueryMode,
   UpdateLeaveRequestDto,
+  UploadLeaveRequestCheckedRecords,
+  UploadLeaveRequestResponse,
+  UploadLeaveRequestViaSpreadsheetDto,
 } from '../domain/dto/leave-request.dto';
 import {
   EmployeLeaveTypeSummary,
@@ -46,7 +50,9 @@ import { countWorkingDays } from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import * as leaveTypeService from './leave-type.service';
 import * as leavePlanService from './leave-plan.service';
-
+import * as leaveTypeRepository from '../repositories/leave-type';
+import * as companyRepository from '../repositories/payroll-company.repository';
+import Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -55,6 +61,7 @@ const events = {
   modified: 'event.LeaveRequest.modified',
   deleted: 'event.LeaveRequest.deleted',
 } as const;
+const workbook = new Excel.Workbook();
 
 export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
@@ -810,3 +817,382 @@ export async function convertLeavePlanToRequest(
 
   return newLeaveRequest;
 }
+
+export async function uploadLeaveRequests(
+  companyId: number, 
+  uploadedExcelFile: Express.Multer.File,
+): Promise<UploadLeaveRequestResponse> {
+  const company = await companyRepository.findFirst({ id: companyId });
+
+  if (!company) {
+    logger.warn('Company[%s] does not exist', companyId);
+    throw new NotFoundError({ message: 'Company does not exist' });
+  }
+
+  const successful: UploadLeaveRequestResponse['successful'] = [];
+  const failed: UploadLeaveRequestResponse['failed'] = [];
+
+  try {
+    const collectedRows: UploadLeaveRequestViaSpreadsheetDto[] = [];
+    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer);
+    const worksheet = sheet.getWorksheet('leave_requests');
+    if (!worksheet) {
+      throw new NotFoundError({
+        message: 'Work sheet with data not availble'
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let noRows = -1;
+    worksheet.eachRow({ includeEmpty: false }, function() {
+      noRows += 1;
+    });
+
+    worksheet.eachRow(((row: Excel.Row, rowNumber: number) => {
+      const handleNull = (index: number) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        return row?.values[index] || null;
+      };
+
+      if (row.hasValues && Array.isArray(row.values)) {
+
+        if (rowNumber !== 1) {
+          const payload: UploadLeaveRequestViaSpreadsheetDto = {
+            companyId,
+            rowNumber,
+            employeeNumber: handleNull(1),
+            leaveTypeCode: handleNull(2),
+            startDate: handleNull(3),
+            returnDate: handleNull(4),
+            comment: handleNull(5),
+            notifyApprovers: handleNull(6),
+          };
+
+          collectedRows.push(payload);
+        }
+      }
+    }));
+
+    for (const collectedRow of collectedRows) {
+      const rowNumber = collectedRow.rowNumber;   
+
+      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow, company);
+
+      if (!validation.issues.length) {
+        const checkedRecords = validation.checkedRecords;
+        const record = createLeaveRequestPayloadStructure(collectedRow, checkedRecords);
+        
+        const newLeaveRequest = await leaveRequestRepository.create(record.leaveReqeust);
+      
+        if (newLeaveRequest) {
+          if (validation.checkedRecords.notifyApprovers === true) {
+            const approvers = await getEmployeeApproversWithDefaults({
+              employeeId: newLeaveRequest.employeeId,
+              approvalType: 'leave'
+            });
+            
+            for (const x of approvers) {
+              if (x.approver && x.approver.email && x.employee) {
+                sendLeaveRequestEmail({
+                  requestId: newLeaveRequest.id,
+                  approverEmail: x.approver.email,
+                  approverFirstName: x.approver.firstName,
+                  employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                  requestDate: newLeaveRequest.createdAt,
+                  startDate: newLeaveRequest.startDate,
+                  endDate: newLeaveRequest.returnDate,
+                  leaveTypeName: checkedRecords.leaveTypeName,
+                  employeePhotoUrl: x.employee.photoUrl,
+                });
+              }
+            }
+            successful.push({
+              leaveRequestId: newLeaveRequest.id,
+              rowNumber: collectedRow.rowNumber,
+              approversNotified: true
+            });
+          } else {
+            successful.push({
+              leaveRequestId: newLeaveRequest.id,
+              rowNumber: collectedRow.rowNumber,
+              approversNotified: false
+            });
+          }
+        }
+      } else {
+        failed.push({ rowNumber, errors: validation.issues, });
+      }
+    }
+  } catch (err) {
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  return { successful, failed };
+}
+
+const handleLeaveRequestSpreadSheetValidation =
+  async (data: UploadLeaveRequestViaSpreadsheetDto, company: PayrollCompany) => {
+    const response = {
+      checkedRecords: {
+        leavePackageId: 0,
+        employeeId: 0,
+        numberOfDays: 0,
+        approvalsRequired: 0,
+        leaveTypeName: '',
+        notifyApprovers: true,
+      },
+      issues: [] as {
+          reason: string,
+          column: string,
+      }[]
+    };
+
+    let  includeHolidays: boolean | undefined,
+      includeWeekends: boolean | undefined,
+      numberOfDaysLeft: number | undefined,
+      approvalsRequired: number | undefined,
+      leaveTypeName: string | undefined;
+
+    let employeeId: number;
+
+    const expectedColumns = [
+      {
+        name: 'employeeNumber', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (!data.employeeNumber) {
+            return false;
+          }
+
+          const employee: EmployeeDto | null = await employeeRepository.findFirst(
+            {
+              employeeNumber: data.employeeNumber,
+              companyId: company.id
+            }
+          );
+
+          if (!employee) {
+            return {
+              error: {
+                column: 'employeeNumber',
+                reason: 'This employee does not exists'
+              },
+            };
+          } else {
+            employeeId = employee.id;
+            approvalsRequired = company.leaveRequestApprovalsRequired;
+
+            return { id: employee.id, column: 'employeeId' };
+          }
+          
+        }
+      },
+      {
+        name: 'leaveTypeCode', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (!data.leaveTypeCode)  {
+            return {
+              error: {
+                column: 'code',
+                reason: 'Leave type code is required'
+              },
+            };
+          }
+          const leaveType = await leaveTypeRepository.findFirst({
+            code: data.leaveTypeCode,
+          });
+
+          if (!leaveType) {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'This leave type does not exists'
+              },
+            };
+          }
+          leaveTypeName = leaveType.name;
+          let validateData: ValidationReturnObject;
+          try {
+            validateData = 
+            await leaveTypeService.validate({ 
+              leaveTypeId: leaveType?.id, 
+              employeeId 
+            });
+          } catch (err) {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'No applicable leave package found'
+              },
+            };
+          }
+
+          if (validateData)  {
+            const { 
+              considerPublicHolidayAsWorkday, 
+              considerWeekendAsWorkday, 
+              leavePackageId
+            } = validateData;
+            includeHolidays = considerPublicHolidayAsWorkday 
+              ? considerPublicHolidayAsWorkday 
+              : false;
+            includeWeekends = considerWeekendAsWorkday 
+              ? considerWeekendAsWorkday 
+              : false;
+            const leaveTypeSumary = await getEmployeeLeaveTypeSummary(employeeId, leaveType.id);
+            numberOfDaysLeft = leaveTypeSumary.numberOfDaysLeft;
+            return { id: leavePackageId, column: 'leavePackageId' };
+          } else {
+            return {
+              error: {
+                column: 'leaveTypeCode',
+                reason: 'No applicable leave package found'
+              },
+            };
+          }
+        }
+      },
+      {
+        name: 'startDate', type: 'date', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (data.startDate) {
+            if (!helpers.isValidDate(data.startDate)) {
+              return {
+                error: {
+                  column: 'startDate',
+                  reason: 'Date provided is not valid'
+                },
+              };
+            }
+          } else {
+            return {
+              error: {
+                column: 'periodStartDate',
+                reason: 'Start date is required'
+              },
+            };
+          }
+
+          return false;
+        }
+      },
+      {
+        name: 'returnDate', type: 'date', required: false,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          if (data.returnDate) {
+            if (!helpers.isValidDate(data.returnDate)) {
+              return {
+                error: {
+                  column: 'returnDate',
+                  reason: 'Date provided is not valid'
+                },
+              };
+            }
+          }
+          const numberOfDays = await countWorkingDays({ 
+            startDate: data.startDate, 
+            endDate: data.returnDate, 
+            includeHolidays: includeHolidays,
+            includeWeekends: includeWeekends 
+          });
+        
+          if (numberOfDaysLeft && numberOfDays > numberOfDaysLeft) {
+            logger.warn('Number of days requested is more than number of days left for this leave');
+            return {
+              error: {
+                column: 'returnDate',
+                reason: 'Number of days requested is more than number of days left for this leave'
+              },
+            };
+        
+          } else {
+            return { id: numberOfDays, column: 'numberOfDays' };
+          }
+
+        }
+      },
+      {
+        name: 'notifyApprovers', type: 'string', required: true,
+        validate: async (data: UploadLeaveRequestViaSpreadsheetDto) => {
+          const expected = ['no', 'yes'];
+          const notifyApprovers = data.notifyApprovers?.toLowerCase();
+          if (!expected.includes(notifyApprovers)) {
+            return {
+              error: {
+                column: 'notifyApprovers',
+                reason: `Notify approvers has to be one of the following options. ${
+                  JSON.stringify(expected)
+                }`
+              },
+            };
+          }
+
+          return { id: notifyApprovers === 'yes', column: 'notifyApprovers' };
+        }
+      }
+    ];
+
+    for (const expectedColumn of expectedColumns) {
+
+      const columnName = expectedColumn.name;
+      const columnValue = 
+        data?.[expectedColumn.name as keyof UploadLeaveRequestViaSpreadsheetDto] || null;
+
+      if (columnValue && expectedColumn.type === 'date') {
+        (data as any)[expectedColumn.name as keyof UploadLeaveRequestViaSpreadsheetDto] = 
+          new Date(columnValue);
+      }
+
+      if (!columnValue && expectedColumn.required) {
+        response.issues.push({
+          column: columnName,
+          reason: `${columnName} is required`,
+        });
+      }
+      if (!['date'].includes(expectedColumn.type)) {
+        if (columnValue && typeof columnValue !== expectedColumn.type) {
+          response.issues.push({
+            column: columnName,
+            reason: `Expected ${expectedColumn.type} but got ${typeof columnValue}`
+          });
+        }
+      }
+
+      const executeValidator = await expectedColumn.validate(data);
+      if (executeValidator && ('error' in executeValidator) ) {
+        response.issues.push(executeValidator.error as any);
+      }
+
+      if ( executeValidator && ('id' in executeValidator) 
+        && executeValidator?.column) {
+        const key = executeValidator.column, value = executeValidator.id;
+        response.checkedRecords = { ...response.checkedRecords, [key]: value };
+      }
+      
+      if (approvalsRequired) {
+        response.checkedRecords.approvalsRequired = approvalsRequired;
+      }
+      if (leaveTypeName) {
+        response.checkedRecords.leaveTypeName = leaveTypeName;
+      }
+
+    }
+
+    
+    return response;
+  };
+
+const createLeaveRequestPayloadStructure = (
+  collectedRow: UploadLeaveRequestViaSpreadsheetDto, 
+  checkedRecords: UploadLeaveRequestCheckedRecords
+) => {
+  const leaveRequestCreatePayload = {
+    employeeId: checkedRecords.employeeId,
+    leavePackageId: checkedRecords.leavePackageId,
+    startDate: collectedRow.startDate,
+    returnDate: collectedRow.returnDate,
+    comment: collectedRow.comment ? collectedRow.comment : '',
+    numberOfDays: checkedRecords.numberOfDays,
+    approvalsRequired: checkedRecords.approvalsRequired
+  };
+  return { leaveReqeust: leaveRequestCreatePayload };
+};

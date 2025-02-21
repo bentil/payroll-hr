@@ -15,6 +15,7 @@ import {
 } from '../services/employee-approver.service';
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
+import multer from 'multer';
 
 
 const logger = rootLogger.child({ context: 'HelpersUtil' });
@@ -341,3 +342,25 @@ export async function applyApprovalScopeToQuery(
 
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
+
+export function isValidDate(date: Date): boolean {
+  if (!isNaN(date.getTime())) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const fileUpload = (request: any, type: 'file' | 'files') => {
+  if (type === 'file') {
+    const multerSingle = multer().single(type);
+    return new Promise((resolve, reject) => {
+      multerSingle(request, undefined as any, async (error) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(request);
+      });
+    });
+  }
+};
