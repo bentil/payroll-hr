@@ -484,7 +484,7 @@ router.delete(
 // ### LEAVE REQUEST ROUTES
 router.post(
   '/leave-requests',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.addNewLeaveRequest
 );
@@ -497,14 +497,14 @@ router.patch(
 );
 router.get(
   '/leave-requests',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.getLeaveRequests
 );
 
 router.get(
   '/leave-requests/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leaveReqV1Controller.getLeaveRequest
 );
 
@@ -552,7 +552,7 @@ router.post(
 router.post(
   '/payroll-compan(y|ies)/:companyId/tree/nodes',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
@@ -574,7 +574,7 @@ router.get(
 router.patch(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
@@ -584,7 +584,7 @@ router.patch(
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId/employee',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   treeNodeV1Controller.unlinkEmployee
@@ -593,7 +593,7 @@ router.delete(
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
@@ -759,7 +759,7 @@ router.delete(
 router.post(
   '/company-document-types',
   authenticateUser({ 
-    category: [UserCategory.HR], 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:information:write' 
   }),
   validateRequestBody(CREATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
@@ -768,28 +768,28 @@ router.post(
 
 router.get(
   '/company-document-types',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.getCompanyDocumentTypes
 );
 
 router.get(
   '/company-document-types/search',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(SEARCH_COMPANY_DOCUMENT_TYPE_SCHEMA),
   compDocTypeV1Controller.searchCompanyDocumentTypes
 );
 
 router.get(
   '/company-document-types/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   compDocTypeV1Controller.getCompanyDocumentType
 );
 
 router.patch(
   '/company-document-types/:id',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:information:write'
   }),
   validateRequestBody(UPDATE_COMPANY_DOCUMENT_TYPE_SCHEMA),
@@ -799,7 +799,7 @@ router.patch(
 router.delete(
   '/company-document-types/:id',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:information:write'
   }),
   compDocTypeV1Controller.deleteCompanyDocumentType
@@ -809,7 +809,7 @@ router.delete(
 
 router.post(
   '/employee-documents',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(CREATE_EMPLOYEE_DOCUMENT_SCHEMA),
   employeeDocumentV1Controller.addEmployeeDocument
 );
@@ -829,14 +829,14 @@ router.get(
 
 router.patch(
   '/employee-documents/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   validateRequestBody(UPDATE_EMPLOYEE_DOCUMENT_SCHEMA),
   employeeDocumentV1Controller.updateEmployeeDocument
 );
 
 router.delete(
   '/employee-documents/:id',
-  authenticateUser({ category: [UserCategory.HR] }),
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
   employeeDocumentV1Controller.deleteEmployeeDocument
 );
 
@@ -845,7 +845,7 @@ router.delete(
 router.post(
   '/announcements',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(CREATE_ANNOUNCEMENT_SCHEMA),
@@ -855,7 +855,7 @@ router.post(
 router.get(
   '/announcements',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestQuery(QUERY_ANNOUNCEMENT_SCHEMA),
@@ -864,7 +864,7 @@ router.get(
 
 router.get(
   '/announcements/me',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.getMyAnnouncements
 );
@@ -872,7 +872,7 @@ router.get(
 router.get(
   '/announcements/search',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
@@ -881,21 +881,21 @@ router.get(
 
 router.get(
   '/announcements/me/search',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
   announcementV1Controller.searchMyAnnouncements
 );
 
 router.get(
   '/announcements/:id',
-  authenticateUser({ isEmployee: true, permissions: 'announcements:write' }),
+  authenticateUser({ permissions: 'announcements:write' }),
   announcementV1Controller.getAnnouncement
 );
 
 router.patch(
   '/announcements/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_SCHEMA),
@@ -905,7 +905,7 @@ router.patch(
 router.patch(
   '/announcements/:announcementId/resources/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA),
@@ -915,7 +915,7 @@ router.patch(
 router.delete(
   '/announcements/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   announcementV1Controller.deleteAnnouncement

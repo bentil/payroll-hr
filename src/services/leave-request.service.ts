@@ -69,9 +69,10 @@ export async function addLeaveRequest(
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId, startDate } = payload;
   const { employeeId: reqEmployeeId, category } = authUser;
-  if ((reqEmployeeId !== employeeId) && (category !== UserCategory.HR)) {
+  const allowedCategories = [ UserCategory.HR, UserCategory.OPERATIONS ];
+  if ((reqEmployeeId !== employeeId) && (!allowedCategories.includes(category))) {
     logger.warn(
-      'LeaveRequest was not created by Employee[%s] or an HR employee. Create rejected',
+      'LeaveRequest was not created by Employee[%s] or appropriate user. Create rejected',
       employeeId
     );
     throw new ForbiddenError({
@@ -667,11 +668,12 @@ export async function adjustDays(
   payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
   const { employeeId, category } = authorizedUser;
+  const allowedCategories = [ UserCategory.HR, UserCategory.OPERATIONS ];
   
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   // check for employee being an hr
-  if(category !== UserCategory.HR) {
+  if(!allowedCategories.includes(category)) {
     throw new ForbiddenError({
       message: 'You are not allowed to perform this action'
     });
