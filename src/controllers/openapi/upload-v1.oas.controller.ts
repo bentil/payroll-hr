@@ -2,7 +2,6 @@ import {
   Get,
   Path, 
   Post,
-  Queries,
   Route, 
   Request,
   Security, 
@@ -12,7 +11,6 @@ import {
 import { rootLogger } from '../../utils/logger';
 import * as leaveReqeustService from '../../services/leave-request.service';
 import { 
-  QueryLeaveRequestDto, 
   UploadLeaveRequestResponse 
 } from '../../domain/dto/leave-request.dto';
 
@@ -49,11 +47,10 @@ export class UploadV1Controller {
   @Get('/payroll-companies/{companyId}/exports/leave-requests')
     public async exportLeaveRequests(
       @Path('companyId') companyId: number,
-      @Queries() query: QueryLeaveRequestDto,
       @Request() req: Express.Request
     ): Promise<any> {
       this.logger.debug('Received request to serve LeaveRequestTemplate');
-      const rel = await leaveReqeustService.exportLeaveRequests(companyId, query, req.user!);
+      const rel = await leaveReqeustService.exportLeaveRequests(companyId, req.user!);
       return rel;
     }
 

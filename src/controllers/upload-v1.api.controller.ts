@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { UploadV1Controller } from './openapi/upload-v1.oas.controller';
-import { QueryLeaveRequestDto } from '../domain/dto/leave-request.dto';
 
 const controller = new UploadV1Controller();
 export async function uploadLeaveRequests(
@@ -26,7 +25,7 @@ export async function exportLeaveRequests(
   try {
     const { companyId } = req.params;  
     const response = await controller.exportLeaveRequests(
-      +companyId, req.query as unknown as QueryLeaveRequestDto, req
+      +companyId, req
     );
     res.setHeader(
       'Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

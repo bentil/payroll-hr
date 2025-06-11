@@ -1202,25 +1202,23 @@ const createLeaveRequestPayloadStructure = (
 
 export async function exportLeaveRequests(
   companyId: number,
-  query: QueryLeaveRequestDto,
   authorizedUser: AuthorizedUser
 ) {
-  console.log('test', query);
   const page: number = 1;
   const take = config.pagination.limit;
   const orderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
-  console.log('Exporting leave requests with query', query);
+  console.log('Exporting leave requests for Company[%s]', companyId);
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, 
-    { queryMode: RequestQueryMode.ALL },
+    { companyId, queryMode: RequestQueryMode.ALL },
     { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   let result: ListWithPagination<LeaveRequestDto>;
   try {
-    logger.debug('Finding LeaveRequest(s) that matched query', { query });
+    logger.debug('Finding LeaveRequest(s) for Company[%s]', companyId);
     result = await leaveRequestRepository.find({
       skip,
       take,
@@ -1235,9 +1233,13 @@ export async function exportLeaveRequests(
         employee: true,
       }
     });
-    logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
+    logger.info(
+      'Found %d LeaveRequest(s) to export for Company[%s]', 
+      result.data.length, 
+      companyId
+    );
   } catch (err) {
-    logger.warn('Querying LeaveRequest with query failed', { query }, { error: err as Error });
+    logger.warn('Querying LeaveRequest failed', { error: err as Error });
     throw new ServerError({
       message: (err as Error).message,
       cause: err
@@ -1265,15 +1267,5 @@ export async function exportLeaveRequests(
       notifyApprovers: ''
     });
   });
-  // for (const leaveRequest of result.data) {
-  //   const validate = await leaveTypeService.validate({ 
-  //     leaveTypeId: leaveRequest.leaveTypeId, 
-  //     employeeId 
-  //   })
-  //   worksheet.addRow({
-  //     employeeNumber: leaveRequest.employee?.employeeNumber,
-  //     leaveTypeCode: leaveRequest.lea
-  //   })
-  // }
   return workbook;
 }

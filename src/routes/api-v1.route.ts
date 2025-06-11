@@ -1003,7 +1003,6 @@ router.get(
     category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:read' 
   }),
-  validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
   uploadV1Controller.exportLeaveRequests
 );
 
