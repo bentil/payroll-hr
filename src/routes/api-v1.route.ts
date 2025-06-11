@@ -249,41 +249,50 @@ router.delete(
 
 router.post(
   '/disciplinary-action-types',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.addNewDisciplinaryActionType
 );
 
 router.get(
   '/disciplinary-action-types',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/search',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionType
 );
 
 router.patch(
   '/disciplinary-action-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(UPDATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.updateDisciplinaryActionType
 );
 
 router.delete(
   '/disciplinary-action-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'company_configs:conduct:write'
+  }),
   disciplinaryActionTypeV1Controller.deleteDisciplinaryActionType
 );
 
@@ -985,6 +994,17 @@ router.post(
   }),
   validate('leave_requests'),
   uploadV1Controller.uploadLeaveRequests
+);
+
+
+router.get(
+  '/payroll-companies/:companyId/exports/leave-requests',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:read' 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
+  uploadV1Controller.exportLeaveRequests
 );
 
 export default router;

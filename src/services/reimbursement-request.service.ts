@@ -539,12 +539,34 @@ export async function searchReimbursementRequests(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        title: {
-          search: searchParam,
-        },
-        description: {
-          search: searchParam,
-        },
+        OR: [
+          {
+            employee: {
+              firstName: {
+                search: searchParam
+              },
+              lastName: {
+                search: searchParam
+              },
+              otherNames: {
+                search: searchParam
+              },
+              employeeNumber: {
+                search: searchParam,
+              },
+            }
+          },
+          {
+            title: {
+              search: searchParam,
+            }
+          },
+          {
+            description: {
+              search: searchParam,
+            }
+          }
+        ]
       },
       include: { 
         employee: true, 

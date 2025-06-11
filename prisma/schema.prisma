@@ -112,6 +112,7 @@ model Employee {
   department                      Department?                 @relation(fields: [departmentId], references: [id])
   departmentLeadership            DepartmentLeadership[]
 
+  @@fulltext([firstName, lastName, otherNames, employeeNumber])
   @@map("employee")
 }
 

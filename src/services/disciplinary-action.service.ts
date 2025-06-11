@@ -99,7 +99,8 @@ export async function addDisciplinaryAction(
 }
 
 export async function getDisciplinaryActions(
-  query: QueryDisciplinaryActionDto
+  query: QueryDisciplinaryActionDto,
+  authUser: AuthorizedUser
 ): Promise<ListWithPagination<DisciplinaryActionDto>> {
   const {
     page,
@@ -114,19 +115,35 @@ export async function getDisciplinaryActions(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
-
+  // add employee scoping
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, 
+    {
+      employeeId,
+      companyId
+    }
+  );
   let result: ListWithPagination<DisciplinaryAction>;
   try {
     logger.debug('Finding DisciplinaryAction(s) that matched query', { query });
     result = await repository.find({
       skip,
       take,
-      where: { companyId, employeeId, actionTypeId, grievanceReportId, actionDate: {
-        gte: actionDateGte && new Date(actionDateGte),
-        lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
-      } },
+      where: { 
+        ...scopedQuery,
+        actionTypeId, 
+        grievanceReportId, 
+        actionDate: {
+          gte: actionDateGte && new Date(actionDateGte),
+          lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
+        } 
+      },
       orderBy: orderByInput,
-      includeRelations: true
+      include: { 
+        actionType: true, 
+        employee: true, 
+        grievanceReport: { include: { grievanceType: true } } 
+      }
     });
     logger.info(
       'Found %d DisciplinaryAction(s) that matched query', result.data.length, { query }
@@ -144,12 +161,29 @@ export async function getDisciplinaryActions(
   return result;
 } 
 
-export async function getDisciplinaryAction(id: number): Promise<DisciplinaryActionDto> {
+export async function getDisciplinaryAction(
+  id: number,
+  authUser: AuthorizedUser
+): Promise<DisciplinaryActionDto> {
   logger.debug('Getting details for DisciplinaryAction[%s]', id);
   let disciplinaryAction: DisciplinaryAction | null;
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, { }
+  );
 
   try {
-    disciplinaryAction = await repository.findOne({ id }, true);
+    disciplinaryAction = await repository.findFirst(
+      { 
+        ...scopedQuery,
+        id 
+      },
+      { 
+        actionType: true,
+        grievanceReport: { include: { grievanceType: true } }, 
+        company: true, 
+        employee: true 
+      }
+    );
   } catch (err) {
     logger.warn('Getting DisciplinaryAction[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -178,7 +212,7 @@ export async function searchDisciplinaryActions(
   } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(authUser, {});
 
   let result: ListWithPagination<DisciplinaryAction>;
   try {
@@ -192,12 +226,34 @@ export async function searchDisciplinaryActions(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        actionNumber: {
-          search: searchParam,
-        },
-        notes: {
-          search: searchParam,
-        },
+        OR: [
+          {
+            employee: {
+              firstName: {
+                search: searchParam
+              },
+              lastName: {
+                search: searchParam
+              },
+              otherNames: {
+                search: searchParam
+              },
+              employeeNumber: {
+                search: searchParam
+              },
+            },
+          },
+          {
+            actionNumber: {
+              search: searchParam,
+            },
+          },
+          {
+            notes: {
+              search: searchParam,
+            },
+          },
+        ]
       },
       include: {
         actionType: true, 
@@ -205,7 +261,7 @@ export async function searchDisciplinaryActions(
         employee: true
       }
     });
-    logger.info('Found %d DisciplinaryAction(s) that matched query', { query });
+    logger.info('Found %d DisciplinaryAction(s) that matched query', result.data.length, { query });
   } catch (err) {
     logger.warn(
       'Searching DisciplinaryAction with query failed',
@@ -259,7 +315,14 @@ export async function updateDisciplinaryAction(
 
   logger.debug('Persisting update(s) to DisciplinaryAction[%s]', id);
   const updatedDisciplinaryAction = await repository.update({
-    where: { id }, data: updateData, includeRelations: true
+    where: { id }, 
+    data: updateData,
+    include: { 
+      actionType: true,
+      grievanceReport: { include: { grievanceType: true } }, 
+      company: true, 
+      employee: true 
+    } 
   });
   logger.info('Update(s) to DisciplinaryAction[%s] persisted successfully!', id);
 

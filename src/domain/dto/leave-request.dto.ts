@@ -1,11 +1,11 @@
 import { 
   Employee,
   LEAVE_REQUEST_STATUS, 
-  LeavePackage, 
   LeaveRequest, 
   LeaveResponse
 } from '@prisma/client';
 import config from '../../config';
+import { LeavePackageDto } from './leave-package.dto';
 
 export class CreateLeaveRequestDto {
   employeeId!: number;
@@ -64,7 +64,7 @@ export class LeaveResponseInputDto {
 
 export interface LeaveRequestDto extends LeaveRequest {
 	employee?: Employee;
-	leavePackage?: LeavePackage;
+	leavePackage?: LeavePackageDto;
   leaveResponses?: LeaveResponse[];
 }
 

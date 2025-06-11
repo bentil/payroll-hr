@@ -2,7 +2,10 @@ import { DisciplinaryAction, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
-import { CreateDisciplinaryActionDto } from '../domain/dto/disciplinary-action.dto';
+import { 
+  CreateDisciplinaryActionDto, 
+  DisciplinaryActionDto 
+} from '../domain/dto/disciplinary-action.dto';
 
 export async function create(
   { 
@@ -35,18 +38,19 @@ export async function create(
 
 export async function findOne(
   whereUniqueInput: Prisma.DisciplinaryActionWhereUniqueInput,
-  includeRelations?: boolean,
+  include?: Prisma.DisciplinaryActionInclude,
 ): Promise<DisciplinaryAction | null> {
   return await prisma.disciplinaryAction.findUnique({
     where: whereUniqueInput,
-    include: includeRelations
-      ? { 
-        actionType: true,
-        grievanceReport: { include: { grievanceType: true } }, 
-        company: true, 
-        employee: true 
-      } : undefined
+    include,
   });
+}
+
+export async function findFirst(
+  where: Prisma.DisciplinaryActionWhereInput,
+  include?: Prisma.DisciplinaryActionInclude
+): Promise<DisciplinaryActionDto | null> {
+  return prisma.disciplinaryAction.findFirst({ where, include });
 }
 
 export async function find(params: {
@@ -54,22 +58,12 @@ export async function find(params: {
   take?: number,
   where?: Prisma.DisciplinaryActionWhereInput,
   orderBy?: Prisma.DisciplinaryActionOrderByWithRelationAndSearchRelevanceInput
-  includeRelations?: boolean,
+  include?: Prisma.DisciplinaryActionInclude,
 }): Promise<ListWithPagination<DisciplinaryAction>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.disciplinaryAction.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations 
-        ? { 
-          actionType: true, employee: true, grievanceReport: { include: { grievanceType: true } } 
-        }
-        : undefined
-    }),
+    prisma.disciplinaryAction.findMany(params),
     paginate 
       ? prisma.disciplinaryAction.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
@@ -80,21 +74,10 @@ export async function find(params: {
 export async function update(params: {
   where: Prisma.DisciplinaryActionWhereUniqueInput,
   data: Prisma.DisciplinaryActionUpdateInput,
-  includeRelations?: boolean
+  include?: Prisma.DisciplinaryActionInclude,
 }) {
-  const { where, data, includeRelations } = params;
   try {
-    return await prisma.disciplinaryAction.update({ 
-      where, 
-      data,
-      include: includeRelations
-        ? { 
-          actionType: true,
-          grievanceReport: { include: { grievanceType: true } }, 
-          company: true, 
-          employee: true 
-        } : undefined 
-    });
+    return await prisma.disciplinaryAction.update(params);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {

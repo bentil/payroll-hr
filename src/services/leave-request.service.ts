@@ -11,6 +11,7 @@ import {
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
   LeaveRequestDto,
+  LeaveRequestOrderBy,
   LeaveResponseInputDto,
   QueryLeaveRequestDto,
   RequestQueryMode,
@@ -52,7 +53,8 @@ import * as leaveTypeService from './leave-type.service';
 import * as leavePlanService from './leave-plan.service';
 import * as leaveTypeRepository from '../repositories/leave-type';
 import * as companyRepository from '../repositories/payroll-company.repository';
-import Excel from 'exceljs';
+import * as Excel from 'exceljs';
+import config from '../config';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -1196,3 +1198,82 @@ const createLeaveRequestPayloadStructure = (
   };
   return { leaveReqeust: leaveRequestCreatePayload };
 };
+
+
+export async function exportLeaveRequests(
+  companyId: number,
+  query: QueryLeaveRequestDto,
+  authorizedUser: AuthorizedUser
+) {
+  console.log('test', query);
+  const page: number = 1;
+  const take = config.pagination.limit;
+  const orderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+  console.log('Exporting leave requests with query', query);
+  const skip = helpers.getSkip(page, take);
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
+    authorizedUser, 
+    { queryMode: RequestQueryMode.ALL },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+  );
+
+  let result: ListWithPagination<LeaveRequestDto>;
+  try {
+    logger.debug('Finding LeaveRequest(s) that matched query', { query });
+    result = await leaveRequestRepository.find({
+      skip,
+      take,
+      where: { 
+        ...scopedQuery,
+      },
+      orderBy: orderByInput,
+      include: {
+        leavePackage: {
+          include: { leaveType: true }
+        },
+        employee: true,
+      }
+    });
+    logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
+  } catch (err) {
+    logger.warn('Querying LeaveRequest with query failed', { query }, { error: err as Error });
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+  const workbook = new Excel.Workbook();
+  const worksheet = workbook.addWorksheet('leave_requests');
+  worksheet.columns = [
+    { header: 'employeeNumber', key: 'employeeNumber', width: 10 },
+    { header: 'leaveTypeCode', key: 'leaveTypeCode', width: 32 }, 
+    { header: 'startDate', key: 'startDate', width: 15 },
+    { header: 'returnDate', key: 'returnDate', width: 15 },
+    { header: 'comment', key: 'comment', width: 32 }, 
+    { header: 'notifyApprovers', key: 'notifyApprovers', width: 15 }
+  ];
+  console.log(result.data.length);
+
+  result.data.forEach((leaveRequest) => {
+    worksheet.addRow({
+      employeeNumber: leaveRequest.employee?.employeeNumber,
+      leaveTypeCode: leaveRequest.leavePackage?.leaveType?.code,
+      startDate: leaveRequest.startDate,
+      returnDate: leaveRequest.returnDate,
+      comment: leaveRequest.comment,
+      notifyApprovers: ''
+    });
+  });
+  // for (const leaveRequest of result.data) {
+  //   const validate = await leaveTypeService.validate({ 
+  //     leaveTypeId: leaveRequest.leaveTypeId, 
+  //     employeeId 
+  //   })
+  //   worksheet.addRow({
+  //     employeeNumber: leaveRequest.employee?.employeeNumber,
+  //     leaveTypeCode: leaveRequest.lea
+  //   })
+  // }
+  return workbook;
+}

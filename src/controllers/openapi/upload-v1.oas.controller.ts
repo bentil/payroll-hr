@@ -1,14 +1,20 @@
 import { 
+  Get,
   Path, 
   Post,
+  Queries,
   Route, 
+  Request,
   Security, 
   Tags, 
   UploadedFile 
 } from 'tsoa';
 import { rootLogger } from '../../utils/logger';
 import * as leaveReqeustService from '../../services/leave-request.service';
-import { UploadLeaveRequestResponse } from '../../domain/dto/leave-request.dto';
+import { 
+  QueryLeaveRequestDto, 
+  UploadLeaveRequestResponse 
+} from '../../domain/dto/leave-request.dto';
 
 @Tags('upload')
 @Route('/api/v1/payroll-companies/{companyId}/uploads')
@@ -31,4 +37,24 @@ export class UploadV1Controller {
     this.logger.debug('About to upload LeaveRequests for the company[%s]', companyId);
     return await leaveReqeustService.uploadLeaveRequests(companyId, file);
   }
+
+  /**
+   * Get leave requests for a payroll company and export them as an Excel file.
+   * 
+   * @param companyId 
+   * @param query 
+   * @param req 
+   * @returns excel file stream
+   */
+  @Get('/payroll-companies/{companyId}/exports/leave-requests')
+    public async exportLeaveRequests(
+      @Path('companyId') companyId: number,
+      @Queries() query: QueryLeaveRequestDto,
+      @Request() req: Express.Request
+    ): Promise<any> {
+      this.logger.debug('Received request to serve LeaveRequestTemplate');
+      const rel = await leaveReqeustService.exportLeaveRequests(companyId, query, req.user!);
+      return rel;
+    }
+
 }
