@@ -1207,7 +1207,6 @@ export async function exportLeaveRequests(
   const page: number = 1;
   const take = config.pagination.limit;
   const orderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
-  console.log('Exporting leave requests for Company[%s]', companyId);
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
@@ -1255,7 +1254,6 @@ export async function exportLeaveRequests(
     { header: 'comment', key: 'comment', width: 32 }, 
     { header: 'notifyApprovers', key: 'notifyApprovers', width: 15 }
   ];
-  console.log(result.data.length);
 
   result.data.forEach((leaveRequest) => {
     worksheet.addRow({
