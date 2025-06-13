@@ -112,6 +112,7 @@ import {
   CREATE_LEAVE_RESPONSE_SCHEMA,
   ADJUST_DAYS_SCHEMA,
   CONVERT_LEAVE_PLAN_SCHEMA,
+  FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -1003,6 +1004,7 @@ router.get(
     category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:read' 
   }),
+  validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
   uploadV1Controller.exportLeaveRequests
 );
 

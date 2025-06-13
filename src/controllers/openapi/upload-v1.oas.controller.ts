@@ -6,11 +6,13 @@ import {
   Request,
   Security, 
   Tags, 
-  UploadedFile 
+  UploadedFile, 
+  Queries
 } from 'tsoa';
 import { rootLogger } from '../../utils/logger';
 import * as leaveReqeustService from '../../services/leave-request.service';
 import { 
+  FilterLeaveRequestForExportDto,
   UploadLeaveRequestResponse 
 } from '../../domain/dto/leave-request.dto';
 
@@ -47,10 +49,11 @@ export class UploadV1Controller {
   @Get('/payroll-companies/{companyId}/exports/leave-requests')
     public async exportLeaveRequests(
       @Path('companyId') companyId: number,
-      @Request() req: Express.Request
+      @Queries() query: FilterLeaveRequestForExportDto,
+      @Request() req: Express.Request,
     ): Promise<any> {
       this.logger.debug('Received request to serve LeaveRequestTemplate');
-      const rel = await leaveReqeustService.exportLeaveRequests(companyId, req.user!);
+      const rel = await leaveReqeustService.exportLeaveRequests(companyId, query, req.user!);
       return rel;
     }
 

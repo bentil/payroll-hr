@@ -10,8 +10,8 @@ import {
   AdjustDaysDto,
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
+  FilterLeaveRequestForExportDto,
   LeaveRequestDto,
-  LeaveRequestOrderBy,
   LeaveResponseInputDto,
   QueryLeaveRequestDto,
   RequestQueryMode,
@@ -54,7 +54,6 @@ import * as leavePlanService from './leave-plan.service';
 import * as leaveTypeRepository from '../repositories/leave-type';
 import * as companyRepository from '../repositories/payroll-company.repository';
 import * as Excel from 'exceljs';
-import config from '../config';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -1202,27 +1201,54 @@ const createLeaveRequestPayloadStructure = (
 
 export async function exportLeaveRequests(
   companyId: number,
-  authorizedUser: AuthorizedUser
+  query: FilterLeaveRequestForExportDto,
+  authorizedUser: AuthorizedUser,
 ) {
-  const page: number = 1;
-  const take = config.pagination.limit;
-  const orderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+  const {
+    page,
+    limit: take,
+    orderBy,
+    employeeId: qEmployeeId,
+    leavePackageId,
+    status,
+    queryMode,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+  } = query;
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, 
-    { companyId, queryMode: RequestQueryMode.ALL },
+    { companyId, queryMode, qEmployeeId },
     { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   let result: ListWithPagination<LeaveRequestDto>;
   try {
-    logger.debug('Finding LeaveRequest(s) for Company[%s]', companyId);
+    logger.debug('Finding LeaveRequest(s) that matched query', { query });
     result = await leaveRequestRepository.find({
       skip,
       take,
       where: { 
         ...scopedQuery,
+        leavePackageId, 
+        status, 
+        startDate: {
+          gte: startDateGte && new Date(startDateGte),
+          lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+        }, 
+        returnDate: {
+          gte: returnDateGte && new Date(returnDateGte),
+          lt: returnDateLte && dateutil.getDate(new Date(returnDateLte), { days: 1 }),
+        },
+        createdAt: {
+          gte: createdAtGte && new Date(createdAtGte),
+          lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+        }
       },
       orderBy: orderByInput,
       include: {
@@ -1232,13 +1258,9 @@ export async function exportLeaveRequests(
         employee: true,
       }
     });
-    logger.info(
-      'Found %d LeaveRequest(s) to export for Company[%s]', 
-      result.data.length, 
-      companyId
-    );
+    logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
   } catch (err) {
-    logger.warn('Querying LeaveRequest failed', { error: err as Error });
+    logger.warn('Querying LeaveRequest with query failed', { query }, { error: err as Error });
     throw new ServerError({
       message: (err as Error).message,
       cause: err

@@ -124,3 +124,44 @@ export const CONVERT_LEAVE_PLAN_SCHEMA = Joi.object({
       'number.base': 'Leave type id must be a number'
     }),
 });
+
+export const FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA = Joi.object({
+  employeeId: Joi.number(),
+  leaveTypeId: Joi.number(),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
+  status: Joi.string().valid(...Object.values(LEAVE_REQUEST_STATUS)),
+  'startDate.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'startDate.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'returnDate.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'returnDate.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'createdAt.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'createdAt.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  page: Joi.number()
+    .optional()
+    .min(1)
+    .default(1)
+    .messages({
+      'number.min': 'page must be more than or equal to 1'
+    }),
+  limit: Joi.number()
+    .optional()
+    .min(1)
+    .default(config.pagination.limit)
+    .messages({
+      'number.min': 'limit must be more than or equal to 1'
+    }),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(LeaveRequestOrderBy))
+    .default(LeaveRequestOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(LeaveRequestOrderBy)}`
+    })
+});

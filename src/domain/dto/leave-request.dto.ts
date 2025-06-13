@@ -117,3 +117,19 @@ export class UploadLeaveRequestResponse {
     }[]
   }[];
 }
+
+export class FilterLeaveRequestForExportDto {
+  employeeId?: number;
+  leavePackageId?: number;
+  queryMode?: RequestQueryMode;
+  status?: LEAVE_REQUEST_STATUS;
+  'startDate.gte'?: string;
+  'startDate.lte'?: string;
+  'returnDate.gte'?: string;
+  'returnDate.lte'?: string;
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  page: number = 1;
+  limit: number = config.pagination.limit;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+}
