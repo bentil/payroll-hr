@@ -43,7 +43,7 @@ export async function addCompanyTreeNode(
   if (!(companyIds.includes(companyId))) {
     logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
     throw new ForbiddenError({
-      message: 'You do not have permission to add a node for this company'
+      message: 'You do not have permission to perform this action'
     });
   }
 
@@ -283,7 +283,7 @@ export async function updateCompanyTreeNode(
   if (!(companyIds.includes(companyId))) {  
     logger.warn('Can not update CompanyTreeNode for other Company[%s]', companyId);
     throw new ForbiddenError({
-      message: 'You do not have permission to update a node for this company'
+      message: 'You do not have permission to perform this action'
     });
   }
   logger.debug('Finding CompanyTreeNode[%s] to update', nodeId);
@@ -470,9 +470,9 @@ export async function unlinkEmployee(
 ): Promise<CompanyTreeNodeDto> {
   const { companyIds } = authUser;
   if (!(companyIds.includes(companyId))) {
-    logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
+    logger.warn('Can not unlink employee for this Node[%s]', nodeId);
     throw new ForbiddenError({
-      message: 'You do not have permission to add a node for this company'
+      message: 'You do not have permission to perform thi action'
     });
   }
   logger.debug('Finding CompanyTreeNode[%s] to unlink employee from', nodeId);
@@ -528,9 +528,9 @@ export async function deleteNode(
   const { successorParentId } = query;
   const { companyIds } = authUser;
   if (!(companyIds.includes(companyId))) {
-    logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
+    logger.warn('Can not delete CompanyTreeNode to Company[%s]', companyId);
     throw new ForbiddenError({
-      message: 'You do not have permission to add a node for this company'
+      message: 'You do not have permission to perform this action'
     });
   }
 
