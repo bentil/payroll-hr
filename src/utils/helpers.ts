@@ -111,6 +111,11 @@ export async function applyCompanyScopeToQuery(
 ): Promise<ScopedQuery> {
   const { platformUser, companyIds } = user;
   const { companyId: qCompanyId, ...query } = queryParams;
+  if (!(companyIds.includes(qCompanyId))) {
+    {
+      throw new ForbiddenError({ message: 'User not allowed to perform action' });
+    }
+  }
 
   let authorized = false;
   const scopeQuery = {
