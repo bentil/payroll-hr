@@ -550,7 +550,7 @@ router.post(
 router.post(
   '/payroll-compan(y|ies)/:companyId/tree/nodes',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestBody(CREATE_COMPANY_TREE_NODE_SCHEMA),
@@ -572,7 +572,7 @@ router.get(
 router.patch(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestBody(UPDATE_COMPANY_TREE_NODE_SCHEMA),
@@ -582,7 +582,7 @@ router.patch(
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId/employee',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   treeNodeV1Controller.unlinkEmployee
@@ -591,7 +591,7 @@ router.delete(
 router.delete(
   '/payroll-compan(y|ies)/:companyId/tree/nodes/:nodeId',
   authenticateUser({ 
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:hierarchy:write'
   }),
   validateRequestQuery(DELETE_COMPANY_NODE_SCHEMA),
