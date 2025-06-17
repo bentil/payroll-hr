@@ -39,6 +39,13 @@ export async function addCompanyTreeNode(
   authUser: AuthorizedUser,
 ): Promise<CompanyTreeNodeDto> {
   const { parentId, employeeId, jobTitleId, childNodes } = creatData;
+  const { companyIds } = authUser;
+  if (!(companyIds.includes(companyId))) {
+    logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
+    throw new ForbiddenError({
+      message: 'You do not have permission to add a node for this company'
+    });
+  }
 
   if (parentId == null) { // '==' used to match both null and undefined
     logger.debug('Checking if Company[%s] root node exists', companyId);
@@ -272,6 +279,13 @@ export async function updateCompanyTreeNode(
   authUser: AuthorizedUser,
 ): Promise<CompanyTreeNodeDto> {
   const { parentId, employeeId, jobTitleId } = updateData;
+  const { companyIds } = authUser;
+  if (!(companyIds.includes(companyId))) {  
+    logger.warn('Can not update CompanyTreeNode for other Company[%s]', companyId);
+    throw new ForbiddenError({
+      message: 'You do not have permission to update a node for this company'
+    });
+  }
   logger.debug('Finding CompanyTreeNode[%s] to update', nodeId);
 
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
@@ -454,6 +468,13 @@ export async function unlinkEmployee(
   companyId: number,
   authUser: AuthorizedUser,
 ): Promise<CompanyTreeNodeDto> {
+  const { companyIds } = authUser;
+  if (!(companyIds.includes(companyId))) {
+    logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
+    throw new ForbiddenError({
+      message: 'You do not have permission to add a node for this company'
+    });
+  }
   logger.debug('Finding CompanyTreeNode[%s] to unlink employee from', nodeId);
 
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
@@ -505,6 +526,13 @@ export async function deleteNode(
   authUser: AuthorizedUser,
 ): Promise<void> {
   const { successorParentId } = query;
+  const { companyIds } = authUser;
+  if (!(companyIds.includes(companyId))) {
+    logger.warn('Can not add CompanyTreeNode to Company[%s]', companyId);
+    throw new ForbiddenError({
+      message: 'You do not have permission to add a node for this company'
+    });
+  }
 
   logger.debug('Finding CompanyTreeNode[%s] to delete', nodeId);
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
