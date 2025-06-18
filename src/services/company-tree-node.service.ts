@@ -39,6 +39,7 @@ export async function addCompanyTreeNode(
   authUser: AuthorizedUser,
 ): Promise<CompanyTreeNodeDto> {
   const { parentId, employeeId, jobTitleId, childNodes } = creatData;
+  await helpers.applyCompanyScopeToQuery(authUser, { companyId });
 
   if (parentId == null) { // '==' used to match both null and undefined
     logger.debug('Checking if Company[%s] root node exists', companyId);
