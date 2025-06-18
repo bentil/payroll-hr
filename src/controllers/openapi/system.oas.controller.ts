@@ -1,7 +1,7 @@
 import {
   Get,
   Route,
-  Tags
+  Tags,
 } from 'tsoa';
 import { rootLogger } from '../../utils/logger';
 import path from 'path';
@@ -16,7 +16,7 @@ export class SystemController {
      * @returns 
      */
   @Get('/templates/uploads/leave_requests.xlsx')
-  public  serveLeaveRequestTemplate() {
+  public serveLeaveRequestTemplate() {
     this.logger.debug('Received request to serve LeaveRequestTemplate');
     const rel = path.join(__dirname, '../../../templates/uploads/leave_requests.xlsx');
     return rel;

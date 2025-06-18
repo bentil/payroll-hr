@@ -7,7 +7,7 @@ export async function serveLeaveRequestTemplate(
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void>  {
+): Promise<void> {
   try {
     const response = await controller.serveLeaveRequestTemplate();
     res.download(response);

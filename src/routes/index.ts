@@ -2,7 +2,9 @@ import { NextFunction, Request, Response, Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 
 import v1Router from './api-v1.route';
-import { serveLeaveRequestTemplate } from '../controllers/system.api';
+import { 
+  serveLeaveRequestTemplate 
+} from '../controllers/system.api';
 
 const appRouter = Router();
 

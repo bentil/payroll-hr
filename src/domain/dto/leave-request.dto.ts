@@ -1,11 +1,11 @@
 import { 
   Employee,
   LEAVE_REQUEST_STATUS, 
-  LeavePackage, 
   LeaveRequest, 
   LeaveResponse
 } from '@prisma/client';
 import config from '../../config';
+import { LeavePackageDto } from './leave-package.dto';
 
 export class CreateLeaveRequestDto {
   employeeId!: number;
@@ -64,7 +64,7 @@ export class LeaveResponseInputDto {
 
 export interface LeaveRequestDto extends LeaveRequest {
 	employee?: Employee;
-	leavePackage?: LeavePackage;
+	leavePackage?: LeavePackageDto;
   leaveResponses?: LeaveResponse[];
 }
 
@@ -116,4 +116,20 @@ export class UploadLeaveRequestResponse {
       reason: string;
     }[]
   }[];
+}
+
+export class FilterLeaveRequestForExportDto {
+  employeeId?: number;
+  leavePackageId?: number;
+  queryMode?: RequestQueryMode;
+  status?: LEAVE_REQUEST_STATUS;
+  'startDate.gte'?: string;
+  'startDate.lte'?: string;
+  'returnDate.gte'?: string;
+  'returnDate.lte'?: string;
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  page: number = 1;
+  limit: number = config.pagination.limit;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }

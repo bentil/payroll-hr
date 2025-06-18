@@ -10,6 +10,7 @@ import {
   AdjustDaysDto,
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
+  FilterLeaveRequestForExportDto,
   LeaveRequestDto,
   LeaveResponseInputDto,
   QueryLeaveRequestDto,
@@ -52,7 +53,7 @@ import * as leaveTypeService from './leave-type.service';
 import * as leavePlanService from './leave-plan.service';
 import * as leaveTypeRepository from '../repositories/leave-type';
 import * as companyRepository from '../repositories/payroll-company.repository';
-import Excel from 'exceljs';
+import * as Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -1196,3 +1197,94 @@ const createLeaveRequestPayloadStructure = (
   };
   return { leaveReqeust: leaveRequestCreatePayload };
 };
+
+export async function exportLeaveRequests(
+  companyId: number,
+  query: FilterLeaveRequestForExportDto,
+  authorizedUser: AuthorizedUser,
+) {
+  const {
+    page,
+    limit: take,
+    orderBy,
+    employeeId: qEmployeeId,
+    leavePackageId,
+    status,
+    queryMode,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+  } = query;
+  const skip = helpers.getSkip(page, take);
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
+    authorizedUser, 
+    { companyId, queryMode, qEmployeeId },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+  );
+
+  let result: ListWithPagination<LeaveRequestDto>;
+  try {
+    logger.debug('Finding LeaveRequest(s) that matched query', { query });
+    result = await leaveRequestRepository.find({
+      skip,
+      take,
+      where: { 
+        ...scopedQuery,
+        leavePackageId, 
+        status, 
+        startDate: {
+          gte: startDateGte && new Date(startDateGte),
+          lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+        }, 
+        returnDate: {
+          gte: returnDateGte && new Date(returnDateGte),
+          lt: returnDateLte && dateutil.getDate(new Date(returnDateLte), { days: 1 }),
+        },
+        createdAt: {
+          gte: createdAtGte && new Date(createdAtGte),
+          lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+        }
+      },
+      orderBy: orderByInput,
+      include: {
+        leavePackage: {
+          include: { leaveType: true }
+        },
+        employee: true,
+      }
+    });
+    logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
+  } catch (err) {
+    logger.warn('Querying LeaveRequest with query failed', { query }, { error: err as Error });
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+  const workbook = new Excel.Workbook();
+  const worksheet = workbook.addWorksheet('leave_requests');
+  worksheet.columns = [
+    { header: 'employeeNumber', key: 'employeeNumber', width: 10 },
+    { header: 'leaveTypeCode', key: 'leaveTypeCode', width: 32 }, 
+    { header: 'startDate', key: 'startDate', width: 15 },
+    { header: 'returnDate', key: 'returnDate', width: 15 },
+    { header: 'comment', key: 'comment', width: 32 }, 
+    { header: 'notifyApprovers', key: 'notifyApprovers', width: 15 }
+  ];
+
+  result.data.forEach((leaveRequest) => {
+    worksheet.addRow({
+      employeeNumber: leaveRequest.employee?.employeeNumber,
+      leaveTypeCode: leaveRequest.leavePackage?.leaveType?.code,
+      startDate: leaveRequest.startDate,
+      returnDate: leaveRequest.returnDate,
+      comment: leaveRequest.comment,
+      notifyApprovers: ''
+    });
+  });
+  return workbook;
+}

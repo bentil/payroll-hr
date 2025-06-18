@@ -57,6 +57,10 @@ export async function createOrUpdateEmployee(
     unionMember: data.unionMember,
     statusLastModifiedAt: data.statusLastModifiedAt,
     pensioner: data.pensioner,
+    hr: data.hr,
+    userId: data.userId,
+    username: data.username,
+    excludeFromPayrollRun: data.excludeFromPayrollRun,
   });
   logger.info('Employee[%s] saved', data.id);
 
