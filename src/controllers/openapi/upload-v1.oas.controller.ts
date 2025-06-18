@@ -56,5 +56,4 @@ export class UploadV1Controller {
       const rel = await leaveReqeustService.exportLeaveRequests(companyId, query, req.user!);
       return rel;
     }
-
 }
