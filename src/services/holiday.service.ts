@@ -57,10 +57,12 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
     includeWeekends
   } = params;
   let exclude;
-  if (includeHolidays) {
-    exclude = HOLIDAY_TYPE.PUBLIC_HOLIDAY;
+  if (includeHolidays && includeWeekends) {
+    exclude = { notIn: [ HOLIDAY_TYPE.PUBLIC_HOLIDAY, HOLIDAY_TYPE.WEEKEND ] };
+  } else if (includeHolidays) {
+    exclude = { not:  HOLIDAY_TYPE.PUBLIC_HOLIDAY };
   } else if (includeWeekends) {
-    exclude = HOLIDAY_TYPE.WEEKEND;
+    exclude = { not: HOLIDAY_TYPE.WEEKEND };
   } else {
     exclude = undefined;
   }
@@ -72,7 +74,7 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
         lte: endDate,
         gte: startDate,
       },
-      type: { not: exclude }
+      type: exclude
     });
   } catch (err) {
     logger.warn('Getting non working days failed', { error: err as Error });
@@ -81,7 +83,6 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
       cause: err
     });
   }
-
   return nonWorkingDays;
 }
 

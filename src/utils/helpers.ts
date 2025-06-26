@@ -91,7 +91,7 @@ export async function calculateDaysBetweenDates(
   const differenceInTime = endDate.getTime() - startDate.getTime();
 
   // To calculate the no. of days between two dates 
-  const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+  const differenceInDays = (differenceInTime / (1000 * 3600 * 24)) + 1;
 
   return differenceInDays;
 }
