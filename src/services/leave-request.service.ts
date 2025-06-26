@@ -1198,7 +1198,6 @@ const createLeaveRequestPayloadStructure = (
   return { leaveReqeust: leaveRequestCreatePayload };
 };
 
-
 export async function exportLeaveRequests(
   companyId: number,
   query: FilterLeaveRequestForExportDto,

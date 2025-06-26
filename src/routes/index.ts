@@ -35,5 +35,4 @@ appRouter.get(
   serveLeaveRequestTemplate
 );
 
-
 export default appRouter;
