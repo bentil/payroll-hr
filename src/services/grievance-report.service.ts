@@ -221,12 +221,34 @@ export async function searchGrievanceReports(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
-        reportNumber: {
-          search: searchParam,
-        },
-        note: {
-          search: searchParam,
-        },
+        OR: [
+          {
+            reportingEmployee: {
+              firstName: {
+                search: searchParam
+              },
+              lastName: {
+                search: searchParam
+              },
+              otherNames: {
+                search: searchParam
+              },
+              employeeNumber: {
+                search: searchParam
+              },
+            },
+          },
+          {
+            reportNumber: {
+              search: searchParam,
+            },
+          },
+          {
+            note: {
+              search: searchParam,
+            },
+          }
+        ]
       },
       include: {
         grievanceType: true,

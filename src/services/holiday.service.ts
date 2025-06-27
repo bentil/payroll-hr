@@ -1,8 +1,8 @@
-import { Holiday, HOLIDAY_TYPE } from '@prisma/client';
+import { Holiday, HOLIDAY_TYPE, Prisma } from '@prisma/client';
 import { HolidayEvent } from '../domain/events/holiday.event';
 import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/holiday.repository';
-import { CountQueryObject } from '../domain/dto/holiday.dto';
+import { CountNonWorkingDaysQueryObject, CountQueryObject } from '../domain/dto/holiday.dto';
 import { NotFoundError, ServerError } from '../errors/http-errors';
 import { calculateDaysBetweenDates } from '../utils/helpers';
 import { errors } from '../utils/constants';
@@ -37,10 +37,17 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
   const {
     startDate,
     endDate,
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday
   } = params;
 
   
-  const nonWorkingDays = await countNonWorkingDays(params);
+  const nonWorkingDays = await countNonWorkingDays({
+    startDate,
+    endDate,
+    excludeHolidays: considerPublicHolidayAsWorkday,
+    excludeWeekends: considerWeekendAsWorkday
+  });
 
   const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
 
@@ -49,20 +56,20 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
   return numberOfDays;
 }
 
-export async function countNonWorkingDays(params: CountQueryObject): Promise<number> {
+export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject): Promise<number> {
   const {
     startDate,
     endDate,
-    includeHolidays,
-    includeWeekends
+    excludeHolidays,
+    excludeWeekends
   } = params;
-  let exclude;
-  if (includeHolidays) {
-    exclude = HOLIDAY_TYPE.PUBLIC_HOLIDAY;
-  } else if (includeWeekends) {
-    exclude = HOLIDAY_TYPE.WEEKEND;
-  } else {
-    exclude = undefined;
+  let exclude: Prisma.EnumHOLIDAY_TYPEFilter | undefined;
+  if (excludeHolidays && excludeWeekends) {
+    exclude = { notIn: [ HOLIDAY_TYPE.PUBLIC_HOLIDAY, HOLIDAY_TYPE.WEEKEND ] };
+  } else if (excludeHolidays) {
+    exclude = { not:  HOLIDAY_TYPE.PUBLIC_HOLIDAY };
+  } else if (excludeWeekends) {
+    exclude = { not: HOLIDAY_TYPE.WEEKEND };
   }
 
   let nonWorkingDays: number;
@@ -72,7 +79,7 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
         lte: endDate,
         gte: startDate,
       },
-      type: { not: exclude }
+      type: exclude
     });
   } catch (err) {
     logger.warn('Getting non working days failed', { error: err as Error });
@@ -81,7 +88,6 @@ export async function countNonWorkingDays(params: CountQueryObject): Promise<num
       cause: err
     });
   }
-
   return nonWorkingDays;
 }
 

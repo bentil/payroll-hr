@@ -23,6 +23,7 @@ import * as leavePlanV1Controller from '../controllers/leave-plan-v1.api.control
 import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.controller';
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
+import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -111,6 +112,7 @@ import {
   CREATE_LEAVE_RESPONSE_SCHEMA,
   ADJUST_DAYS_SCHEMA,
   CONVERT_LEAVE_PLAN_SCHEMA,
+  FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -139,6 +141,7 @@ import {
   validateRequestBody,
   validateRequestQuery
 } from '../middleware/request-validation.middleware';
+import validate from '../middleware/upload.validation';
 
 
 const router = Router();
@@ -247,41 +250,50 @@ router.delete(
 
 router.post(
   '/disciplinary-action-types',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.addNewDisciplinaryActionType
 );
 
 router.get(
   '/disciplinary-action-types',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(QUERY_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/search',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/:id',
-  authenticateUser(),
+  authenticateUser({ isEmployee: true }),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionType
 );
 
 router.patch(
   '/disciplinary-action-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR], 
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(UPDATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.updateDisciplinaryActionType
 );
 
 router.delete(
   '/disciplinary-action-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({
+    category: [UserCategory.HR],
+    permissions: 'company_configs:conduct:write'
+  }),
   disciplinaryActionTypeV1Controller.deleteDisciplinaryActionType
 );
 
@@ -972,6 +984,27 @@ router.post(
   }),
   validateRequestBody(CREATE_EMPLOYEE_APPROVER_SCHEMA),
   employeeApproverV1Controller.employeeApproverPreflight
+);
+
+// UPLOAD ROUTES
+router.post(
+  '/payroll-companies/:companyId/uploads/leave-requests',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:write' 
+  }),
+  validate('leave_requests'),
+  uploadV1Controller.uploadLeaveRequests
+);
+
+router.get(
+  '/payroll-companies/:companyId/exports/leave-requests',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:read' 
+  }),
+  validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
+  uploadV1Controller.exportLeaveRequests
 );
 
 export default router;

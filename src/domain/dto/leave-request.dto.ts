@@ -1,11 +1,11 @@
 import { 
   Employee,
   LEAVE_REQUEST_STATUS, 
-  LeavePackage, 
   LeaveRequest, 
   LeaveResponse
 } from '@prisma/client';
 import config from '../../config';
+import { LeavePackageDto } from './leave-package.dto';
 
 export class CreateLeaveRequestDto {
   employeeId!: number;
@@ -64,7 +64,7 @@ export class LeaveResponseInputDto {
 
 export interface LeaveRequestDto extends LeaveRequest {
 	employee?: Employee;
-	leavePackage?: LeavePackage;
+	leavePackage?: LeavePackageDto;
   leaveResponses?: LeaveResponse[];
 }
 
@@ -81,4 +81,55 @@ export class AdjustDaysDto {
 
 export class ConvertLeavePlanToRequestDto {
   leavePlanId!: number;
+}
+
+export class UploadLeaveRequestViaSpreadsheetDto {
+  rowNumber?: number;
+  companyId!: number;
+  employeeNumber!: string;
+  leaveTypeCode!: string;
+  startDate!: Date;
+  returnDate!: Date;
+  comment?: string;
+  notifyApprovers!: 'Yes' | 'No';
+}
+
+export class UploadLeaveRequestCheckedRecords {
+  employeeId!: number;
+  leavePackageId!: number;
+  numberOfDays!: number;
+  approvalsRequired!: number;
+  leaveTypeName?: string;
+  notifyApprovers?: boolean;
+}
+
+export class UploadLeaveRequestResponse {
+  successful!: {
+    leaveRequestId?: number;
+    rowNumber?: number;
+    approversNotified?: boolean;
+  }[];
+  failed!: {
+    rowNumber?: number;
+    errors: {
+      column: string;
+      reason: string;
+    }[]
+  }[];
+}
+
+export class FilterLeaveRequestForExportDto {
+  employeeId?: number;
+  leavePackageId?: number;
+  queryMode?: RequestQueryMode;
+  status?: LEAVE_REQUEST_STATUS;
+  'startDate.gte'?: string;
+  'startDate.lte'?: string;
+  'returnDate.gte'?: string;
+  'returnDate.lte'?: string;
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  page: number = 1;
+  limit: number = config.pagination.limit;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }

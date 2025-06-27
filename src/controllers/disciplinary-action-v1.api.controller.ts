@@ -30,6 +30,7 @@ export async function getDisciplinaryActions(
   try {
     const response = await controller.getDisciplinaryActions(
       req.query as unknown as QueryDisciplinaryActionDto,
+      req
     );
     res.json(response);
   } catch (err) {
@@ -44,7 +45,7 @@ export async function getDisciplinaryAction(
 ): Promise<void> {
   const { id } = req.params;
   try {
-    const response = await controller.getDisciplinaryAction(+id);
+    const response = await controller.getDisciplinaryAction(+id, req);
     res.json(response);
   } catch (err) {
     next(err);
