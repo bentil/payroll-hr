@@ -70,8 +70,6 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
     exclude = { not:  HOLIDAY_TYPE.PUBLIC_HOLIDAY };
   } else if (excludeWeekends) {
     exclude = { not: HOLIDAY_TYPE.WEEKEND };
-  } else {
-    exclude = undefined;
   }
 
   let nonWorkingDays: number;
