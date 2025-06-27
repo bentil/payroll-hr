@@ -119,8 +119,8 @@ export async function addLeaveRequest(
   const numberOfDays = await countWorkingDays({ 
     startDate: payload.startDate, 
     endDate: payload.returnDate, 
-    includeHolidays: considerPublicHolidayAsWorkday,
-    includeWeekends: considerWeekendAsWorkday 
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday 
   });
 
   if (numberOfDays > leaveSummary.numberOfDaysLeft) {
@@ -361,22 +361,22 @@ export async function updateLeaveRequest(
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: returnDate, 
-      includeHolidays: considerPublicHolidayAsWorkday,
-      includeWeekends: considerWeekendAsWorkday 
+      considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday 
     });
   } else if (startDate) {
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: leaveRequest.returnDate, 
-      includeHolidays: considerPublicHolidayAsWorkday,
-      includeWeekends: considerWeekendAsWorkday 
+      considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday 
     });
   } else if (returnDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: leaveRequest.startDate, 
       endDate: returnDate, 
-      includeHolidays: considerPublicHolidayAsWorkday,
-      includeWeekends: considerWeekendAsWorkday 
+      considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday 
     });
   }
   
@@ -757,8 +757,8 @@ export async function convertLeavePlanToRequest(
   const numberOfDays = await countWorkingDays({ 
     startDate: intendedStartDate, 
     endDate: intendedReturnDate, 
-    includeHolidays: validateData.considerPublicHolidayAsWorkday,
-    includeWeekends: validateData.considerWeekendAsWorkday 
+    considerPublicHolidayAsWorkday: validateData.considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday: validateData.considerWeekendAsWorkday 
   });
   
 
@@ -1092,8 +1092,8 @@ const handleLeaveRequestSpreadSheetValidation =
           const numberOfDays = await countWorkingDays({ 
             startDate: data.startDate, 
             endDate: data.returnDate, 
-            includeHolidays: includeHolidays,
-            includeWeekends: includeWeekends 
+            considerPublicHolidayAsWorkday: includeHolidays,
+            considerWeekendAsWorkday: includeWeekends 
           });
         
           if (numberOfDaysLeft && numberOfDays > numberOfDaysLeft) {
