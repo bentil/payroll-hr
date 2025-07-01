@@ -62,9 +62,11 @@ export async function addLeaveRequest(
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId, startDate } = payload;
   const { employeeId: reqEmployeeId, category } = authUser;
-  if ((reqEmployeeId !== employeeId) && (category !== UserCategory.HR)) {
+  const allowedUsers = [ UserCategory.HR, UserCategory.OPERATIONS ];
+  if ((reqEmployeeId !== employeeId) && (!allowedUsers.includes(category))) {
     logger.warn(
-      'LeaveRequest was not created by Employee[%s] or an HR employee. Create rejected',
+      'LeaveRequest was not created by Employee[%s], an HR employee or an OPERATIONS user.' 
+      + 'Create rejected',
       employeeId
     );
     throw new ForbiddenError({
@@ -198,7 +200,9 @@ export async function getLeaveRequests(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
-    authorizedUser, { employeeId: qEmployeeId, queryMode }
+    authorizedUser, 
+    { employeeId: qEmployeeId, queryMode }, 
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
   let include: Prisma.LeaveRequestInclude;
   if (queryMode !== RequestQueryMode.SELF) {
@@ -256,7 +260,9 @@ export async function getLeaveRequest(
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
-    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+    authorizedUser, 
+    { id, queryMode: RequestQueryMode.ALL },
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   logger.debug('Getting details for LeaveRequest[%s]', id);
@@ -660,11 +666,12 @@ export async function adjustDays(
   payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
   const { employeeId, category } = authorizedUser;
+  const allowedUsers = [ UserCategory.HR, UserCategory.OPERATIONS ];
   
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   // check for employee being an hr
-  if(category !== UserCategory.HR) {
+  if(!allowedUsers.includes(category)) {
     throw new ForbiddenError({
       message: 'You are not allowed to perform this action'
     });

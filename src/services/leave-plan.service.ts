@@ -7,7 +7,7 @@ import {
   UpdateLeavePlanDto,
 } from '../domain/dto/leave-plan.dto';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError,
   ForbiddenError, 
@@ -111,7 +111,9 @@ export async function getLeavePlans(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    authorizedUser, { employeeId, queryMode }
+    authorizedUser, 
+    { employeeId, queryMode },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   let result: ListWithPagination<LeavePlanDto>;
@@ -161,7 +163,8 @@ export async function getLeavePlan(
   let leavePlan: LeavePlanDto | null;
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser,
-    { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL }
+    { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   try {
