@@ -15,6 +15,7 @@ import {
 } from '../services/employee-approver.service';
 import { getEmployee } from '../services/employee.service';
 import { rootLogger } from '../utils/logger';
+import multer from 'multer';
 
 
 const logger = rootLogger.child({ context: 'HelpersUtil' });
@@ -90,7 +91,7 @@ export async function calculateDaysBetweenDates(
   const differenceInTime = endDate.getTime() - startDate.getTime();
 
   // To calculate the no. of days between two dates 
-  const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+  const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24)) + 1;
 
   return differenceInDays;
 }
@@ -336,3 +337,25 @@ export async function applyApprovalScopeToQuery(
 
   return { scopedQuery: { ...query, ...scopeQuery } };
 }
+
+export function isValidDate(date: Date): boolean {
+  if (!isNaN(date.getTime())) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const fileUpload = (request: any, type: 'file' | 'files') => {
+  if (type === 'file') {
+    const multerSingle = multer().single(type);
+    return new Promise((resolve, reject) => {
+      multerSingle(request, undefined as any, async (error) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(request);
+      });
+    });
+  }
+};
