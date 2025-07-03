@@ -154,7 +154,9 @@ export async function getReimbursementRequests(
   // );
 
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
-    authorizedUser, { employeeId: qEmployeeId, queryMode }
+    authorizedUser, 
+    { employeeId: qEmployeeId, queryMode },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
     
   let result: ListWithPagination<ReimbursementRequestDto>;
@@ -217,7 +219,9 @@ export async function getReimbursementRequest(
   // );
 
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
-    authorizedUser, { id, queryMode: RequestQueryMode.ALL }
+    authorizedUser, 
+    { id, queryMode: RequestQueryMode.ALL },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   logger.debug('Getting details for ReimbursementRequest[%s]', id);
@@ -527,7 +531,9 @@ export async function searchReimbursementRequests(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy); 
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
-    authUser, { queryMode }
+    authUser, 
+    { queryMode },
+    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
   );
 
   let result: ListWithPagination<ReimbursementRequestDto>;
