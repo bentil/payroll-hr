@@ -1223,7 +1223,7 @@ export async function exportLeaveRequests(
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, 
     { companyId, queryMode, qEmployeeId },
-    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<LeaveRequestDto>;

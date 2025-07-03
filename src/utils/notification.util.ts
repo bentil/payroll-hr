@@ -88,7 +88,7 @@ export async function sendLeaveRequestEmail(
       from: config.notifications.emailSender,
       subject: config.notifications.leaveRequestSubject,
       body: emailBody,
-      emailRecipients: [ data.approverEmail ],
+      emailRecipients: [data.approverEmail],
     }
   };
   logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
@@ -126,7 +126,7 @@ export async function sendReimbursementRequestEmail(
       from: config.notifications.emailSender,
       subject: config.notifications.reimbursementRequestSubject,
       body: emailBody,
-      emailRecipients: [ data.approverEmail ],
+      emailRecipients: [data.approverEmail],
     }
   };
   logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
