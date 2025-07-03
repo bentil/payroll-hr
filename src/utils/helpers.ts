@@ -237,7 +237,7 @@ export async function validateResponder(params: {
 }): Promise<void> {
   const { authUser, requestorEmployeeId, expectedLevel } = params;
   const { employeeId, category, companyIds } = authUser;
-  const generalApprovers = [ UserCategory.HR, UserCategory.OPERATIONS ];
+  const generalApprovers = [UserCategory.HR, UserCategory.OPERATIONS];
   if (employeeId === requestorEmployeeId) {
     logger.warn('Responder of request cannot be same as requestor');
     throw new ForbiddenError({

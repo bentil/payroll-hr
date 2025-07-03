@@ -70,7 +70,7 @@ export async function addLeaveRequest(
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId, startDate } = payload;
   const { employeeId: reqEmployeeId, category } = authUser;
-  const allowedUsers = [ UserCategory.HR, UserCategory.OPERATIONS ];
+  const allowedUsers = [UserCategory.HR, UserCategory.OPERATIONS];
   if ((reqEmployeeId !== employeeId) && (!allowedUsers.includes(category))) {
     logger.warn(
       'LeaveRequest was not created by Employee[%s], an HR employee or an OPERATIONS user.' 
@@ -674,7 +674,7 @@ export async function adjustDays(
   payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
   const { employeeId, category } = authorizedUser;
-  const allowedUsers = [ UserCategory.HR, UserCategory.OPERATIONS ];
+  const allowedUsers = [UserCategory.HR, UserCategory.OPERATIONS];
   
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
@@ -1230,7 +1230,7 @@ export async function exportLeaveRequests(
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, 
     { companyId, queryMode, qEmployeeId },
-    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<LeaveRequestDto>;

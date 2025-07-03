@@ -113,7 +113,7 @@ export async function getLeavePlans(
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser, 
     { employeeId, queryMode },
-    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<LeavePlanDto>;
@@ -164,7 +164,7 @@ export async function getLeavePlan(
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser,
     { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL },
-    { extendAdminCategories: [ UserCategory.OPERATIONS ] }
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   try {
