@@ -98,7 +98,7 @@ export async function getEmployeeWorkTimes(
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     user, 
     { employeeId: qEmployeeId, queryMode, companyId },
-    { extendAdminCategories: [UserCategory.OPERATIONS] }
+    { extendAdminCategories: [ UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<EmployeeWorkTimeDto>;
