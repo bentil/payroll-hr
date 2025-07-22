@@ -65,7 +65,7 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
   } = params;
   let exclude: Prisma.EnumHOLIDAY_TYPEFilter | undefined;
   if (excludeHolidays && excludeWeekends) {
-    exclude = { notIn: [ HOLIDAY_TYPE.PUBLIC_HOLIDAY, HOLIDAY_TYPE.WEEKEND ] };
+    exclude = { notIn: [HOLIDAY_TYPE.PUBLIC_HOLIDAY, HOLIDAY_TYPE.WEEKEND] };
   } else if (excludeHolidays) {
     exclude = { not:  HOLIDAY_TYPE.PUBLIC_HOLIDAY };
   } else if (excludeWeekends) {
