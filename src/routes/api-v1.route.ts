@@ -461,92 +461,92 @@ router.delete(
 
 router.post(
   '/leave-plans',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.addNewLeavePlan
 );
 
 router.patch(
   '/leave-plans/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(UPDATE_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.updateLeavePlan
 );
 router.get(
   '/leave-plans',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_PLAN_SCHEMA),
   leavePlanV1Controller.getLeavePlans
 );
 
 router.get(
   '/leave-plans/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leavePlanV1Controller.getLeavePlan
 );
 
 router.delete(
   '/leave-plans/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leavePlanV1Controller.deleteLeavePlan
 );
 
 // ### LEAVE REQUEST ROUTES
 router.post(
   '/leave-requests',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.addNewLeaveRequest
 );
 
 router.patch(
   '/leave-requests/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(UPDATE_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.updateLeaveRequest
 );
 router.get(
   '/leave-requests',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_LEAVE_REQUEST_SCHEMA),
   leaveReqV1Controller.getLeaveRequests
 );
 
 router.get(
   '/leave-requests/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leaveReqV1Controller.getLeaveRequest
 );
 
 router.delete(
   '/leave-requests/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leaveReqV1Controller.deleteLeaveRequest
 );
 
 router.post(
   '/leave-requests/:id/response',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(CREATE_LEAVE_RESPONSE_SCHEMA),
   leaveReqV1Controller.addLeaveResponse
 );
 
 router.post(
   '/leave-requests/:id/cancel',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   leaveReqV1Controller.cancelLeaveRequest
 );
 
 router.patch(
   '/leave-requests/:id/number-of-days',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(ADJUST_DAYS_SCHEMA),
   leaveReqV1Controller.adjustDays
 );
 
 router.post(
   '/leave-requests/convert-plan',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestBody(CONVERT_LEAVE_PLAN_SCHEMA),
   leaveReqV1Controller.convertLeavePlan
 );
@@ -554,7 +554,7 @@ router.post(
 // ### Employee Leave Type summary 
 router.post(
   '/employees/:employeeId/leave-types/:leaveTypeId/summary',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   summaryV1Controller.getSummary
 );
 
