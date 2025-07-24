@@ -49,8 +49,9 @@ export async function findOne(
 
 export async function findFirst(
   where: Prisma.LeavePackageWhereInput,
+  include?: Prisma.LeavePackageInclude
 ): Promise<LeavePackage | null> {
-  return prisma.leavePackage.findFirst({ where });
+  return prisma.leavePackage.findFirst({ where, include });
 }
 
 export async function find(params: {
