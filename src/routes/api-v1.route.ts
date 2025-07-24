@@ -855,7 +855,7 @@ router.delete(
 router.post(
   '/announcements',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(CREATE_ANNOUNCEMENT_SCHEMA),
@@ -865,7 +865,7 @@ router.post(
 router.get(
   '/announcements',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestQuery(QUERY_ANNOUNCEMENT_SCHEMA),
@@ -882,7 +882,7 @@ router.get(
 router.get(
   '/announcements/search',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestQuery(SEARCH_ANNOUNCEMENT_SCHEMA),
@@ -898,14 +898,14 @@ router.get(
 
 router.get(
   '/announcements/:id',
-  authenticateUser({ isEmployee: true, permissions: 'announcements:write' }),
+  authenticateUser({ permissions: 'announcements:write' }),
   announcementV1Controller.getAnnouncement
 );
 
 router.patch(
   '/announcements/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_SCHEMA),
@@ -915,7 +915,7 @@ router.patch(
 router.patch(
   '/announcements/:announcementId/resources/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   validateRequestBody(UPDATE_ANNOUNCEMENT_RESOURCE_SCHEMA),
@@ -925,7 +925,7 @@ router.patch(
 router.delete(
   '/announcements/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'announcements:write'
   }),
   announcementV1Controller.deleteAnnouncement
