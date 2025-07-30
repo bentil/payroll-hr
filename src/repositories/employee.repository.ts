@@ -1,6 +1,6 @@
-import { Prisma, Employee, GradeLevel, PayrollCompany } from '@prisma/client';
+import { Prisma, Employee } from '@prisma/client';
 import { prisma } from '../components/db.component';
-import { EmployeeEvent } from '../domain/events/employee.event';
+import { EmployeeDto, EmployeeEvent } from '../domain/events/employee.event';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
 
@@ -67,11 +67,6 @@ export async function find(params: {
   ]);
 
   return getListWithPagination(data, { skip, take, totalCount });
-}
-
-export interface EmployeeDto extends Employee {
-  majorGradeLevel?: GradeLevel,
-  company?: PayrollCompany,
 }
 
 export async function findOne(

@@ -6,6 +6,7 @@ import {
 import {
   AnnouncementV1Controller
 } from './openapi/announcement-v1.oas.controller';
+import { QueryAnnouncementReadEventSummaryDto } from '../domain/dto/announcement-read-event.dto';
 
 
 const controller = new AnnouncementV1Controller();
@@ -143,6 +144,64 @@ export async function deleteAnnouncement(
   try {
     await controller.deleteAnnouncement(+id, req);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addNewAnnouncementReadEvent(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const response = await controller.addAnnouncementReadEvent(+id, req.body, req);
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAnnouncementReadEventSummaryList(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  try {
+    const response = await controller.getAnnouncementReadEventSummaryList(
+      req.query as unknown as QueryAnnouncementReadEventSummaryDto,
+      req
+    );
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getAnnouncementReadEventSummary(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { id } = req.params;
+  try {
+    const response = await controller.getAnnouncementReadEventSummary(+id, req);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getReadEventDetails(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { id } = req.params;
+  try {
+    const response = await controller.getReadEventDetails(+id);
+    res.json(response);
   } catch (err) {
     next(err);
   }

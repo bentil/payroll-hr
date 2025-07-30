@@ -44,7 +44,7 @@ import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { sendLeaveRequestEmail } from '../utils/notification.util';
+import { sendLeaveRequestEmail, sendLeaveResponseEmail } from '../utils/notification.util';
 import { getEmployeeApproversWithDefaults } from './employee-approver.service';
 import * as employeeService from './employee.service';
 import { countWorkingDays } from './holiday.service';
@@ -511,9 +511,124 @@ export async function addLeaveResponse(
     include: { 
       leavePackage: { include: { leaveType: true } },
       leaveResponses: true,
+      employee: { include: { company: true } }
     } 
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
+
+  logger.info('Sending notification after successful response to leave Request');
+  const approvers = await getEmployeeApproversWithDefaults({
+    employeeId,
+    approvalType: 'leave'
+  });
+  const leaveType = updatedLeaveRequest.leavePackage?.leaveType;
+  //You have one leave request pending approval. See details below.
+  if (updatedLeaveRequest.employee && updatedLeaveRequest.employee.company) {
+    if (updatedLeaveRequest.employee.company.notifyApproversOnRequestResponse) {
+      if (updatedLeaveRequest.status === LEAVE_REQUEST_STATUS.PENDING) {
+        for (const x of approvers) {
+          if (x.approver && x.approver.email && x.employee) {
+            sendLeaveResponseEmail({
+              requestId: updatedLeaveRequest.id,
+              recipientEmail: x.approver.email,
+              recipientFirstName: x.approver.firstName,
+              employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+              requestDate: updatedLeaveRequest.createdAt,
+              startDate: updatedLeaveRequest.startDate,
+              endDate: updatedLeaveRequest.returnDate,
+              leaveTypeName: leaveType!.name,
+              responseMessage: 
+                `Leave request has been approved at level ${expectedLevel}` + 
+                ` pending level ${expectedLevel+1} approval`,
+            });
+          }
+        }
+      } else {
+        if (updatedLeaveRequest.status === LEAVE_REQUEST_STATUS.DECLINED) {
+          for (const x of approvers) {
+            if (x.approver && x.approver.email && x.employee) {
+              sendLeaveResponseEmail({
+                requestId: updatedLeaveRequest.id,
+                recipientEmail: x.approver.email,
+                recipientFirstName: x.approver.firstName,
+                employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                requestDate: updatedLeaveRequest.createdAt,
+                startDate: updatedLeaveRequest.startDate,
+                endDate: updatedLeaveRequest.returnDate,
+                leaveTypeName: leaveType!.name,
+                responseMessage: `Leave request has been declined at level ${expectedLevel}`,
+              });
+            }
+          }
+          if (updatedLeaveRequest.employee && updatedLeaveRequest.employee.email) {
+            sendLeaveResponseEmail({
+              requestId: updatedLeaveRequest.id,
+              recipientEmail: updatedLeaveRequest.employee.email,
+              recipientFirstName: updatedLeaveRequest.employee.firstName,
+              employeeFullName: 
+                `${updatedLeaveRequest.employee.firstName}`.trim() +
+                `${updatedLeaveRequest.employee.lastName}`.trim(),
+              requestDate: updatedLeaveRequest.createdAt,
+              startDate: updatedLeaveRequest.startDate,
+              endDate: updatedLeaveRequest.returnDate,
+              leaveTypeName: leaveType!.name,
+              responseMessage: 'Your leave request has been declined',
+            });
+          }
+        } else if (updatedLeaveRequest.status === LEAVE_REQUEST_STATUS.APPROVED) {
+          for (const x of approvers) {
+            if (x.approver && x.approver.email && x.employee) {
+              sendLeaveResponseEmail({
+                requestId: updatedLeaveRequest.id,
+                recipientEmail: x.approver.email,
+                recipientFirstName: x.approver.firstName,
+                employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                requestDate: updatedLeaveRequest.createdAt,
+                startDate: updatedLeaveRequest.startDate,
+                endDate: updatedLeaveRequest.returnDate,
+                leaveTypeName: leaveType!.name,
+                responseMessage: 'Leave request has received final approval',
+              });
+            }
+          }
+          if (updatedLeaveRequest.employee && updatedLeaveRequest.employee.email) {
+            sendLeaveResponseEmail({
+              requestId: updatedLeaveRequest.id,
+              recipientEmail: updatedLeaveRequest.employee.email,
+              recipientFirstName: updatedLeaveRequest.employee.firstName,
+              employeeFullName: 
+                `${updatedLeaveRequest.employee.firstName}`.trim() +
+                `${updatedLeaveRequest.employee.lastName}`.trim(),
+              requestDate: updatedLeaveRequest.createdAt,
+              startDate: updatedLeaveRequest.startDate,
+              endDate: updatedLeaveRequest.returnDate,
+              leaveTypeName: leaveType!.name,
+              responseMessage: 'Your leave request has been approved',
+            });
+          }
+        }
+      }
+    } else {
+      if (updatedLeaveRequest.status === LEAVE_REQUEST_STATUS.APPROVED) {
+        if (updatedLeaveRequest.employee && updatedLeaveRequest.employee.email) {
+          sendLeaveResponseEmail({
+            requestId: updatedLeaveRequest.id,
+            recipientEmail: updatedLeaveRequest.employee.email,
+            recipientFirstName: updatedLeaveRequest.employee.firstName,
+            employeeFullName: 
+              `${updatedLeaveRequest.employee.firstName}`.trim() +
+              `${updatedLeaveRequest.employee.lastName}`.trim(),
+            requestDate: updatedLeaveRequest.createdAt,
+            startDate: updatedLeaveRequest.startDate,
+            endDate: updatedLeaveRequest.returnDate,
+            leaveTypeName: leaveType!.name,
+            responseMessage: 'Your leave request has been approved',
+          });
+        }
+      }
+    }
+  }
+  
 
   // Emit event.LeaveRequest.modified event
   logger.debug(`Emitting ${events.modified}`);

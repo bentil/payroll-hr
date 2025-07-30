@@ -203,3 +203,36 @@ export async function deleteEmployee(id: number): Promise<void> {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
 }
+
+export async function countEmployees(
+  options: {
+    gradeLevels?: number[],
+    companyId?: number,
+  }
+): Promise<number> {
+  const { gradeLevels, companyId } = options;
+  logger.debug('Getting count for Employee based on ', options);
+  let employeeCount: number;
+
+  try {
+    employeeCount = await repository.count(
+      {
+        companyId,
+        OR: gradeLevels ?
+          [
+            { majorGradeLevelId: { in: gradeLevels } },
+            { minorGradeLevelId: { in: gradeLevels } }
+          ]
+          : undefined
+      }
+    );
+  } catch (err) {
+    logger.warn(
+      'Getting Employee count failed'
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  logger.info('EmployeeCount retrieved!');
+  return employeeCount;
+}
