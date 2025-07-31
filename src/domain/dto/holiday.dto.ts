@@ -1,11 +1,9 @@
-import { AuthorizedUser } from '../user.domain';
-
 export interface CountQueryObject {
   startDate:Date;
   endDate: Date;
   considerPublicHolidayAsWorkday?: boolean;
   considerWeekendAsWorkday?: boolean;
-  authUser: AuthorizedUser;
+  organizationId: string;
 }
 
 export interface CountNonWorkingDaysQueryObject {
@@ -13,5 +11,5 @@ export interface CountNonWorkingDaysQueryObject {
   endDate: Date;
   excludeHolidays?: boolean;
   excludeWeekends?: boolean;
-  authUser: AuthorizedUser;
+  organizationId: string;
 }

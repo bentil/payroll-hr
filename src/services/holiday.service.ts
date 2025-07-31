@@ -4,7 +4,7 @@ import { rootLogger } from '../utils/logger';
 import * as repository from '../repositories/holiday.repository';
 import { CountNonWorkingDaysQueryObject, CountQueryObject } from '../domain/dto/holiday.dto';
 import { NotFoundError, ServerError } from '../errors/http-errors';
-import { applyOrganizationScopeToQuery, calculateDaysBetweenDates } from '../utils/helpers';
+import { calculateDaysBetweenDates } from '../utils/helpers';
 import { errors } from '../utils/constants';
 
 const logger = rootLogger.child({ context: 'HolidayService' });
@@ -39,7 +39,7 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
     endDate,
     considerPublicHolidayAsWorkday,
     considerWeekendAsWorkday,
-    authUser
+    organizationId
   } = params;
 
   
@@ -48,7 +48,7 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
     endDate,
     excludeHolidays: considerPublicHolidayAsWorkday,
     excludeWeekends: considerWeekendAsWorkday,
-    authUser
+    organizationId
   });
 
   const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
@@ -64,7 +64,7 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
     endDate,
     excludeHolidays,
     excludeWeekends,
-    authUser
+    organizationId
   } = params;
   let exclude: Prisma.EnumHOLIDAY_TYPEFilter | undefined;
   if (excludeHolidays && excludeWeekends) {
@@ -75,11 +75,10 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
     exclude = { not: HOLIDAY_TYPE.WEEKEND };
   }
 
-  const { scopedQuery } = await applyOrganizationScopeToQuery(authUser, { });
   let nonWorkingDays: number;
   try {
     nonWorkingDays = await repository.count({
-      ...scopedQuery,
+      organizationId,
       date: {
         lte: endDate,
         gte: startDate,

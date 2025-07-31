@@ -39,6 +39,7 @@ export async function addLeavePlan(
   authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
+  const { organizationId } = authorizedUser;
   
   // VALIDATION
   const validateData = await validate({ leaveTypeId, employeeId });
@@ -58,7 +59,7 @@ export async function addLeavePlan(
     endDate: payload.intendedReturnDate, 
     considerPublicHolidayAsWorkday,
     considerWeekendAsWorkday,
-    authUser: authorizedUser
+    organizationId
   });
   const creatData: leavePlanRepository.CreateLeavePlanObject = {
     employeeId: payload.employeeId,
@@ -202,7 +203,7 @@ export async function updateLeavePlan(
 ): Promise<LeavePlanDto> {
   const { leaveTypeId, ...remainingData } = updateData;
   const { intendedStartDate, intendedReturnDate } = remainingData;
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
 
   logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
   let leavePlan: LeavePlanDto | null,
@@ -275,7 +276,7 @@ export async function updateLeavePlan(
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
       considerWeekendAsWorkday,
-      authUser: authorizedUser
+      organizationId
     });
   } else if (intendedStartDate) {
     numberOfDays = await countWorkingDays({ 
@@ -283,7 +284,7 @@ export async function updateLeavePlan(
       endDate: leavePlan.intendedReturnDate, 
       considerPublicHolidayAsWorkday,
       considerWeekendAsWorkday,
-      authUser: authorizedUser
+      organizationId
     });
   } else if (intendedReturnDate) {
     numberOfDays = await countWorkingDays({ 
@@ -291,7 +292,7 @@ export async function updateLeavePlan(
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
       considerWeekendAsWorkday,
-      authUser: authorizedUser
+      organizationId
     });
   }
   
