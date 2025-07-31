@@ -11,7 +11,7 @@ export async function uploadLeaveRequests(
   try {
     const { companyId } = req.params;
     const file = req.file as Express.Multer.File;
-    const response = await controller.uploadLeaveRequests(+companyId, file);
+    const response = await controller.uploadLeaveRequests(+companyId, file, req);
     res.json(response);
   } catch (err) {
     next(err);

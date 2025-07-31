@@ -10,7 +10,7 @@ export async function addNewLeavePlan(
   next: NextFunction
 ): Promise<void> {
   try {
-    const response = await controller.addLeavePlan(req.body);
+    const response = await controller.addLeavePlan(req.body, req);
     res.status(201).json(response);
   } catch (err) {
     next(err);

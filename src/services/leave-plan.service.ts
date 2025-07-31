@@ -35,9 +35,11 @@ const events = {
 } as const;
 
 export async function addLeavePlan(
-  payload: CreateLeavePlanDto
+  payload: CreateLeavePlanDto,
+  authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
+  const { organizationId } = authorizedUser;
   
   // VALIDATION
   const validateData = await validate({ leaveTypeId, employeeId });
@@ -56,7 +58,8 @@ export async function addLeavePlan(
     startDate: payload.intendedStartDate, 
     endDate: payload.intendedReturnDate, 
     considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday 
+    considerWeekendAsWorkday,
+    organizationId
   });
   const creatData: leavePlanRepository.CreateLeavePlanObject = {
     employeeId: payload.employeeId,
@@ -200,7 +203,7 @@ export async function updateLeavePlan(
 ): Promise<LeavePlanDto> {
   const { leaveTypeId, ...remainingData } = updateData;
   const { intendedStartDate, intendedReturnDate } = remainingData;
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
 
   logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
   let leavePlan: LeavePlanDto | null,
@@ -272,21 +275,24 @@ export async function updateLeavePlan(
       startDate: intendedStartDate, 
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (intendedStartDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: intendedStartDate, 
       endDate: leavePlan.intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (intendedReturnDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: leavePlan.intendedStartDate, 
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   }
   
