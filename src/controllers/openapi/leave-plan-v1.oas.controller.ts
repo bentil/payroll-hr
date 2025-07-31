@@ -38,10 +38,11 @@ export class LeavePlanV1Controller {
   @Post()
   @SuccessResponse(201, 'Created')
   public async addLeavePlan(
-    @Body() createData: CreateLeavePlanDto
+    @Body() createData: CreateLeavePlanDto,
+    @Request() req: Express.Request,
   ): Promise<ApiSuccessResponse<LeavePlan>> {
     this.logger.debug('Received request to add LeavePlan', { data: createData, });
-    const leavePlan = await LeavePlanService.addLeavePlan(createData);
+    const leavePlan = await LeavePlanService.addLeavePlan(createData, req.user!);
     return { data: leavePlan };
   }
 

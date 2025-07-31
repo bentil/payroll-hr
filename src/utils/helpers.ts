@@ -359,3 +359,26 @@ export const fileUpload = (request: any, type: 'file' | 'files') => {
     });
   }
 };
+
+export async function applyOrganizationScopeToQuery(
+  user: AuthorizedUser,
+  queryParams: Record<string, any>
+): Promise<ScopedQuery> {
+  const { platformUser } = user;
+  const { organizationId: qOrganizationId, ...query } = queryParams;
+
+  const scopeQuery = {} as { [key: string]: unknown };
+  let authorized = false;
+  if (platformUser) {
+    scopeQuery.organizationId = qOrganizationId || undefined;
+    authorized = true;
+  } else if (!qOrganizationId || qOrganizationId === user.organizationId) {
+    scopeQuery.organizationId = user.organizationId;
+    authorized = true;
+  }
+
+  if (!authorized) {
+    throw new ForbiddenError({ message: 'User not allowed to perform action' });
+  }
+  return { scopedQuery: { ...query, ...scopeQuery } };
+}
