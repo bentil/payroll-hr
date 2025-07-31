@@ -206,3 +206,19 @@ export async function getReadEventDetails(
     next(err);
   }
 }
+
+export async function getReadEventDetailsPDF(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { id } = req.params;
+  try {
+    const pdfBuffer = await controller.getReadEventDetailsPDF(+id, req);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="announcement-${id}-read-events.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}

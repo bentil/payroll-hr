@@ -17,6 +17,7 @@ import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
+import { generateAnnouncementReadEventPDF, AnnouncementReadEventPDFData } from '../utils/pdf-generator.util';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -163,7 +164,7 @@ export async function getReadEventDetails(
     result = await repository.find({
       where: { announcementId },
       include: { 
-        employee: { include: { jobTitle: true } },
+        employee: { include: { jobTitle: true, department: true } },
         announcement: { include: { targetGradeLevels: true } }
       }
     });
@@ -198,4 +199,35 @@ export async function getReadEventDetails(
   });
 
   return summary;
+}
+
+export async function generateReadEventDetailsPDF(
+  announcementId: number,
+  authUser: AuthorizedUser
+): Promise<Buffer> {
+  logger.debug('Generating PDF for AnnouncementReadEvent details for Announcement[%s]', announcementId);
+  
+  // Get announcement details
+  const announcement = await announcementService.getAnnouncement(announcementId, authUser);
+  
+  // Get read event details
+  const readEventDetails = await getReadEventDetails(announcementId);
+  
+  // Generate PDF
+  const pdfData: AnnouncementReadEventPDFData = {
+    announcement,
+    readEvents: readEventDetails
+  };
+  
+  try {
+    const pdfBuffer = await generateAnnouncementReadEventPDF(pdfData);
+    logger.info('PDF generated successfully for Announcement[%s]', announcementId);
+    return pdfBuffer;
+  } catch (error) {
+    logger.error('Failed to generate PDF for Announcement[%s]', announcementId, { error });
+    throw new ServerError({
+      message: 'Failed to generate PDF report',
+      cause: error
+    });
+  }
 }

@@ -13,6 +13,7 @@ import {
   SuccessResponse,
   Tags,
   Delete,
+  Produces,
 } from 'tsoa';
 import {
   ApiErrorResponse,
@@ -332,5 +333,26 @@ export class AnnouncementV1Controller {
     );
     const details = await readEventService.getReadEventDetails(id);
     return { data: details };
+  }
+
+  /**
+   * Get an AnnouncementReadEventDetails PDF report
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns PDF Buffer
+   */
+  @Get('/{id}/read-events/details/pdf')
+  @Produces('application/pdf')
+  public async getReadEventDetailsPDF(
+    @Path('id') id: number,
+    @Request() req: ExtendedRequest,
+  ): Promise<Buffer> {
+    this.logger.debug(
+      'Received request to get AnnouncementReadEventDetails PDF for Announcement[%s]', id
+    );
+    const authUser = extractAuthUser(req);
+    const pdfBuffer = await readEventService.generateReadEventDetailsPDF(id, authUser);
+    return pdfBuffer;
   }
 }
