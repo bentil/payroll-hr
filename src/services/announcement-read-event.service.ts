@@ -124,7 +124,8 @@ export async function getAnnouncementReadEventSummary(
   return {
     recipientCount,
     readCount,
-    readRatio
+    readRatio,
+    announcement
   }; 
 }
 
