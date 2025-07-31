@@ -69,7 +69,7 @@ export async function addLeaveRequest(
   authUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
   const { employeeId, leaveTypeId, startDate } = payload;
-  const { employeeId: reqEmployeeId, category } = authUser;
+  const { employeeId: reqEmployeeId, category, organizationId } = authUser;
   const allowedUsers = [UserCategory.HR, UserCategory.OPERATIONS];
   if ((reqEmployeeId !== employeeId) && (!allowedUsers.includes(category))) {
     logger.warn(
@@ -122,7 +122,8 @@ export async function addLeaveRequest(
     startDate: payload.startDate, 
     endDate: payload.returnDate, 
     considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday 
+    considerWeekendAsWorkday,
+    organizationId
   });
 
   if (numberOfDays > leaveSummary.numberOfDaysLeft) {
@@ -302,7 +303,7 @@ export async function updateLeaveRequest(
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
   const { leaveTypeId, startDate, returnDate, comment } = updateData;
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
 
   logger.debug('Finding LeaveRequest[%s] to update', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
@@ -368,21 +369,24 @@ export async function updateLeaveRequest(
       startDate, 
       endDate: returnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (startDate) {
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: leaveRequest.returnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (returnDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: leaveRequest.startDate, 
       endDate: returnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   }
   
@@ -736,6 +740,7 @@ export async function convertLeavePlanToRequest(
   authorizedUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
   const { leavePlanId } = convertData;
+  const { organizationId } = authorizedUser;
   
   logger.debug('Finding leavePlan[%s] to convert', leavePlanId);
   const leavePlan = await leavePlanService.getLeavePlan(
@@ -765,7 +770,8 @@ export async function convertLeavePlanToRequest(
     startDate: intendedStartDate, 
     endDate: intendedReturnDate, 
     considerPublicHolidayAsWorkday: validateData.considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday: validateData.considerWeekendAsWorkday 
+    considerWeekendAsWorkday: validateData.considerWeekendAsWorkday,
+    organizationId
   });
   
 
@@ -829,8 +835,10 @@ export async function convertLeavePlanToRequest(
 export async function uploadLeaveRequests(
   companyId: number, 
   uploadedExcelFile: Express.Multer.File,
+  authorizedUser: AuthorizedUser
 ): Promise<UploadLeaveRequestResponse> {
   const company = await companyRepository.findFirst({ id: companyId });
+  const { organizationId } = authorizedUser;
 
   if (!company) {
     logger.warn('Company[%s] does not exist', companyId);
@@ -884,7 +892,11 @@ export async function uploadLeaveRequests(
     for (const collectedRow of collectedRows) {
       const rowNumber = collectedRow.rowNumber;   
 
-      const validation = await handleLeaveRequestSpreadSheetValidation(collectedRow, company);
+      const validation = await handleLeaveRequestSpreadSheetValidation(
+        collectedRow, 
+        company, 
+        organizationId
+      );
 
       if (!validation.issues.length) {
         const checkedRecords = validation.checkedRecords;
@@ -939,7 +951,11 @@ export async function uploadLeaveRequests(
 }
 
 const handleLeaveRequestSpreadSheetValidation =
-  async (data: UploadLeaveRequestViaSpreadsheetDto, company: PayrollCompany) => {
+  async (
+    data: UploadLeaveRequestViaSpreadsheetDto, 
+    company: PayrollCompany, 
+    organizationId: string
+  ) => {
     const response = {
       checkedRecords: {
         leavePackageId: 0,
@@ -1100,7 +1116,8 @@ const handleLeaveRequestSpreadSheetValidation =
             startDate: data.startDate, 
             endDate: data.returnDate, 
             considerPublicHolidayAsWorkday: includeHolidays,
-            considerWeekendAsWorkday: includeWeekends 
+            considerWeekendAsWorkday: includeWeekends,
+            organizationId
           });
         
           if (numberOfDaysLeft && numberOfDays > numberOfDaysLeft) {
