@@ -1310,6 +1310,10 @@ export async function getLeavesTakenReport(
   const {
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
     orderBy
   } = query;
   const orderByInput = helpers.getOrderByInput(orderBy);
@@ -1355,7 +1359,16 @@ export async function getLeavesTakenReport(
                   gte: createdAtGte && new Date(createdAtGte),
                   lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
                 },
-                returnDate: { lte: new Date() }
+                startDate: {
+                  gte: startDateGte && new Date(startDateGte),
+                  lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+                }, 
+                returnDate: {
+                  gte: returnDateGte && new Date(returnDateGte),
+                  lt: returnDateLte 
+                    ? dateutil.getDate(new Date(returnDateLte), { days: 1 })
+                    : new Date(),
+                },
               },
               orderBy: orderByInput,
               include: {
@@ -1446,6 +1459,10 @@ export async function getEmployeeLeavesTakenReport(
   const {
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
     orderBy
   } = query;
   const orderByInput = helpers.getOrderByInput(orderBy);
@@ -1483,7 +1500,16 @@ export async function getEmployeeLeavesTakenReport(
                 gte: createdAtGte && new Date(createdAtGte),
                 lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
               },
-              returnDate: { lte: new Date() }
+              startDate: {
+                gte: startDateGte && new Date(startDateGte),
+                lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+              }, 
+              returnDate: {
+                gte: returnDateGte && new Date(returnDateGte),
+                lt: returnDateLte 
+                  ? dateutil.getDate(new Date(returnDateLte), { days: 1 })
+                  : new Date(),
+              },
             },
             orderBy: orderByInput,
             include: {

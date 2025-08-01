@@ -134,6 +134,10 @@ export class FilterLeaveRequestForExportDto {
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
 export class QueryLeaveRequestForReportDto {
+  'startDate.gte'?: string;
+  'startDate.lte'?: string;
+  'returnDate.gte'?: string;
+  'returnDate.lte'?: string;
   'createdAt.gte'?: string;
   'createdAt.lte'?: string;
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
