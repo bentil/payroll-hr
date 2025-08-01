@@ -10,10 +10,15 @@ import {
   AdjustDaysDto,
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
+  EmployeeLeaveTakenReportObject,
   FilterLeaveRequestForExportDto,
   LeaveRequestDto,
   LeaveResponseInputDto,
+  LeaveTakenReportDepartmentObject,
+  LeaveTakenReportEmployeeObject,
+  LeaveTakenReportObject,
   QueryLeaveRequestDto,
+  QueryLeaveRequestForReportDto,
   RequestQueryMode,
   UpdateLeaveRequestDto,
   UploadLeaveRequestCheckedRecords,
@@ -54,6 +59,7 @@ import * as leavePlanService from './leave-plan.service';
 import * as leaveTypeRepository from '../repositories/leave-type';
 import * as companyRepository from '../repositories/payroll-company.repository';
 import * as Excel from 'exceljs';
+import * as departmentRepository from '../repositories/department.repository';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -1294,4 +1300,250 @@ export async function exportLeaveRequests(
     });
   });
   return workbook;
+}
+
+export async function getLeavesTakenReport(
+  companyId: number,
+  query: QueryLeaveRequestForReportDto,
+  authorizedUser: AuthorizedUser
+): Promise<LeaveTakenReportObject[]> {
+  const {
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+    orderBy
+  } = query;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });
+  // Get departments in the company and list of all the ids
+  const departments = await departmentRepository.find({
+    where: { companyId }
+  });
+
+  // Get all available leaveTypes 
+  const leaveTypes = await leaveTypeRepository.find({
+    where: { 
+      leavePackages: {
+        every: { companyId }
+      },
+    },
+    include: { leavePackages: true }
+  });
+  const report: LeaveTakenReportObject[] = [];
+  
+  if (leaveTypes.data.length > 0 ) {
+    for (const leaveType of leaveTypes.data) {
+      if (leaveType.leavePackages) {
+        const leavePackageIds: number[] = [];
+        leaveType.leavePackages.forEach((pack) => {
+          leavePackageIds.push(pack.id);
+        });
+        const deptSummary: LeaveTakenReportDepartmentObject[] = [];
+        // get all list of  employees and find leave requests of leaveType
+        for (const dep of departments) {
+          let result: ListWithPagination<LeaveRequestDto>;
+          try {
+            // finding leaveRequests within the leaveType of interest for a company
+            logger.debug('Finding LeaveRequest(s) taken by employees in company[%s]', companyId);
+            result = await leaveRequestRepository.find({
+              where: { 
+                employee: {
+                  departmentId: dep.id
+                },
+                status: LEAVE_REQUEST_STATUS.APPROVED,
+                leavePackageId: { in: leavePackageIds },
+                createdAt: {
+                  gte: createdAtGte && new Date(createdAtGte),
+                  lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+                },
+                returnDate: { lte: new Date() }
+              },
+              orderBy: orderByInput,
+              include: {
+                employee: { 
+                  include: {
+                    department: true,
+                  } 
+                }
+              }
+            });
+            logger.info(
+              'Found %d LeaveRequest(s) taken by employees of company[%s]',
+              companyId, result.data.length, { query }
+            );
+          } catch (err) {
+            logger.warn(
+              'Querying LeaveRequest for leave taken by employees in Company[%s] failed',
+              companyId, { error: err as Error }
+            );
+            throw new ServerError({
+              message: (err as Error).message,
+              cause: err
+            });
+          }
+          const employeeSummary: LeaveTakenReportEmployeeObject [] = [];
+          if (result.data.length > 0) {
+            // clear duplicate employeeIds 
+            const cleanLeaveRequestList = Object.values(
+              result.data.reduce((acc, curr) => {
+                if (!acc[curr.employeeId]) {
+                  acc[curr.employeeId] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
+                } else {
+                  acc[curr.employeeId].numberOfDays = (
+                    acc[curr.employeeId].numberOfDays ?? 0) + (curr.numberOfDays ?? 0
+                  );
+                }
+                return acc;
+              }, {} as Record<number, LeaveRequestDto>)
+            );
+            cleanLeaveRequestList.forEach((req) => {
+              employeeSummary.push({
+                id: req.employee!.id,
+                employeeNumber: req.employee!.employeeNumber,
+                name: `${req.employee!.lastName} ${req.employee!.firstName}`,
+                numberOfDays: req.numberOfDays ?? 0
+              });
+            });
+          }
+          if (employeeSummary.length > 0) {
+            let numberOfDaysPerDepartment = 0;
+            employeeSummary.forEach((empSumm) => numberOfDaysPerDepartment += empSumm.numberOfDays);
+
+            deptSummary.push({
+              id: dep.id,
+              code: dep.code,
+              name: dep.name,
+              employees: employeeSummary,
+              numberOfDaysPerDepartment
+            });
+          }
+        }
+        if (deptSummary.length > 0) {
+          let numberOfDaysPerCompany = 0;
+          deptSummary.forEach((x) => numberOfDaysPerCompany += x.numberOfDaysPerDepartment);
+
+          report.push({
+            leaveType: {
+              id: leaveType.id,
+              code: leaveType.code,
+              name: leaveType.name
+            },
+            department: deptSummary,
+            numberOfDaysPerCompany
+          });
+        }
+      }
+    }
+  }
+  return report;
+}
+
+export async function getEmployeeLeavesTakenReport(
+  companyId: number,
+  employeeId: number,
+  query: QueryLeaveRequestForReportDto,
+  authorizedUser: AuthorizedUser
+): Promise<EmployeeLeaveTakenReportObject[]> {
+  const {
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+    orderBy
+  } = query;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });  
+
+  // Get all available leaveTypes 
+  const leaveTypes = await leaveTypeRepository.find({
+    where: { 
+      leavePackages: {
+        every: { companyId }
+      },
+    },
+    include: { leavePackages: true }
+  });
+  const report: EmployeeLeaveTakenReportObject[] = [];
+  
+  if (leaveTypes.data.length > 0 ) {
+    for (const leaveType of leaveTypes.data) {
+      if (leaveType.leavePackages) {
+        const leavePackageIds: number[] = [];
+        leaveType.leavePackages.forEach((pack) => {
+          leavePackageIds.push(pack.id);
+        });
+        // get all list of  employees and find leave requests of leaveType
+        let result: ListWithPagination<LeaveRequestDto>;
+        try {
+          // finding leaveRequests within the leaveType of interest for a company
+          logger.debug('Finding LeaveRequest(s) taken by employees in company[%s]', companyId);
+          result = await leaveRequestRepository.find({
+            where: { 
+              employeeId,
+              status: LEAVE_REQUEST_STATUS.APPROVED,
+              leavePackageId: { in: leavePackageIds },
+              createdAt: {
+                gte: createdAtGte && new Date(createdAtGte),
+                lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+              },
+              returnDate: { lte: new Date() }
+            },
+            orderBy: orderByInput,
+            include: {
+              employee: { 
+                include: {
+                  department: true,
+                } 
+              }
+            }
+          });
+          logger.info(
+            'Found %d LeaveRequest(s) taken by employees of company[%s]',
+            companyId, result.data.length, { query }
+          );
+        } catch (err) {
+          logger.warn(
+            'Querying LeaveRequest for leave taken by employees in Company[%s] failed',
+            companyId, { error: err as Error }
+          );
+          throw new ServerError({
+            message: (err as Error).message,
+            cause: err
+          });
+        }
+        let employeeSummary: LeaveTakenReportEmployeeObject | undefined;
+        if (result.data.length > 0) {
+          // clear duplicate employeeIds 
+          const cleanLeaveRequestList = Object.values(
+            result.data.reduce((acc, curr) => {
+              if (!acc[curr.employeeId]) {
+                acc[curr.employeeId] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
+              } else {
+                acc[curr.employeeId].numberOfDays = (
+                  acc[curr.employeeId].numberOfDays ?? 0) + (curr.numberOfDays ?? 0
+                );
+              }
+              return acc;
+            }, {} as Record<number, LeaveRequestDto>)
+          );
+          cleanLeaveRequestList.forEach((req) => {
+            employeeSummary = {
+              id: req.employee!.id,
+              employeeNumber: req.employee!.employeeNumber,
+              name: `${req.employee!.lastName} ${req.employee!.firstName}`,
+              numberOfDays: req.numberOfDays ?? 0
+            };
+          });
+        }
+        if (employeeSummary) {
+          report.push({
+            leaveType: {
+              id: leaveType.id,
+              code: leaveType.code,
+              name: leaveType.name
+            },
+            employee: employeeSummary
+          });
+        }
+      }
+    }
+  }
+  return report;
 }

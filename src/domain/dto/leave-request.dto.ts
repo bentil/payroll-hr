@@ -133,3 +133,42 @@ export class FilterLeaveRequestForExportDto {
   limit: number = config.pagination.limit;
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
+export class QueryLeaveRequestForReportDto {
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+}
+
+export class LeaveTakenReportObject {
+  leaveType!: {
+    id: number,
+    code?: string,
+    name?: string,
+  };
+  department!:LeaveTakenReportDepartmentObject[];
+  numberOfDaysPerCompany!: number;
+}
+
+export class LeaveTakenReportDepartmentObject {
+  id!: number;
+  code!: string;
+  name!: string;
+  employees!: LeaveTakenReportEmployeeObject[];
+  numberOfDaysPerDepartment!: number;
+}
+
+export class LeaveTakenReportEmployeeObject {
+  id!: number;
+  employeeNumber!: string;
+  name!: string;
+  numberOfDays!: number;
+}
+
+export class EmployeeLeaveTakenReportObject {
+  leaveType!: {
+    id: number,
+    code?: string,
+    name?: string,
+  };
+  employee!: LeaveTakenReportEmployeeObject;
+}

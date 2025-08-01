@@ -24,6 +24,7 @@ import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.contr
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
 import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
+import * as leaveReportV1controller from '../controllers/leave-report-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -113,6 +114,7 @@ import {
   ADJUST_DAYS_SCHEMA,
   CONVERT_LEAVE_PLAN_SCHEMA,
   FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA,
+  QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -1005,6 +1007,25 @@ router.get(
   }),
   validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
   uploadV1Controller.exportLeaveRequests
+);
+
+// ### LEAVE RESPONSE  ROUTES
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getLeavesTaken
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/employees/:employeeId',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getEmployeeLeavesTaken
 );
 
 export default router;
