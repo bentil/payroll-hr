@@ -1583,7 +1583,6 @@ export async function getEmployeeLeavesTakenReport(
                     });
                     const daysElapsed = req.numberOfDays! - daysLeft;
                     daysUsed += daysElapsed;
-                    daysApprovedButNotUsed += daysLeft;
                   } else if (req.returnDate <= today) {
                     daysUsed = daysUsed + req.numberOfDays!;
                   } else if (req.startDate > today) {
