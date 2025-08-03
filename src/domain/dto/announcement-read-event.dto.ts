@@ -12,6 +12,7 @@ export class AnnouncementReadEventResponseDto{
   recipientCount!: number;
   readCount!: number;
   readRatio!: Decimal;
+  announcement?: AnnouncementDto;
 }
 
 export class ReadEventSummmaryDto {
