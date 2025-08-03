@@ -168,11 +168,24 @@ export class LeaveTakenReportEmployeeObject {
   numberOfDays!: number;
 }
 
+export class LeaveTakenWithPackageReportObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  leavePackages!: EmployeeLeavePackageObject[];
+}
+
 export class EmployeeLeaveTakenReportObject {
-  leaveType!: {
-    id: number,
-    code?: string,
-    name?: string,
-  };
-  employee!: LeaveTakenReportEmployeeObject;
+  leaveType!: LeaveTakenWithPackageReportObject[];
+  employee!: Omit <LeaveTakenReportEmployeeObject, 'numberOfDays'>;
+}
+
+export class EmployeeLeavePackageObject {
+  id!: number;
+  name!: string;
+  code!: string;
+  daysUsed!: number;
+  daysApprovedButNotUsed!: number;
+  daysPendingApproval!: number;
+  daysAvailable!: number;
 }

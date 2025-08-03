@@ -1,4 +1,4 @@
-import { Employee, PayrollCompany } from '@prisma/client';
+import { Employee, GradeLevel, PayrollCompany } from '@prisma/client';
 
  type EmployeeAccountInfo = {
     id: number;
@@ -36,4 +36,5 @@ export interface EmployeeEvent extends Employee {
 
 export interface EmployeeDto extends Employee {
   company?: PayrollCompany;
+  majorGradeLevel?: GradeLevel;
 }

@@ -52,7 +52,7 @@ export class LeaveReportV1Controller {
     @Path('employeeId') employeeId: number,
     @Queries() query: QueryLeaveRequestForReportDto, 
     @Request() req: Express.Request
-  ): Promise<ApiSuccessResponse<EmployeeLeaveTakenReportObject[]>> {
+  ): Promise<ApiSuccessResponse<EmployeeLeaveTakenReportObject>> {
     this.logger.debug(
       'Received request to get report for LeavesTaken matching query for Employee[%s]', 
       { query }, employeeId);

@@ -71,6 +71,7 @@ export async function getEmployee(
   id: number,
   options?: {
     includeCompany?: boolean;
+    includeMajorGradeLevel?: boolean;
   }
 ): Promise<EmployeeDto> {
   logger.debug('Getting details for Employee[%s]', id);
@@ -79,7 +80,14 @@ export async function getEmployee(
   try {
     employee = await repository.findOne(
       { id },
-      options?.includeCompany ? { company: true } : undefined
+      {
+        company: options?.includeCompany ? 
+          true 
+          : undefined,
+        majorGradeLevel: options?.includeMajorGradeLevel 
+          ? { include: { companyLevel: true } } 
+          : undefined,
+      }
     );
   } catch (err) {
     logger.warn(
