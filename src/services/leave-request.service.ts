@@ -1494,6 +1494,12 @@ export async function getEmployeeLeavesTakenReport(
   if (leaveTypes.data.length > 0 ) {  
     const leavePackageReport: EmployeeLeavePackageObject[] = [];
     for (const leaveType of leaveTypes.data) {
+      // get necessary details to calculate number of days
+      const validateData = await leaveTypeService.validate({ 
+        leaveTypeId: leaveType.id, employeeId 
+      });
+      const { considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
+
       // Get employees leavePackages using employee companyLevel from majorGradeLevel
       if (employee?.majorGradeLevel?.companyLevelId) {
         const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
@@ -1510,7 +1516,7 @@ export async function getEmployeeLeavesTakenReport(
         if (leavePackages.data.length > 0) {
           const leavePackagesList = leavePackages.data;
           for (const pack of leavePackagesList) {
-            let daysAvailable = pack.maxDays;
+            let daysAvailable = 0;
             let daysUsed = 0;
             let daysApprovedButNotUsed = 0;
             let daysPendingApproval = 0;
@@ -1566,25 +1572,30 @@ export async function getEmployeeLeavesTakenReport(
                 const today = new Date();
                 if (req.status === LEAVE_REQUEST_STATUS.APPROVED) {
                   const nextDay = new Date(today);
+                  nextDay.setHours(0, 0, 0, 0);
                   nextDay.setDate(today.getDate() + 1);
-                  if (req.returnDate > today) {
-                    const daysLeft = await helpers.calculateDaysBetweenDates(
-                      nextDay, req.returnDate
-                    );
+                  if (req.returnDate > today && req.startDate <= today) {
+                    const daysLeft = await countWorkingDays({ 
+                      startDate: nextDay, 
+                      endDate: req.returnDate, 
+                      considerPublicHolidayAsWorkday,
+                      considerWeekendAsWorkday 
+                    });
                     const daysElapsed = req.numberOfDays! - daysLeft;
                     daysUsed += daysElapsed;
+                    daysApprovedButNotUsed += daysLeft;
                   } else if (req.returnDate <= today) {
                     daysUsed = daysUsed + req.numberOfDays!;
                   } else if (req.startDate > today) {
                     daysApprovedButNotUsed = daysApprovedButNotUsed + req.numberOfDays!;
                   }
-                  daysAvailable = daysAvailable - req.numberOfDays!;
                 } else if (
                   req.status === LEAVE_REQUEST_STATUS.PENDING && 
                   req.startDate > today
                 ) {
                   daysPendingApproval = daysPendingApproval + req.numberOfDays!;
                 }
+                daysAvailable = pack.maxDays! - daysUsed;
               }
               leavePackageReport.push({
                 id: pack.id,
