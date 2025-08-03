@@ -34,7 +34,7 @@
     "@grpc/grpc-js": "^1.9.6",
     "@grpc/proto-loader": "^0.7.10",
     "@joi/date": "^2.1.0",
-    "@prisma/client": "^5.4.2",
+    "@prisma/client": "^5.22.0",
     "cls-rtracer": "^2.6.3",
     "dayjs": "^1.11.13",
     "dotenv": "^16.3.1",

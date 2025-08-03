@@ -10,10 +10,17 @@ import {
   AdjustDaysDto,
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
+  EmployeeLeavePackageObject,
+  EmployeeLeaveTakenReportObject,
   FilterLeaveRequestForExportDto,
   LeaveRequestDto,
   LeaveResponseInputDto,
+  LeaveTakenReportDepartmentObject,
+  LeaveTakenReportEmployeeObject,
+  LeaveTakenReportObject,
+  LeaveTakenWithPackageReportObject,
   QueryLeaveRequestDto,
+  QueryLeaveRequestForReportDto,
   RequestQueryMode,
   UpdateLeaveRequestDto,
   UploadLeaveRequestCheckedRecords,
@@ -54,6 +61,9 @@ import * as leavePlanService from './leave-plan.service';
 import * as leaveTypeRepository from '../repositories/leave-type';
 import * as companyRepository from '../repositories/payroll-company.repository';
 import * as Excel from 'exceljs';
+import * as departmentRepository from '../repositories/department.repository';
+import * as leavePackageRepository from '../repositories/leave-package';
+import * as companyService from './payroll-company.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -1409,4 +1419,329 @@ export async function exportLeaveRequests(
     });
   });
   return workbook;
+}
+
+export async function getLeavesTakenReport(
+  companyId: number,
+  query: QueryLeaveRequestForReportDto,
+  authorizedUser: AuthorizedUser
+): Promise<LeaveTakenReportObject[]> {
+  const {
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
+    orderBy
+  } = query;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });
+  // Get departments in the company and list of all the ids
+  const departments = await departmentRepository.find({
+    where: { companyId }
+  });
+
+  // Get all available leaveTypes 
+  const leaveTypes = await leaveTypeRepository.find({
+    where: { 
+      leavePackages: {
+        every: { companyId }
+      },
+    },
+    include: { leavePackages: true }
+  });
+  const report: LeaveTakenReportObject[] = [];
+  
+  if (leaveTypes.data.length > 0 ) {
+    for (const leaveType of leaveTypes.data) {
+      if (leaveType.leavePackages) {
+        const leavePackageIds: number[] = [];
+        leaveType.leavePackages.forEach((pack) => {
+          leavePackageIds.push(pack.id);
+        });
+        const deptSummary: LeaveTakenReportDepartmentObject[] = [];
+        // get all list of  employees and find leave requests of leaveType
+        for (const dep of departments) {
+          let result: ListWithPagination<LeaveRequestDto>;
+          try {
+            // finding leaveRequests within the leaveType of interest for a company
+            logger.debug('Finding LeaveRequest(s) taken by employees in company[%s]', companyId);
+            result = await leaveRequestRepository.find({
+              where: { 
+                employee: {
+                  departmentId: dep.id
+                },
+                status: LEAVE_REQUEST_STATUS.APPROVED,
+                leavePackageId: { in: leavePackageIds },
+                createdAt: {
+                  gte: createdAtGte && new Date(createdAtGte),
+                  lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+                },
+                startDate: {
+                  gte: startDateGte && new Date(startDateGte),
+                  lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+                }, 
+                returnDate: {
+                  gte: returnDateGte && new Date(returnDateGte),
+                  lt: returnDateLte 
+                    ? dateutil.getDate(new Date(returnDateLte), { days: 1 })
+                    : new Date(),
+                },
+              },
+              orderBy: orderByInput,
+              include: {
+                employee: { 
+                  include: {
+                    department: true,
+                  } 
+                }
+              }
+            });
+            logger.info(
+              'Found %d LeaveRequest(s) taken by employees of company[%s]',
+              companyId, result.data.length, { query }
+            );
+          } catch (err) {
+            logger.warn(
+              'Querying LeaveRequest for leave taken by employees in Company[%s] failed',
+              companyId, { error: err as Error }
+            );
+            throw new ServerError({
+              message: (err as Error).message,
+              cause: err
+            });
+          }
+          const employeeSummary: LeaveTakenReportEmployeeObject [] = [];
+          if (result.data.length > 0) {
+            // clear duplicate employeeIds 
+            const cleanLeaveRequestList = Object.values(
+              result.data.reduce((acc, curr) => {
+                if (!acc[curr.employeeId]) {
+                  acc[curr.employeeId] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
+                } else {
+                  acc[curr.employeeId].numberOfDays = (
+                    acc[curr.employeeId].numberOfDays ?? 0) + (curr.numberOfDays ?? 0
+                  );
+                }
+                return acc;
+              }, {} as Record<number, LeaveRequestDto>)
+            );
+            cleanLeaveRequestList.forEach((req) => {
+              employeeSummary.push({
+                id: req.employee!.id,
+                employeeNumber: req.employee!.employeeNumber,
+                name: `${req.employee!.lastName} ${req.employee!.firstName}`,
+                numberOfDays: req.numberOfDays ?? 0
+              });
+            });
+          }
+          if (employeeSummary.length > 0) {
+            let numberOfDaysPerDepartment = 0;
+            employeeSummary.forEach((empSumm) => numberOfDaysPerDepartment += empSumm.numberOfDays);
+
+            deptSummary.push({
+              id: dep.id,
+              code: dep.code,
+              name: dep.name,
+              employees: employeeSummary,
+              numberOfDaysPerDepartment
+            });
+          }
+        }
+        if (deptSummary.length > 0) {
+          let numberOfDaysPerCompany = 0;
+          deptSummary.forEach((x) => numberOfDaysPerCompany += x.numberOfDaysPerDepartment);
+
+          report.push({
+            leaveType: {
+              id: leaveType.id,
+              code: leaveType.code,
+              name: leaveType.name
+            },
+            department: deptSummary,
+            numberOfDaysPerCompany
+          });
+        }
+      }
+    }
+  }
+  return report;
+}
+
+export async function getEmployeeLeavesTakenReport(
+  companyId: number,
+  employeeId: number,
+  query: QueryLeaveRequestForReportDto,
+  authorizedUser: AuthorizedUser
+): Promise<EmployeeLeaveTakenReportObject> {
+  // Validate emloyee and company
+  const [company, employee] = await Promise.all([
+    companyService.validatePayrollCompany(companyId),
+    employeeService.getEmployee(employeeId, { includeMajorGradeLevel: true }),
+  ]);
+
+  logger.info('Employee[%s] and Company[%s] exists', employee.id, company.id);
+
+  const {
+    'createdAt.gte': createdAtGte,
+    'createdAt.lte': createdAtLte,
+    'startDate.gte': startDateGte,
+    'startDate.lte': startDateLte,
+    'returnDate.gte': returnDateGte,
+    'returnDate.lte': returnDateLte,
+    orderBy
+  } = query;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });  
+
+  // Get all available leaveTypes 
+  const leaveTypes = await leaveTypeRepository.find({
+    where: { 
+      leavePackages: {
+        every: { companyId }
+      },
+    },
+    include: { leavePackages: true }
+  });
+  const reportSummary: LeaveTakenWithPackageReportObject[]= [];
+
+  if (leaveTypes.data.length > 0 ) {  
+    const leavePackageReport: EmployeeLeavePackageObject[] = [];
+    for (const leaveType of leaveTypes.data) {
+      // get necessary details to calculate number of days
+      const validateData = await leaveTypeService.validate({ 
+        leaveTypeId: leaveType.id, employeeId 
+      });
+      const { considerPublicHolidayAsWorkday, considerWeekendAsWorkday } = validateData;
+
+      // Get employees leavePackages using employee companyLevel from majorGradeLevel
+      if (employee?.majorGradeLevel?.companyLevelId) {
+        const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
+        // Get leavePackages for employe level and of leaveType
+        const leavePackages = await leavePackageRepository.find({
+          where: {
+            companyLevelLeavePackages: { some: { 
+              leavePackage: { leaveTypeId: leaveType.id },
+              companyLevelId 
+            } }
+          },
+          include: { leaveType: true }
+        });
+        if (leavePackages.data.length > 0) {
+          const leavePackagesList = leavePackages.data;
+          for (const pack of leavePackagesList) {
+            let daysAvailable = 0;
+            let daysUsed = 0;
+            let daysApprovedButNotUsed = 0;
+            let daysPendingApproval = 0;
+            
+            let result: ListWithPagination<LeaveRequestDto>;
+            try {
+              // finding leaveRequests for leavePackage under leaveType of interest for an employee
+              logger.debug('Finding LeaveRequest(s) taken by employees in company[%s]', companyId);
+              result = await leaveRequestRepository.find({
+                where: { 
+                  employeeId,
+                  leavePackageId: pack.id,
+                  createdAt: {
+                    gte: createdAtGte && new Date(createdAtGte),
+                    lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
+                  },
+                  startDate: {
+                    gte: startDateGte && new Date(startDateGte),
+                    lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
+                  }, 
+                  returnDate: {
+                    gte: returnDateGte && new Date(returnDateGte),
+                    lt: returnDateLte && dateutil.getDate(new Date(returnDateLte), { days: 1 }),
+                  },
+                },
+                orderBy: orderByInput,
+                include: {
+                  employee: { 
+                    include: {
+                      department: true,
+                    } 
+                  }
+                }
+              });
+              logger.info(
+                'Found %d LeaveRequest(s) taken by employees of company[%s]',
+                companyId, result.data.length, { query }
+              );
+            } catch (err) {
+              logger.warn(
+                'Querying LeaveRequest for leave taken by employees in Company[%s] failed',
+                companyId, { error: err as Error }
+              );
+              throw new ServerError({
+                message: (err as Error).message,
+                cause: err
+              });
+            }
+            if (result.data.length > 0) {
+              // get individual leave requests for employee for package and calculate 
+              // the number of days based on the status
+              for (const req of result.data) {
+                const today = new Date();
+                if (req.status === LEAVE_REQUEST_STATUS.APPROVED) {
+                  const nextDay = new Date(today);
+                  nextDay.setHours(0, 0, 0, 0);
+                  nextDay.setDate(today.getDate() + 1);
+                  if (req.returnDate > today && req.startDate <= today) {
+                    const daysLeft = await countWorkingDays({ 
+                      startDate: nextDay, 
+                      endDate: req.returnDate, 
+                      considerPublicHolidayAsWorkday,
+                      considerWeekendAsWorkday 
+                    });
+                    const daysElapsed = req.numberOfDays! - daysLeft;
+                    daysUsed += daysElapsed;
+                  } else if (req.returnDate <= today) {
+                    daysUsed = daysUsed + req.numberOfDays!;
+                  } else if (req.startDate > today) {
+                    daysApprovedButNotUsed = daysApprovedButNotUsed + req.numberOfDays!;
+                  }
+                } else if (
+                  req.status === LEAVE_REQUEST_STATUS.PENDING && 
+                  req.startDate > today
+                ) {
+                  daysPendingApproval = daysPendingApproval + req.numberOfDays!;
+                }
+                daysAvailable = pack.maxDays! - daysUsed;
+              }
+              leavePackageReport.push({
+                id: pack.id,
+                name: pack.name,
+                code: pack.code,
+                daysUsed,
+                daysApprovedButNotUsed,
+                daysPendingApproval,
+                daysAvailable,
+              });
+            }
+          }
+        }
+      }
+      if (leavePackageReport.length > 0) {
+        reportSummary.push(
+          {
+            id: leaveType.id,
+            code: leaveType.code,
+            name: leaveType.name,
+            leavePackages: leavePackageReport
+          }
+        );
+      }   
+    }
+  }
+  return  {
+    leaveType: reportSummary,
+    employee: {
+      id: employee.id,
+      employeeNumber: employee.employeeNumber,
+      name: `${employee.lastName}, ${employee.firstName}`
+    }
+  };
 }

@@ -38,5 +38,5 @@ export interface EmployeeDto extends Employee {
   company?: PayrollCompany;
   jobTitle?: JobTitle;
   department?: Department;
-  majorGradeLevel?: GradeLevel,
+  majorGradeLevel?: GradeLevel;
 }
