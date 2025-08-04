@@ -1,45 +1,45 @@
 import { Announcement, AnnouncementReadEvent } from '@prisma/client';
 import {
   Body,
+  Delete,
   Get,
   Patch,
   Path,
   Post,
+  Produces,
   Queries,
-  Response,
   Request,
+  Response,
   Route,
   Security,
   SuccessResponse,
   Tags,
-  Delete,
-  Produces,
 } from 'tsoa';
 import {
   ApiErrorResponse,
-  ApiSuccessResponse
+  ApiSuccessResponse,
 } from '../../domain/api-responses';
 import {
+  AnnouncementReadEventResponseDto,
+  CreateAnnouncementReadEventDto,
+  QueryAnnouncementReadEventSummaryDto,
+  ReadEventSummmaryDto,
+} from '../../domain/dto/announcement-read-event.dto';
+import {
+  AnnouncementDto,
+  AnnouncementResourceDto,
   CreateAnnouncementDto,
   QueryAnnouncementDto,
-  UpdateAnnouncementDto,
+  QueryEmployeeAnnouncementDto,
   SearchAnnouncementDto,
-  AnnouncementDto,
+  UpdateAnnouncementDto,
   UpdateAnnouncementResourceDto,
-  AnnouncementResourceDto,
-  QueryEmployeeAnnouncementDto
 } from '../../domain/dto/announcement.dto';
+import { AccessDeniedError } from '../../errors/unauthorized-errors';
 import * as service from '../../services/announcement.service';
 import * as readEventService from '../../services/announcement-read-event.service';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
-import { 
-  //AnnouncementReadEventDto, 
-  AnnouncementReadEventResponseDto, 
-  CreateAnnouncementReadEventDto, 
-  QueryAnnouncementReadEventSummaryDto,
-  ReadEventSummmaryDto
-} from '../../domain/dto/announcement-read-event.dto';
 
 
 @Tags('announcements')
@@ -346,13 +346,15 @@ export class AnnouncementV1Controller {
   @Produces('application/pdf')
   public async getReadEventDetailsPDF(
     @Path('id') id: number,
-    @Request() req: ExtendedRequest,
+    @Request() req: Express.Request,
   ): Promise<Buffer> {
     this.logger.debug(
-      'Received request to get AnnouncementReadEventDetails PDF for Announcement[%s]', id
+      'Received request to get AnnouncementReadEventDetails PDF for Announcement[%s]',
+      id
     );
-    const authUser = extractAuthUser(req);
-    const pdfBuffer = await readEventService.generateReadEventDetailsPDF(id, authUser);
+    if (!req.user) throw new AccessDeniedError();
+    const pdfBuffer = await readEventService
+      .generateReadEventDetailsPDF(id, req.user);
     return pdfBuffer;
   }
 }

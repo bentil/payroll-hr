@@ -41,7 +41,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.LeaveTypeWhereInput,
-  orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput,
+  orderBy?: Prisma.LeaveTypeOrderByWithRelationInput,
   include?: Prisma.LeaveTypeInclude
 }): Promise<ListWithPagination<LeaveTypeDto>> {
   const { skip, take, } = params;
@@ -60,7 +60,7 @@ export async function search(
   params: {
     skip?: number,
     take?: number,
-    orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput
+    orderBy?: Prisma.LeaveTypeOrderByWithRelationInput
   },
   searchParam?: string
 ): Promise<ListWithPagination<LeaveType>> {

@@ -39,7 +39,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.GrievanceTypeWhereInput,
-  orderBy?: Prisma.GrievanceTypeOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.GrievanceTypeOrderByWithRelationInput
 }): Promise<ListWithPagination<GrievanceType>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -75,7 +75,7 @@ export async function search(params: {
   skip?: number,
   take?: number,
   where?: Prisma.GrievanceTypeWhereInput,
-  orderBy?: Prisma.GrievanceTypeOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.GrievanceTypeOrderByWithRelationInput
 }): Promise<ListWithPagination<GrievanceType>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

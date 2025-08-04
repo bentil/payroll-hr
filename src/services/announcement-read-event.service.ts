@@ -1,3 +1,4 @@
+import { Decimal } from '@prisma/client/runtime/library';
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementReadEventDto,
@@ -8,16 +9,18 @@ import {
 } from '../domain/dto/announcement-read-event.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { ForbiddenError, ServerError } from '../errors/http-errors';
-import * as repository from '../repositories/announcement-read-event.repository';
+import * as readEventRepository from '../repositories/announcement-read-event.repository';
 import * as announcementRepository from '../repositories/announcement.repository';
 import { ListWithPagination } from '../repositories/types';
-import * as employeeService from '../services/employee.service';
 import * as announcementService from '../services/announcement.service';
+import * as employeeService from '../services/employee.service';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { Decimal } from '@prisma/client/runtime/library';
-import { generateAnnouncementReadEventPDF, AnnouncementReadEventPDFData } from '../utils/pdf-generator.util';
+import {
+  AnnouncementReadEventPDFData,
+  generateAnnouncementReadEventPDF,
+} from '../utils/pdf-generator.util';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -43,7 +46,7 @@ export async function addAnnouncementReadEvent(
   logger.debug('Adding new AnnouncementReadEvent to the database...');
   let newAnnouncementReadEvent: AnnouncementReadEventDto;
   try {
-    newAnnouncementReadEvent = await repository.create(
+    newAnnouncementReadEvent = await readEventRepository.create(
       { ...creatData, announcementId }, 
       { 
         employee: true,
@@ -103,7 +106,7 @@ export async function getAnnouncementReadEventSummary(
   }
 
   const recipientCount = await employeeService.countEmployees(countEmployeesObject);
-  const readCount = await repository.count({ 
+  const readCount = await readEventRepository.count({ 
     announcementId,
     announcement: {
       companyId: query?.companyId,
@@ -162,7 +165,7 @@ export async function getReadEventDetails(
   logger.debug('Getting AnnouncementReadEvent for Announcement[%s]', announcementId);
   let result: ListWithPagination<AnnouncementReadEventDto>;
   try {
-    result = await repository.find({
+    result = await readEventRepository.find({
       where: { announcementId },
       include: { 
         employee: { include: { jobTitle: true, department: true } },
@@ -206,7 +209,10 @@ export async function generateReadEventDetailsPDF(
   announcementId: number,
   authUser: AuthorizedUser
 ): Promise<Buffer> {
-  logger.debug('Generating PDF for AnnouncementReadEvent details for Announcement[%s]', announcementId);
+  logger.debug(
+    'Generating PDF for AnnouncementReadEvent details for Announcement[%s]',
+    announcementId
+  );
   
   // Get announcement details
   const announcement = await announcementService.getAnnouncement(announcementId, authUser);

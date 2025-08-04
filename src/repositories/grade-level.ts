@@ -59,7 +59,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.GradeLevelWhereInput,
-  orderBy?: Prisma.GradeLevelOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.GradeLevelOrderByWithRelationInput
 }): Promise<ListWithPagination<GradeLevel>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

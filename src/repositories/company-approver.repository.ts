@@ -61,7 +61,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.CompanyApproverWhereInput,
-  orderBy?: Prisma.CompanyApproverOrderByWithRelationAndSearchRelevanceInput,
+  orderBy?: Prisma.CompanyApproverOrderByWithRelationInput,
   include?: Prisma.CompanyApproverInclude
 }): Promise<ListWithPagination<CompanyApproverDto>> {
   const { skip, take, } = params;

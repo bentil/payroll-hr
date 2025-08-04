@@ -29,7 +29,7 @@ export async function find(params: {
   take?: number,
   where?: Prisma.DepartmentWhereInput,
   include?: Prisma.DepartmentInclude,
-  orderBy?: Prisma.DepartmentOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.DepartmentOrderByWithRelationInput
 }): Promise<Department[]> {
   return await prisma.department.findMany(params);
 }

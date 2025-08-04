@@ -43,7 +43,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.EmployeeWorkTimeWhereInput,
-  orderBy?: Prisma.EmployeeWorkTimeOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.EmployeeWorkTimeOrderByWithRelationInput
   include?: Prisma.EmployeeWorkTimeInclude,
 }): Promise<ListWithPagination<EmployeeWorkTime>> {
   const { skip, take, include } = params;

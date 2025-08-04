@@ -13,3 +13,9 @@ export class UnauthorizedError extends HttpError {
     });
   }
 }
+
+export class AccessDeniedError extends UnauthorizedError {
+  constructor() {
+    super({ message: 'Access denied' });
+  }
+}

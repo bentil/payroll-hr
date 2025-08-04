@@ -11,7 +11,7 @@ export default {
     leaveRequestPath: process.env.LEAVE_REQUEST_TEMPLATE_PATH || '',
     leaveResponsePath: process.env.LEAVE_RESPONSE_TEMPLATE_PATH || '',
     reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
-    reimbursementResponsePath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
+    reimbursementResponsePath: process.env.REIMBURSEMENT_RESPONSE_TEMPLATE_PATH || '',
     defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || ''
   },
   log: {

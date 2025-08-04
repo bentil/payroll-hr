@@ -34,7 +34,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.OvertimeWhereInput,
-  orderBy?: Prisma.OvertimeOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.OvertimeOrderByWithRelationInput
 }) {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

@@ -31,7 +31,7 @@ export async function find(params: {
   take?: number,
   where?: Prisma.DepartmentLeadershipWhereInput,
   include?: Prisma.DepartmentLeadershipInclude,
-  orderBy?: Prisma.DepartmentLeadershipOrderByWithRelationAndSearchRelevanceInput
+  orderBy?: Prisma.DepartmentLeadershipOrderByWithRelationInput
 }): Promise<DepartmentLeadership[]> {
   return await prisma.departmentLeadership.findMany(params);
 }
