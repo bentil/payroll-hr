@@ -1492,7 +1492,6 @@ export async function getEmployeeLeavesTakenReport(
   const reportSummary: LeaveTakenWithPackageReportObject[]= [];
 
   if (leaveTypes.data.length > 0 ) {  
-    const leavePackageReport: EmployeeLeavePackageObject[] = [];
     for (const leaveType of leaveTypes.data) {
       // get necessary details to calculate number of days
       const validateData = await leaveTypeService.validate({ 
@@ -1506,15 +1505,17 @@ export async function getEmployeeLeavesTakenReport(
         // Get leavePackages for employe level and of leaveType
         const leavePackages = await leavePackageRepository.find({
           where: {
-            companyLevelLeavePackages: { some: { 
+            companyLevelLeavePackages: { every: { 
               leavePackage: { leaveTypeId: leaveType.id },
               companyLevelId 
             } }
           },
           include: { leaveType: true }
         });
+        let packageSummary: EmployeeLeavePackageObject[] = [];
         if (leavePackages.data.length > 0) {
           const leavePackagesList = leavePackages.data;
+          const leavePackageReport: EmployeeLeavePackageObject[] = [];
           for (const pack of leavePackagesList) {
             let daysAvailable = 0;
             let daysUsed = 0;
@@ -1607,18 +1608,20 @@ export async function getEmployeeLeavesTakenReport(
               });
             }
           }
+          packageSummary = leavePackageReport;
         }
+        if (packageSummary.length > 0) {
+          reportSummary.push(
+            {
+              id: leaveType.id,
+              code: leaveType.code,
+              name: leaveType.name,
+              leavePackages: packageSummary
+            }
+          );
+        } 
       }
-      if (leavePackageReport.length > 0) {
-        reportSummary.push(
-          {
-            id: leaveType.id,
-            code: leaveType.code,
-            name: leaveType.name,
-            leavePackages: leavePackageReport
-          }
-        );
-      }   
+        
     }
   }
   return  {
