@@ -13,6 +13,9 @@ import {
   EmployeeLeavePackageObject,
   EmployeeLeaveTakenReportObject,
   FilterLeaveRequestForExportDto,
+  LeaveBalanceReportLeavePackageObject,
+  LeaveBalanceReportLeaveTypeObject,
+  LeaveBalanceReportObject,
   LeaveRequestDto,
   LeaveResponseInputDto,
   LeaveTakenReportDepartmentObject,
@@ -1632,4 +1635,115 @@ export async function getEmployeeLeavesTakenReport(
       name: `${employee.lastName}, ${employee.firstName}`
     }
   };
+}
+
+export async function getLeavesBalanceReport(
+  companyId: number,
+  authorizedUser: AuthorizedUser
+): Promise<LeaveBalanceReportObject[]> {
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });
+  const employees = await employeeRepository.find({
+    where: scopedQuery,
+  });  
+
+  // Get all available leaveTypes 
+  const leaveTypes = await leaveTypeRepository.find({
+    where: { 
+      leavePackages: {
+        every: { companyId }
+      },
+    },
+    include: { leavePackages: true }
+  });
+  const report: LeaveBalanceReportObject[] = [];
+  
+  // for each employee, we get leavePackages available for them and remaining days 
+  if (employees.data.length > 0) {
+    for (const employee of employees.data) {
+      const leaveTypeSummary: LeaveBalanceReportLeaveTypeObject[] = [];
+      if (leaveTypes.data.length > 0 ) {
+        for (const leaveType of leaveTypes.data) {
+          const leavePackageSummary: LeaveBalanceReportLeavePackageObject[] = [];
+          // get Leave packages available for employee for specific leave type
+          const leavePackages = await leavePackageRepository.find({
+            where: {
+              companyLevelLeavePackages: { every: { 
+                leavePackage: { leaveTypeId: leaveType.id },
+                companyLevelId: employee.majorGradeLevelId
+                  ? employee.majorGradeLevelId
+                  : undefined
+              } }
+            },
+            include: { leaveType: true }
+          }); 
+          if (leavePackages.data.length > 0) {
+            for (const leavePackage of leavePackages.data) {
+              let remainingLeaveDays = leavePackage.maxDays;
+              // get all list of  employees and find leave requests of leaveType
+              let result: ListWithPagination<LeaveRequestDto>;
+              try {
+                // finding leaveRequests within the leaveType of interest for a company
+                logger.debug(
+                  'Finding LeaveRequest(s) taken by employees in company[%s]', companyId
+                );
+                result = await leaveRequestRepository.find({
+                  where: { 
+                    employeeId: employee.id,
+                    status: LEAVE_REQUEST_STATUS.APPROVED,
+                    leavePackageId: leavePackage.id,
+                  },
+                });
+                logger.info(
+                  'Found %d LeaveRequest(s) taken by employees of company[%s]',
+                  companyId, result.data.length
+                );
+              } catch (err) {
+                logger.warn(
+                  'Querying LeaveRequest for leave taken by employees in Company[%s] failed',
+                  companyId, { error: err as Error }
+                );
+                throw new ServerError({
+                  message: (err as Error).message,
+                  cause: err
+                });
+              }
+              let usedDays = 0;
+              if (result.data.length > 0) {
+                // clear duplicate employeeIds 
+                result.data.forEach((req) => {
+                  usedDays = usedDays + req.numberOfDays!;
+                });
+              }
+              remainingLeaveDays = remainingLeaveDays - usedDays;
+              leavePackageSummary.push({
+                id: leavePackage.id,
+                code: leavePackage.code,
+                name: leavePackage.name,
+                remainingLeaveDays
+              });
+            }
+          }
+          if (leavePackageSummary.length > 0) {
+            leaveTypeSummary.push({
+              id: leaveType.id,
+              name: leaveType.name,
+              code: leaveType.code,
+              leavePackages: leavePackageSummary
+            });
+          }
+        }
+      }
+      if (leaveTypeSummary.length > 0) {
+        report.push({
+          employee: {
+            id: employee.id,
+            employeeNumber: employee.employeeNumber,
+            name: `${employee.lastName}, ${employee.firstName}`,
+          },
+          leaveTypes: leaveTypeSummary
+        });
+      }
+    }
+  }
+  return report;
 }

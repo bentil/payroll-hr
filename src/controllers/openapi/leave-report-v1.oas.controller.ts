@@ -10,6 +10,7 @@ import {
 import { ApiSuccessResponse } from '../../domain/api-responses';
 import {
   EmployeeLeaveTakenReportObject,
+  LeaveBalanceReportObject,
   LeaveTakenReportObject,
   QueryLeaveRequestForReportDto,
 } from '../../domain/dto/leave-request.dto';
@@ -23,10 +24,12 @@ export class LeaveReportV1Controller {
   private readonly logger = rootLogger.child({ context: LeaveReportV1Controller.name, });
 
   /**
-   * Get a list of LeaveRequest(s) matching query
-   *
+   * Get report on leaves taken by employees in a company
+   * 
+   * @param companyId 
+   * @param query 
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching LeaveRequest(s)
+   * @returns Repont on leaves taken
    */
   @Get('/leaves-taken')
   public async getLeavesTaken(
@@ -41,10 +44,12 @@ export class LeaveReportV1Controller {
   }
 
   /**
-   * Get a list of LeaveRequest(s) matching query
-   *
+   * Report on leaves taken by an employee
+   * 
+   * @param companyId 
+   * @param employeeId 
    * @param query Request query parameters, including pagination and ordering details
-   * @returns List of matching LeaveRequest(s)
+   * @returns Leave taken report
    */
   @Get('/leaves-taken/employees/{employeeId}')
   public async getEmployeeLeavesTaken(
@@ -60,6 +65,25 @@ export class LeaveReportV1Controller {
       companyId, employeeId, query, req.user!
     );
     this.logger.info('Returning report on LeavesTaken by Employee[%s]', employeeId);
+    return { data };
+  }
+
+  /**
+   * Get a report on LeaveBalance for employees
+   *
+   * @param companyId 
+   * @returns Report of leaveBalance for individual leavePackages for employees
+   */
+  @Get('/leaves-balance')
+  public async getLeavesBalance(
+    @Path('companyId') companyId: number,
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<LeaveBalanceReportObject[]>> {
+    this.logger.debug(
+      'Received request to get report for LeaveBalance for employees in Company[%s]', companyId
+    );
+    const data = await service.getLeavesBalanceReport(companyId, req.user!);
+    this.logger.info('Returning report on LeaveBalance for employees in Company[%s]', companyId);
     return { data };
   }
 }

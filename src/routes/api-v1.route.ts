@@ -1028,4 +1028,12 @@ router.get(
   leaveReportV1controller.getEmployeeLeavesTaken
 );
 
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-balance',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  leaveReportV1controller.getLeavesBalance
+);
+
 export default router;

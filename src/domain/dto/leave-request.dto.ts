@@ -189,3 +189,26 @@ export class EmployeeLeavePackageObject {
   daysPendingApproval!: number;
   daysAvailable!: number;
 }
+
+export class LeaveBalanceReportObject {
+  employee!: {
+    id: number;
+    employeeNumber: string;
+    name: string;
+  };
+  leaveTypes!: LeaveBalanceReportLeaveTypeObject[];
+}
+
+export class LeaveBalanceReportLeaveTypeObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  leavePackages!: LeaveBalanceReportLeavePackageObject[];
+}
+
+export class LeaveBalanceReportLeavePackageObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  remainingLeaveDays!: number;
+}

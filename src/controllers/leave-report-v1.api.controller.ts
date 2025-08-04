@@ -41,3 +41,20 @@ export async function getEmployeeLeavesTaken(
     next(err);
   }
 }
+
+export async function getLeavesBalance(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { companyId } = req.params;
+  try {
+    const response = await controller.getLeavesBalance(
+      +companyId,
+      req
+    );
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
