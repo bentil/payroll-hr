@@ -24,6 +24,8 @@ import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.contr
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
 import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as disciplinaryActionReportV1Controller from '../controllers/disciplinary-action-report-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -58,7 +60,8 @@ import {
   CREATE_DISCIPLINARY_ACTION_SCHEMA,
   QUERY_DISCIPLINARY_ACTION_SCHEMA,
   UPDATE_DISCIPLINARY_ACTION_SCHEMA,
-  SEARCH_DISCIPLINARY_ACTION_SCHEMA
+  SEARCH_DISCIPLINARY_ACTION_SCHEMA,
+  QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA
 } from '../domain/request-schema/disciplinary-action.schema';
 import {
   CREATE_EMPLOYEE_APPROVER_SCHEMA, 
@@ -1005,6 +1008,25 @@ router.get(
   }),
   validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
   uploadV1Controller.exportLeaveRequests
+);
+
+// ## DISCIPLINARY ACTION REPORT ROUTES
+router.get(
+  '/payroll-companies/:companyId/disciplinary-actions/reports',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA),
+  disciplinaryActionReportV1Controller.getDisciplinaryActionsReport
+);
+
+router.get(
+  '/payroll-companies/:companyId/disciplinary-actions/reports/employees/:employeeId',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA),
+  disciplinaryActionReportV1Controller.getDisciplinaryActionsForEmployeeReport
 );
 
 export default router;
