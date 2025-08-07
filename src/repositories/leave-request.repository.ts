@@ -73,7 +73,7 @@ export async function find(params: {
   skip?: number;
   take?: number;
   where?: Prisma.LeaveRequestWhereInput;
-  orderBy?: Prisma.LeaveRequestOrderByWithRelationInput;
+  orderBy?: Prisma.LeaveRequestOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.LeaveRequestInclude;
 }): Promise<ListWithPagination<LeaveRequestDto>> {
   const { skip, take, include } = params;
@@ -105,7 +105,7 @@ export async function findResponse(params: {
   skip?: number;
   take?: number;
   where?: Prisma.LeaveResponseWhereInput;
-  orderBy?: Prisma.LeaveResponseOrderByWithRelationInput;
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.LeaveResponseInclude;
 }): Promise<LeaveResponse[]> {
   const data = await prisma.leaveResponse.findMany(params);
@@ -115,7 +115,7 @@ export async function findResponse(params: {
 
 export async function findFirstResponse(params: {
   where: Prisma.LeaveResponseWhereInput;
-  orderBy?: Prisma.LeaveResponseOrderByWithRelationInput;
+  orderBy?: Prisma.LeaveResponseOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.LeaveResponseInclude;
 }): Promise<LeaveResponse | null> {
   return prisma.leaveResponse.findFirst(params);

@@ -73,7 +73,7 @@ export async function find(params: {
   skip?: number;
   take?: number;
   where?: Prisma.ReimbursementRequestWhereInput;
-  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationInput;
+  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.ReimbursementRequestInclude;
 }): Promise<ListWithPagination<ReimbursementRequestDto>> {
   const { skip, take, include } = params;
@@ -288,7 +288,7 @@ export async function search(params: {
   take?: number;
   where: Prisma.ReimbursementRequestWhereInput;
   include?: Prisma.ReimbursementRequestInclude;
-  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationInput;
+  orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput;
 }): Promise<ListWithPagination<ReimbursementRequest>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -330,7 +330,7 @@ export async function deleteOne(
 
 export async function findFirstComment(params: {
   where: Prisma.ReimbursementRequestCommentWhereInput;
-  orderBy?: Prisma.ReimbursementRequestCommentOrderByWithRelationInput;
+  orderBy?: Prisma.ReimbursementRequestCommentOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.ReimbursementRequestCommentInclude;
 }): Promise<ReimbursementRequestComment | null>  {
   return prisma.reimbursementRequestComment.findFirst(params);

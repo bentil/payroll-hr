@@ -53,7 +53,7 @@ export async function find(params: {
   take?: number,
   where?: Prisma.AnnouncementReadEventWhereInput,
   include?: Prisma.AnnouncementReadEventInclude,
-  orderBy?: Prisma.AnnouncementReadEventOrderByWithRelationInput
+  orderBy?: Prisma.AnnouncementReadEventOrderByWithRelationAndSearchRelevanceInput
 }): Promise<ListWithPagination<AnnouncementReadEventDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

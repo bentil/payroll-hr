@@ -45,7 +45,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.CompanyDocumentTypeWhereInput,
-  orderBy?: Prisma.CompanyDocumentTypeOrderByWithRelationInput
+  orderBy?: Prisma.CompanyDocumentTypeOrderByWithRelationAndSearchRelevanceInput
 }): Promise<ListWithPagination<CompanyDocumentType>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -63,7 +63,7 @@ export async function search(params: {
   skip?: number,
   take?: number,
   where?: Prisma.CompanyDocumentTypeWhereInput,
-  orderBy?: Prisma.CompanyDocumentTypeOrderByWithRelationInput
+  orderBy?: Prisma.CompanyDocumentTypeOrderByWithRelationAndSearchRelevanceInput
 }): Promise<ListWithPagination<CompanyDocumentType>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

@@ -57,7 +57,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.DisciplinaryActionWhereInput,
-  orderBy?: Prisma.DisciplinaryActionOrderByWithRelationInput
+  orderBy?: Prisma.DisciplinaryActionOrderByWithRelationAndSearchRelevanceInput
   include?: Prisma.DisciplinaryActionInclude,
 }): Promise<ListWithPagination<DisciplinaryAction>> {
   const { skip, take } = params;
@@ -95,7 +95,7 @@ export async function search(params: {
   skip?: number,
   take?: number,
   where?: Prisma.DisciplinaryActionWhereInput,
-  orderBy?: Prisma.DisciplinaryActionOrderByWithRelationInput,
+  orderBy?: Prisma.DisciplinaryActionOrderByWithRelationAndSearchRelevanceInput,
   include?: Prisma.DisciplinaryActionInclude
 }): Promise<ListWithPagination<DisciplinaryAction>> {
   const { skip, take } = params;

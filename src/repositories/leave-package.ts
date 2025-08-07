@@ -59,7 +59,7 @@ export async function find(params: {
   take?: number,
   include?: Prisma.LeavePackageInclude,
   where?: Prisma.LeavePackageWhereInput,
-  orderBy?: Prisma.LeavePackageOrderByWithRelationInput
+  orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput
 }): Promise<ListWithPagination<LeavePackageDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
@@ -77,7 +77,7 @@ export async function search(
   params: {
     skip?: number,
     take?: number,
-    orderBy?: Prisma.LeavePackageOrderByWithRelationInput,
+    orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput,
     include?: Prisma.LeavePackageInclude,
   },
   searchParam?: string

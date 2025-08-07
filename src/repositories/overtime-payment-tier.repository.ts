@@ -42,7 +42,7 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.OvertimePaymentTierWhereInput,
-  orderBy?: Prisma.OvertimePaymentTierOrderByWithRelationInput
+  orderBy?: Prisma.OvertimePaymentTierOrderByWithRelationAndSearchRelevanceInput
 }) {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
