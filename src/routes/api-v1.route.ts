@@ -1067,6 +1067,32 @@ router.get(
   leaveReportV1controller.getLeavesBalance
 );
 
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getLeavesTakenPdf
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/employees/:employeeId/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getEmployeeLeavesTakenPdf
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-balance/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  leaveReportV1controller.getLeavesBalancePdf
+);
+
 // ### COMPANY APPROVER ROUTES
 router.post(
   '/payroll-companies/:companyId/approvers',

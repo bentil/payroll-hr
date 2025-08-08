@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Leave Taken Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #fff;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 25px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .employee-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .employee-info .detail {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .employee-info .label {
+            font-weight: 600;
+            color: #555;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .employee-info .value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        
+        .leave-type-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .leave-type-header {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 15px;
+        }
+        
+        .leave-type-header h3 {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .leave-packages-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        
+        .leave-packages-table thead {
+            background-color: #ecf0f1;
+        }
+        
+        .leave-packages-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid #bdc3c7;
+            border-right: 1px solid #ddd;
+        }
+        
+        .leave-packages-table th:last-child {
+            border-right: none;
+        }
+        
+        .leave-packages-table tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .leave-packages-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .leave-packages-table tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .leave-packages-table td {
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #555;
+            border-right: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        .leave-packages-table td:last-child {
+            border-right: none;
+        }
+        
+        .package-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .package-code {
+            color: #7f8c8d;
+            font-size: 10px;
+            font-style: italic;
+        }
+        
+        .days-used {
+            font-weight: 600;
+            color: #e74c3c;
+            text-align: center;
+        }
+        
+        .days-approved {
+            font-weight: 500;
+            color: #f39c12;
+            text-align: center;
+        }
+        
+        .days-pending {
+            font-weight: 500;
+            color: #9b59b6;
+            text-align: center;
+        }
+        
+        .days-available {
+            font-weight: 600;
+            color: #27ae60;
+            text-align: center;
+        }
+        
+        .no-packages {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+            font-style: italic;
+            background-color: #f8f9fa;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 10px;
+        }
+        
+        .footer .timestamp {
+            margin-bottom: 4px;
+        }
+        
+        .footer .confidential {
+            color: #e74c3c;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+            
+            .leave-type-section {
+                page-break-inside: avoid;
+            }
+            
+            .leave-packages-table {
+                page-break-inside: auto;
+            }
+            
+            .leave-packages-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            .leave-packages-table thead {
+                display: table-header-group;
+            }
+        }
+        
+        .totals-row {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        .totals-row td {
+            color: white !important;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .summary-totals {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #34495e;
+            color: white;
+            border-radius: 6px;
+        }
+        
+        .summary-totals h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .totals-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            text-align: center;
+        }
+        
+        .total-item {
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .total-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .total-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Employee Leave Taken Report</h1>
+            <div class="subtitle">Individual Leave Package Analysis</div>
+        </div>
+        
+        <!-- Employee Information -->
+        <div class="employee-info">
+            <div class="detail">
+                <span class="label">Employee Name:</span>
+                <span class="value">{{employeeName}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Employee Number:</span>
+                <span class="value">{{employeeNumber}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Company:</span>
+                <span class="value">{{companyName}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Report Period:</span>
+                <span class="value">{{reportPeriod}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Generated:</span>
+                <span class="value">{{currentDate}}</span>
+            </div>
+        </div>
+        
+        <!-- Summary Statistics -->
+        <div class="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{totalLeaveTypes}}</div>
+                <div class="stat-label">Leave Types</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalPackages}}</div>
+                <div class="stat-label">Leave Packages</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalUsedDays}}</div>
+                <div class="stat-label">Days Used</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalAvailableDays}}</div>
+                <div class="stat-label">Days Available</div>
+            </div>
+        </div>
+        
+        <!-- Leave Types and Packages -->
+        {{#if leaveTypes.length}}
+        {{#each leaveTypes}}
+        <div class="leave-type-section">
+            <div class="leave-type-header">
+                <h3>{{this.name}}{{#if this.code}} ({{this.code}}){{/if}}</h3>
+            </div>
+            
+            {{#if this.leavePackages.length}}
+            <table class="leave-packages-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Leave Package</th>
+                        <th style="width: 15%;">Days Used</th>
+                        <th style="width: 20%;">Days Approved But Not Used</th>
+                        <th style="width: 20%;">Days Pending Approval</th>
+                        <th style="width: 20%;">Days Available</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each this.leavePackages}}
+                    <tr>
+                        <td>
+                            <div class="package-name">{{this.name}}</div>
+                            {{#if this.code}}
+                            <div class="package-code">({{this.code}})</div>
+                            {{/if}}
+                        </td>
+                        <td class="days-used">{{this.daysUsed}}</td>
+                        <td class="days-approved">{{this.daysApprovedButNotUsed}}</td>
+                        <td class="days-pending">{{this.daysPendingApproval}}</td>
+                        <td class="days-available">{{this.daysAvailable}}</td>
+                    </tr>
+                    {{/each}}
+                    {{#if this.showTotals}}
+                    <tr class="totals-row">
+                        <td><strong>Total for {{this.name}}</strong></td>
+                        <td class="days-used"><strong>{{this.totalUsed}}</strong></td>
+                        <td class="days-approved"><strong>{{this.totalApproved}}</strong></td>
+                        <td class="days-pending"><strong>{{this.totalPending}}</strong></td>
+                        <td class="days-available"><strong>{{this.totalAvailable}}</strong></td>
+                    </tr>
+                    {{/if}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="no-packages">
+                No leave packages available for this leave type.
+            </div>
+            {{/if}}
+        </div>
+        {{/each}}
+        
+        <!-- Overall Summary -->
+        <div class="summary-totals">
+            <h4>Overall Leave Summary</h4>
+            <div class="totals-grid">
+                <div class="total-item">
+                    <div class="total-value">{{grandTotalUsed}}</div>
+                    <div class="total-label">Total Days Used</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-value">{{grandTotalApproved}}</div>
+                    <div class="total-label">Total Days Approved</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-value">{{grandTotalPending}}</div>
+                    <div class="total-label">Total Days Pending</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-value">{{grandTotalAvailable}}</div>
+                    <div class="total-label">Total Days Available</div>
+                </div>
+            </div>
+        </div>
+        {{else}}
+        <div class="no-data">
+            No leave data available for this employee.
+        </div>
+        {{/if}}
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="timestamp">Report generated on {{currentDate}}</div>
+            <div class="company">{{companyName}}</div>
+            <div class="confidential">Confidential - Internal Use Only</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as Handlebars from 'handlebars';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import { rootLogger as logger } from '../utils/logger';
 import S3Component from '../components/s3.component';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +11,75 @@ export interface PdfGenerationResult {
   presignedUrl: string;
   s3Key: string;
   bucket: string;
+}
+
+export interface LeaveTakenReportData {
+  companyName: string;
+  reportPeriod: string;
+  reportData: Array<{
+    leaveType: {
+      id: number;
+      code?: string;
+      name?: string;
+    };
+    department: Array<{
+      id: number;
+      code: string;
+      name: string;
+      employees: Array<{
+        id: number;
+        employeeNumber: string;
+        name: string;
+        numberOfDays: number;
+      }>;
+      numberOfDaysPerDepartment: number;
+    }>;
+    numberOfDaysPerCompany: number;
+  }>;
+}
+
+export interface EmployeeLeaveTakenReportData {
+  employeeName: string;
+  employeeNumber: string;
+  companyName: string;
+  reportPeriod: string;
+  leaveTypes: Array<{
+    id: number;
+    code?: string;
+    name?: string;
+    leavePackages: Array<{
+      id: number;
+      name: string;
+      code: string;
+      daysUsed: number;
+      daysApprovedButNotUsed: number;
+      daysPendingApproval: number;
+      daysAvailable: number;
+    }>;
+  }>;
+}
+
+export interface LeaveBalanceReportData {
+  companyName: string;
+  reportPeriod: string;
+  employees: Array<{
+    employee: {
+      id: number;
+      employeeNumber: string;
+      name: string;
+    };
+    leaveTypes: Array<{
+      id: number;
+      code?: string;
+      name?: string;
+      leavePackages: Array<{
+        id: number;
+        code?: string;
+        name?: string;
+        remainingLeaveDays: number;
+      }>;
+    }>;
+  }>;
 }
 
 export class PdfGenerationService {
@@ -22,6 +93,50 @@ export class PdfGenerationService {
       this.compiledTemplates.set(templateName, compiledTemplate);
     }
     return this.compiledTemplates.get(templateName)!;
+  }
+
+  private static async generatePdfFromHtml(html: string): Promise<Buffer> {
+    let browser;
+    try {
+      // Configure chromium for different environments
+      const isDev = process.env.NODE_ENV === 'development';
+      
+      browser = await puppeteer.launch({
+        args: isDev ? [] : chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: isDev ? undefined : await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+
+      const page = await browser.newPage();
+      
+      // Set content and wait for it to load
+      await page.setContent(html, {
+        waitUntil: 'networkidle0'
+      });
+
+      // Generate PDF with professional settings
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: {
+          top: '20mm',
+          right: '15mm',
+          bottom: '20mm',
+          left: '15mm'
+        },
+        printBackground: true,
+        preferCSSPageSize: true
+      });
+
+      return Buffer.from(pdfBuffer);
+    } catch (error) {
+      logger.error('Error generating PDF from HTML:', error);
+      throw error;
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
   }
 
   static async generateAnnouncementReadEventsPdf(
@@ -66,26 +181,27 @@ export class PdfGenerationService {
 
       const html = template(templateData);
 
-      const htmlBuffer = Buffer.from(html, 'utf-8');
+      // Generate PDF from HTML
+      const pdfBuffer = await this.generatePdfFromHtml(html);
       
       const s3Service = S3Component.getInstance();
-      const fileName = `reports/announcements/${uuidv4()}-announcement-read-events.html`;
+      const fileName = `reports/announcements/${uuidv4()}-announcement-read-events.pdf`;
       const bucketName = process.env.S3_BUCKET_NAME || 'hr-reports';
 
       const uploadResult = await s3Service.uploadFile(
         bucketName,
-        htmlBuffer,
+        pdfBuffer,
         fileName,
-        'text/html'
+        'application/pdf'
       );
 
       const presignedUrl = await s3Service.generatePresignedUrl(
         bucketName,
         fileName,
-        15
+        3600
       );
 
-      logger.info(`PDF report generated and uploaded: ${fileName}`);
+      logger.info(`Announcement read events PDF generated and uploaded: ${fileName}`);
 
       return {
         presignedUrl,
@@ -94,6 +210,275 @@ export class PdfGenerationService {
       };
     } catch (error) {
       logger.error('Error generating announcement read events PDF:', error);
+      throw error;
+    }
+  }
+
+  static async generateLeavesTakenReportPdf(
+    reportData: LeaveTakenReportData
+  ): Promise<PdfGenerationResult> {
+    try {
+      const template = this.getCompiledTemplate('leaves-taken-report');
+      
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Calculate summary statistics
+      const totalLeaveTypes = reportData.reportData.length;
+      const allDepartments = new Set<number>();
+      const allEmployees = new Set<number>();
+      let totalDays = 0;
+
+      reportData.reportData.forEach(leaveTypeData => {
+        totalDays += leaveTypeData.numberOfDaysPerCompany;
+        leaveTypeData.department.forEach(dept => {
+          allDepartments.add(dept.id);
+          dept.employees.forEach(emp => {
+            allEmployees.add(emp.id);
+          });
+        });
+      });
+
+      const templateData = {
+        ...reportData,
+        currentDate,
+        totalLeaveTypes,
+        totalDepartments: allDepartments.size,
+        totalEmployees: allEmployees.size,
+        totalDays
+      };
+
+      const html = template(templateData);
+      
+      // Generate PDF from HTML
+      const pdfBuffer = await this.generatePdfFromHtml(html);
+      
+      const s3Service = S3Component.getInstance();
+      const fileName = `reports/leaves-taken/${uuidv4()}-leaves-taken-report.pdf`;
+      const bucketName = process.env.S3_BUCKET_NAME || 'hr-reports';
+
+      const uploadResult = await s3Service.uploadFile(
+        bucketName,
+        pdfBuffer,
+        fileName,
+        'application/pdf'
+      );
+
+      const presignedUrl = await s3Service.generatePresignedUrl(
+        bucketName,
+        fileName,
+        3600
+      );
+
+      logger.info(`Leaves taken PDF report generated and uploaded: ${fileName}`);
+
+      return {
+        presignedUrl,
+        s3Key: fileName,
+        bucket: bucketName
+      };
+    } catch (error) {
+      logger.error('Error generating leaves taken report PDF:', error);
+      throw error;
+    }
+  }
+
+  static async generateEmployeeLeaveTakenReportPdf(
+    reportData: EmployeeLeaveTakenReportData
+  ): Promise<PdfGenerationResult> {
+    try {
+      const template = this.getCompiledTemplate('employee-leave-taken-report');
+      
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Calculate summary statistics and enhance data
+      let totalPackages = 0;
+      let grandTotalUsed = 0;
+      let grandTotalApproved = 0;
+      let grandTotalPending = 0;
+      let grandTotalAvailable = 0;
+
+      const enhancedLeaveTypes = reportData.leaveTypes.map(leaveType => {
+        let totalUsed = 0;
+        let totalApproved = 0;
+        let totalPending = 0;
+        let totalAvailable = 0;
+
+        leaveType.leavePackages.forEach(pkg => {
+          totalUsed += pkg.daysUsed;
+          totalApproved += pkg.daysApprovedButNotUsed;
+          totalPending += pkg.daysPendingApproval;
+          totalAvailable += pkg.daysAvailable;
+          totalPackages++;
+        });
+
+        grandTotalUsed += totalUsed;
+        grandTotalApproved += totalApproved;
+        grandTotalPending += totalPending;
+        grandTotalAvailable += totalAvailable;
+
+        return {
+          ...leaveType,
+          totalUsed,
+          totalApproved,
+          totalPending,
+          totalAvailable,
+          showTotals: leaveType.leavePackages.length > 1
+        };
+      });
+
+      const templateData = {
+        ...reportData,
+        leaveTypes: enhancedLeaveTypes,
+        currentDate,
+        totalLeaveTypes: reportData.leaveTypes.length,
+        totalPackages,
+        totalUsedDays: grandTotalUsed,
+        totalAvailableDays: grandTotalAvailable,
+        grandTotalUsed,
+        grandTotalApproved,
+        grandTotalPending,
+        grandTotalAvailable
+      };
+
+      const html = template(templateData);
+      
+      // Generate PDF from HTML
+      const pdfBuffer = await this.generatePdfFromHtml(html);
+      
+      const s3Service = S3Component.getInstance();
+      const fileName = `reports/employee-leaves/${uuidv4()}-employee-leave-taken-report.pdf`;
+      const bucketName = process.env.S3_BUCKET_NAME || 'hr-reports';
+
+      const uploadResult = await s3Service.uploadFile(
+        bucketName,
+        pdfBuffer,
+        fileName,
+        'application/pdf'
+      );
+
+      const presignedUrl = await s3Service.generatePresignedUrl(
+        bucketName,
+        fileName,
+        30
+      );
+
+      logger.info(`Employee leave taken PDF report generated and uploaded: ${fileName}`);
+
+      return {
+        presignedUrl,
+        s3Key: fileName,
+        bucket: bucketName
+      };
+    } catch (error) {
+      logger.error('Error generating employee leave taken report PDF:', error);
+      throw error;
+    }
+  }
+
+  static async generateLeaveBalanceReportPdf(
+    reportData: LeaveBalanceReportData
+  ): Promise<PdfGenerationResult> {
+    try {
+      const template = this.getCompiledTemplate('leave-balance-report');
+      
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Calculate summary statistics and enhance data
+      let totalPackages = 0;
+      let totalRemainingDays = 0;
+      const allLeaveTypes = new Set<number>();
+
+      const enhancedEmployees = reportData.employees.map(employeeData => {
+        let employeeTotalRemainingDays = 0;
+
+        const enhancedLeaveTypes = employeeData.leaveTypes.map(leaveType => {
+          allLeaveTypes.add(leaveType.id);
+          
+          const enhancedPackages = leaveType.leavePackages.map(pkg => {
+            totalPackages++;
+            totalRemainingDays += pkg.remainingLeaveDays;
+            employeeTotalRemainingDays += pkg.remainingLeaveDays;
+
+            // Add color coding flags based on remaining days
+            return {
+              ...pkg,
+              remainingLeaveDaysHigh: pkg.remainingLeaveDays >= 15,
+              remainingLeaveDaysMedium: pkg.remainingLeaveDays >= 5 && pkg.remainingLeaveDays < 15
+            };
+          });
+
+          return {
+            ...leaveType,
+            leavePackages: enhancedPackages
+          };
+        });
+
+        return {
+          ...employeeData,
+          leaveTypes: enhancedLeaveTypes,
+          totalRemainingDays: employeeTotalRemainingDays
+        };
+      });
+
+      const templateData = {
+        ...reportData,
+        employees: enhancedEmployees,
+        currentDate,
+        totalEmployees: reportData.employees.length,
+        totalLeaveTypes: allLeaveTypes.size,
+        totalPackages,
+        totalRemainingDays
+      };
+
+      const html = template(templateData);
+      
+      // Generate PDF from HTML
+      const pdfBuffer = await this.generatePdfFromHtml(html);
+      
+      const s3Service = S3Component.getInstance();
+      const fileName = `reports/leave-balance/${uuidv4()}-leave-balance-report.pdf`;
+      const bucketName = process.env.S3_BUCKET_NAME || 'hr-reports';
+
+      const uploadResult = await s3Service.uploadFile(
+        bucketName,
+        pdfBuffer,
+        fileName,
+        'application/pdf'
+      );
+
+      const presignedUrl = await s3Service.generatePresignedUrl(
+        bucketName,
+        fileName,
+        3600
+      );
+
+      logger.info(`Leave balance PDF report generated and uploaded: ${fileName}`);
+
+      return {
+        presignedUrl,
+        s3Key: fileName,
+        bucket: bucketName
+      };
+    } catch (error) {
+      logger.error('Error generating leave balance report PDF:', error);
       throw error;
     }
   }

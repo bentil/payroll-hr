@@ -58,3 +58,57 @@ export async function getLeavesBalance(
     next(err);
   }
 }
+
+export async function getLeavesTakenPdf(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { companyId } = req.params;
+  try {
+    const response = await controller.getLeavesTakenPdf(
+      +companyId,
+      req.query as unknown as QueryLeaveRequestForReportDto, 
+      req
+    );
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getEmployeeLeavesTakenPdf(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { companyId, employeeId } = req.params;
+  try {
+    const response = await controller.getEmployeeLeavesTakenPdf(
+      +companyId,
+      +employeeId,
+      req.query as unknown as QueryLeaveRequestForReportDto, 
+      req
+    );
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getLeavesBalancePdf(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { companyId } = req.params;
+  try {
+    const response = await controller.getLeavesBalancePdf(
+      +companyId,
+      req
+    );
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
