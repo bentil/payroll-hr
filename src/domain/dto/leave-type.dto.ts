@@ -1,5 +1,6 @@
 import { LeaveType } from '@prisma/client';
 import config from '../../config';
+import { LeavePackageDto } from './leave-package.dto';
 
 export class CreateLeaveTypeDto {
   code!: string;
@@ -15,7 +16,9 @@ export class UpdateLeaveTypeDto {
   description?: string;
 }
 
-export interface LeaveTypeDto extends LeaveType {}
+export interface LeaveTypeDto extends LeaveType {
+  leavePackages?: LeavePackageDto[];
+}
 
 export type EmployeLeaveTypeSummary = {
   numberOfDaysAllowed: number,
