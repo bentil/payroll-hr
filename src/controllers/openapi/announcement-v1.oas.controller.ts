@@ -30,6 +30,7 @@ import {
 } from '../../domain/dto/announcement.dto';
 import * as service from '../../services/announcement.service';
 import * as readEventService from '../../services/announcement-read-event.service';
+import PdfGenerationService from '../../services/PdfGenerationService';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
 import { 
@@ -332,5 +333,47 @@ export class AnnouncementV1Controller {
     );
     const details = await readEventService.getReadEventDetails(id);
     return { data: details };
+  }
+
+  /**
+   * Generate PDF report of AnnouncementReadEvent details
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns PDF report URL
+   */
+  @Get('/{id}/read-events/details/pdf')
+  public async getReadEventDetailsPdf(
+    @Path('id') id: number,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+    this.logger.debug(
+      'Received request to generate PDF for AnnouncementReadEvent for Announcement[%s]', id
+    );
+    
+    const announcement = await service.getAnnouncement(id, req.user!);
+    const details = await readEventService.getReadEventDetails(id);
+    
+    const employeeData = details.map(detail => ({
+      name: detail.employee.fullName,
+      jobTitle: detail.employee.jobTitle?.name || 'N/A',
+      department: detail.employee.department?.name || 'N/A'
+    }));
+
+    const pdfResult = await PdfGenerationService.generateAnnouncementReadEventsPdf({
+      announcementTitle: announcement.title,
+      publishDate: announcement.publishDate ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'Not published',
+      companyName: announcement.company?.name || 'N/A',
+      employees: employeeData
+    });
+
+    this.logger.info('PDF report generated for Announcement[%s]', id);
+    return { data: pdfResult };
   }
 }

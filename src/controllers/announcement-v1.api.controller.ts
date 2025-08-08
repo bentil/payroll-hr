@@ -206,3 +206,17 @@ export async function getReadEventDetails(
     next(err);
   }
 }
+
+export async function getReadEventDetailsPdf(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  const { id } = req.params;
+  try {
+    const response = await controller.getReadEventDetailsPdf(+id, req);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}

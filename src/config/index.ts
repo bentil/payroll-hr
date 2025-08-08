@@ -71,5 +71,12 @@ export default {
   grievanceReportAlphaLength: parseInt(process.env.GRIEVANCE_REPORT_ALPHA_LENGTH || '4', 10),
   grievanceReportDigitsLength: parseInt(process.env.GRIEVANCE_REPORT_DIGITS_LENGTH || '2', 10),
   disciplinaryActionAlphaLength: parseInt(process.env.DISCIPLINARY_ACTION_ALPHA_LENGTH || '4', 10),
-  disciplinaryActionDigitsLength: parseInt(process.env.DISCIPLINARY_ACTION_DIGITS_LENGTH || '2', 10)
+  disciplinaryActionDigitsLength: parseInt(process.env.DISCIPLINARY_ACTION_DIGITS_LENGTH || '2', 10),
+  s3: {
+    endpoint: process.env.S3_ENDPOINT,
+    bucketName: process.env.S3_BUCKET_NAME,
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    region: process.env.S3_REGION || 'us-east-1',
+  }
 };

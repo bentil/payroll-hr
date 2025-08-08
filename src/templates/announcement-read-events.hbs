@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcement Read Events Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #fff;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 25px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .announcement-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .announcement-info .detail {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .announcement-info .label {
+            font-weight: 600;
+            color: #555;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .announcement-info .value {
+            color: #333;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        
+        .table-container {
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+        }
+        
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            font-size: 11px;
+        }
+        
+        thead {
+            background-color: #ecf0f1;
+        }
+        
+        th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid #bdc3c7;
+            border-right: 1px solid #ddd;
+        }
+        
+        th:last-child {
+            border-right: none;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        td {
+            padding: 10px 8px;
+            font-size: 11px;
+            color: #555;
+            border-right: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        td:last-child {
+            border-right: none;
+        }
+        
+        .employee-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .job-title {
+            color: #555;
+        }
+        
+        .department {
+            color: #555;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 10px;
+        }
+        
+        .footer .timestamp {
+            margin-bottom: 4px;
+        }
+        
+        .footer .confidential {
+            color: #e74c3c;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+            
+            table {
+                page-break-inside: auto;
+            }
+            
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            thead {
+                display: table-header-group;
+            }
+        }
+        
+        .row-number {
+            font-weight: 500;
+            color: #7f8c8d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Announcement Read Events Report</h1>
+            <div class="subtitle">Employee Acknowledgment Tracking</div>
+        </div>
+        
+        <!-- Announcement Information -->
+        <div class="announcement-info">
+            <div class="detail">
+                <span class="label">Announcement:</span>
+                <span class="value">{{announcementTitle}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Time:</span>
+                <span class="value">{{publishDate}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Company:</span>
+                <span class="value">{{companyName}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Generated:</span>
+                <span class="value">{{currentDate}}</span>
+            </div>
+        </div>
+        
+        <!-- Summary Statistics -->
+        <div class="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{totalReaders}}</div>
+                <div class="stat-label">Total Readers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalDepartments}}</div>
+                <div class="stat-label">Departments</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{readPercentage}}%</div>
+                <div class="stat-label">Read Rate</div>
+            </div>
+        </div>
+        
+        <!-- Main Report Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Employees Who Have Read The Announcement</h3>
+            </div>
+            
+            {{#if employees.length}}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 35%;">Employee</th>
+                        <th style="width: 30%;">Job Title</th>
+                        <th style="width: 27%;">Department</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each employees}}
+                    <tr>
+                        <td class="row-number">{{this.rowNumber}}</td>
+                        <td class="employee-name">{{this.name}}</td>
+                        <td class="job-title">{{this.jobTitle}}</td>
+                        <td class="department">{{this.department}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="no-data">
+                No employees have read this announcement yet.
+            </div>
+            {{/if}}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="timestamp">Report generated on {{currentDate}}</div>
+            <div class="company">{{companyName}}</div>
+            <div class="confidential">Confidential - Internal Use Only</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1145,4 +1145,12 @@ router.get(
   announcementV1Controller.getReadEventDetails
 );
 
+router.get(
+  '/announcements/:id/read-events/details/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetailsPdf
+);
+
 export default router;
