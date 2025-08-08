@@ -73,10 +73,10 @@ export default {
   disciplinaryActionAlphaLength: parseInt(process.env.DISCIPLINARY_ACTION_ALPHA_LENGTH || '4', 10),
   disciplinaryActionDigitsLength: parseInt(process.env.DISCIPLINARY_ACTION_DIGITS_LENGTH || '2', 10),
   s3: {
-    endpoint: process.env.S3_ENDPOINT,
-    bucketName: process.env.S3_BUCKET_NAME,
+    endpoint: process.env.S3_ENDPOINT || 'https://storage.akatua.com',
+    bucketName: process.env.S3_BUCKET_NAME || 'hr-reports',
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    region: process.env.S3_REGION || 'us-east-1',
+    region: process.env.S3_REGION || 'EUROPE-1',
   }
 };
