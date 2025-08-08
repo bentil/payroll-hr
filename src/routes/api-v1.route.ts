@@ -27,6 +27,7 @@ import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
 // eslint-disable-next-line max-len
 import * as disciplinaryActionReportV1Controller from '../controllers/disciplinary-action-report-v1.api.controller';
 import * as leaveReportV1controller from '../controllers/leave-report-v1.api.controller';
+import * as companyApproverV1Controller from '../controllers/company-approver-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -147,7 +148,15 @@ import {
   validateRequestQuery
 } from '../middleware/request-validation.middleware';
 import validate from '../middleware/upload.validation';
-
+import {
+  CREATE_COMPANY_APPROVER_SCHEMA, 
+  QUERY_COMPANY_APPROVER_SCHEMA, 
+  UPDATE_COMPANY_APPROVER_SCHEMA 
+} from '../domain/request-schema/company-approver.schema';
+import { 
+  CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA, 
+  QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA
+} from '../domain/request-schema/announcement-read-event.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -1056,6 +1065,84 @@ router.get(
     category: [UserCategory.HR, UserCategory.OPERATIONS], 
   }),
   leaveReportV1controller.getLeavesBalance
+);
+
+// ### COMPANY APPROVER ROUTES
+router.post(
+  '/payroll-companies/:companyId/approvers',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  validateRequestBody(CREATE_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.addCompanyApprover
+);
+
+router.get(
+  '/payroll-companies/:companyId/approvers',
+  authenticateUser(),
+  validateRequestQuery(QUERY_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.getCompanyApprovers
+);
+
+router.get(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser(),
+  companyApproverV1Controller.getCompanyApprover,
+);
+
+router.patch(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  validateRequestBody(UPDATE_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.updateCompanyApprover
+);
+
+router.delete(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  companyApproverV1Controller.deleteCompanyApprover
+);
+
+// ### ANNOUNCEMENT-READ-EVENT ROUTES
+
+router.post(
+  '/announcements/:id/read-events',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'announcements:write'
+  }),
+  validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
+  announcementV1Controller.addNewAnnouncementReadEvent
+);
+
+router.get(
+  '/announcements/read-events/summary',
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  validateRequestQuery(QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA),
+  announcementV1Controller.getAnnouncementReadEventSummaryList
+);
+
+router.get(
+  '/announcements/:id/read-events/summary',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getAnnouncementReadEventSummary
+);
+
+router.get(
+  '/announcements/:id/read-events/details',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetails
 );
 
 export default router;

@@ -33,9 +33,12 @@ import { errors } from '../utils/constants';
 import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-import { EmployeeDto } from '../repositories/employee.repository';
+import { EmployeeDto } from '../domain/events/employee.event';
 import { getEmployeeApproversWithDefaults } from './employee-approver.service';
-import { sendReimbursementRequestEmail } from '../utils/notification.util';
+import { 
+  sendReimbursementRequestEmail, 
+  sendReimbursementResponseEmail 
+} from '../utils/notification.util';
 import { CompanyCurrencyEvent } from '../domain/events/company-currency.event';
 
 
@@ -99,9 +102,8 @@ export async function addReimbursementRequest(
 
   const approvers = await getEmployeeApproversWithDefaults({
     employeeId,
-    approvalType: 'leave'
+    approvalType: 'reimbursement'
   });
-  
   for(const x of approvers) {
     if (x.approver && x.approver.email && x.employee) {
       sendReimbursementRequestEmail({
@@ -362,7 +364,7 @@ export async function addResponse(
         approverLevel: expectedLevel,
       },
       include: { 
-        employee: true, 
+        employee: { include: { company: true } }, 
         completer: true, 
         approver: true, 
         currency: { include: { currency: true } }, 
@@ -371,6 +373,113 @@ export async function addResponse(
       }
     });
     logger.info('Response added to ReimbursementRequest[%s] successfully!', id);
+
+    logger.info('Sending notification after successful response to reimbursemnt Request');
+    const approvers = await getEmployeeApproversWithDefaults({
+      employeeId,
+      approvalType: 'reimbursement'
+    });
+    if (updatedReimbursementRequest.employee && updatedReimbursementRequest.employee.company) {
+      if (updatedReimbursementRequest.employee.company.notifyApproversOnRequestResponse) {
+        if (updatedReimbursementRequest.status === REIMBURESEMENT_REQUEST_STATUS.QUERIED) {
+          for(const x of approvers) {
+            if (x.approver && x.approver.email && x.employee) {
+              sendReimbursementResponseEmail({
+                requestId: updatedReimbursementRequest.id,
+                recipientEmail: x.approver.email,
+                recipientFirstName: x.approver.firstName,
+                employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                requestDate: updatedReimbursementRequest.createdAt,
+                responseMessage: `Reimbursment request has been approved at level ${expectedLevel}`,
+                currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+                amount: updatedReimbursementRequest.amount
+              });
+            }
+          }
+        } else {
+          if (updatedReimbursementRequest.status === REIMBURESEMENT_REQUEST_STATUS.REJECTED) {
+            for(const x of approvers) {
+              if (x.approver && x.approver.email && x.employee) {
+                sendReimbursementResponseEmail({
+                  requestId: updatedReimbursementRequest.id,
+                  recipientEmail: x.approver.email,
+                  recipientFirstName: x.approver.firstName,
+                  employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                  requestDate: updatedReimbursementRequest.createdAt,
+                  responseMessage: 
+                    `Reimbursment request has been declined at level ${expectedLevel}`,
+                  currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+                  amount: updatedReimbursementRequest.amount
+                });
+              }
+            }
+            if (
+              updatedReimbursementRequest.employee && updatedReimbursementRequest.employee.email
+            ) {
+              sendReimbursementResponseEmail({
+                requestId: updatedReimbursementRequest.id,
+                recipientEmail: updatedReimbursementRequest.employee.email,
+                recipientFirstName: updatedReimbursementRequest.employee.firstName,
+                employeeFullName: `${updatedReimbursementRequest.employee.firstName}`
+                  + ` ${updatedReimbursementRequest.employee.lastName}`.trim(),
+                requestDate: updatedReimbursementRequest.createdAt,
+                responseMessage: 'Your reimbursment request has been declined',
+                currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+                amount: updatedReimbursementRequest.amount
+              });
+            }
+          } else if (
+            updatedReimbursementRequest.status === REIMBURESEMENT_REQUEST_STATUS.APPROVED
+          ) {
+            for (const x of approvers) {
+              if (x.approver && x.approver.email && x.employee) {
+                sendReimbursementResponseEmail({
+                  requestId: updatedReimbursementRequest.id,
+                  recipientEmail: x.approver.email,
+                  recipientFirstName: x.approver.firstName,
+                  employeeFullName: `${x.employee.firstName} ${x.employee.lastName}`.trim(),
+                  requestDate: updatedReimbursementRequest.createdAt,
+                  responseMessage: 'Reimbursement request has received final approval',
+                  currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+                  amount: updatedReimbursementRequest.amount
+                });
+              }
+            }
+            if (
+              updatedReimbursementRequest.employee && updatedReimbursementRequest.employee.email
+            ) {
+              sendReimbursementResponseEmail({
+                requestId: updatedReimbursementRequest.id,
+                recipientEmail: updatedReimbursementRequest.employee.email,
+                recipientFirstName: updatedReimbursementRequest.employee.firstName,
+                employeeFullName: `${updatedReimbursementRequest.employee.firstName}`
+                  + ` ${updatedReimbursementRequest.employee.lastName}`.trim(),
+                requestDate: updatedReimbursementRequest.createdAt,
+                responseMessage: 'Your reimbursement request has been approved',
+                currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+                amount: updatedReimbursementRequest.amount
+              });
+            }
+          }
+        }
+      } else {
+        if (updatedReimbursementRequest.status === REIMBURESEMENT_REQUEST_STATUS.APPROVED) {
+          if (updatedReimbursementRequest.employee && updatedReimbursementRequest.employee.email) {
+            sendReimbursementResponseEmail({
+              requestId: updatedReimbursementRequest.id,
+              recipientEmail: updatedReimbursementRequest.employee.email,
+              recipientFirstName: updatedReimbursementRequest.employee.firstName,
+              employeeFullName: `${updatedReimbursementRequest.employee.firstName}`
+                + ` ${updatedReimbursementRequest.employee.lastName}`.trim(),
+              requestDate: updatedReimbursementRequest.createdAt,
+              responseMessage: 'Your reimbursement request has been approved',
+              currencyCode: updatedReimbursementRequest.currency!.currency!.code,
+              amount: updatedReimbursementRequest.amount
+            });
+          }
+        }
+      }
+    }
 
     // Emit event.ReimbursementRequest.modified event
     logger.debug(`Emitting ${events.modified}`);
