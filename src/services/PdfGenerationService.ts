@@ -101,12 +101,27 @@ export class PdfGenerationService {
       // Configure chromium for different environments
       const isDev = process.env.NODE_ENV === 'development';
       
-      browser = await puppeteer.launch({
-        args: isDev ? [] : chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: isDev ? undefined : await chromium.executablePath(),
-        headless: chromium.headless,
-      });
+      const launchOptions: any = {
+        headless: true,
+        defaultViewport: { width: 1280, height: 720 },
+        args: isDev ? [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+        ] : [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+      };
+
+      // Set executable path for production
+      if (!isDev) {
+        launchOptions.executablePath = await chromium.executablePath();
+      }
+
+      browser = await puppeteer.launch(launchOptions);
 
       const page = await browser.newPage();
       
