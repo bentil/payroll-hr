@@ -102,7 +102,7 @@ export class LeaveReportV1Controller {
     @Path('companyId') companyId: number,
     @Queries() query: QueryLeaveRequestForReportDto, 
     @Request() req: Express.Request
-  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+  ): Promise<ApiSuccessResponse<{}>> {
     this.logger.debug(
       'Received request to generate PDF for LeavesTaken report for Company[%s]', companyId
     );
@@ -128,7 +128,7 @@ export class LeaveReportV1Controller {
     });
 
     this.logger.info('PDF report generated for leaves taken in Company[%s]', companyId);
-    return { data: pdfResult };
+    return { data: pdfResult.presignedUrl };
   }
 
   /**
@@ -146,7 +146,7 @@ export class LeaveReportV1Controller {
     @Path('employeeId') employeeId: number,
     @Queries() query: QueryLeaveRequestForReportDto, 
     @Request() req: Express.Request
-  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+  ): Promise<ApiSuccessResponse<{}>> {
     this.logger.debug(
       'Received request to generate PDF for employee leaves taken report for Employee[%s] in Company[%s]', 
       employeeId, companyId
@@ -175,7 +175,7 @@ export class LeaveReportV1Controller {
     });
 
     this.logger.info('PDF report generated for employee leaves taken for Employee[%s]', employeeId);
-    return { data: pdfResult };
+    return { data: pdfResult.presignedUrl };
   }
 
   /**
@@ -189,7 +189,7 @@ export class LeaveReportV1Controller {
   public async getLeavesBalancePdf(
     @Path('companyId') companyId: number,
     @Request() req: Express.Request
-  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+  ): Promise<ApiSuccessResponse<{}>> {
     this.logger.debug(
       'Received request to generate PDF for leave balance report for Company[%s]', companyId
     );
@@ -214,6 +214,6 @@ export class LeaveReportV1Controller {
     });
 
     this.logger.info('PDF report generated for leave balances in Company[%s]', companyId);
-    return { data: pdfResult };
+    return { data: pdfResult.presignedUrl };
   }
 }
