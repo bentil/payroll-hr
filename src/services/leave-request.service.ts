@@ -1595,6 +1595,7 @@ export async function getEmployeeLeavesTakenReport(
   query: QueryLeaveRequestForReportDto,
   authorizedUser: AuthorizedUser
 ): Promise<EmployeeLeaveTakenReportObject> {
+  const { organizationId } = authorizedUser;
   // Validate emloyee and company
   const [company, employee] = await Promise.all([
     companyService.validatePayrollCompany(companyId),
@@ -1715,7 +1716,8 @@ export async function getEmployeeLeavesTakenReport(
                       startDate: nextDay, 
                       endDate: req.returnDate, 
                       considerPublicHolidayAsWorkday,
-                      considerWeekendAsWorkday 
+                      considerWeekendAsWorkday,
+                      organizationId
                     });
                     const daysElapsed = req.numberOfDays! - daysLeft;
                     daysUsed += daysElapsed;
