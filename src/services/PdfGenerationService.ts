@@ -104,6 +104,7 @@ export class PdfGenerationService {
       const launchOptions: any = {
         headless: true,
         defaultViewport: { width: 1280, height: 720 },
+        timeout: 60000, // 60 seconds browser launch timeout
         args: isDev ? [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -125,9 +126,14 @@ export class PdfGenerationService {
 
       const page = await browser.newPage();
       
+      // Set page timeout to 60 seconds for all operations
+      page.setDefaultTimeout(60000);
+      page.setDefaultNavigationTimeout(60000);
+      
       // Set content and wait for it to load
       await page.setContent(html, {
-        waitUntil: 'networkidle0'
+        waitUntil: 'networkidle0',
+        timeout: 60000 // 60 seconds timeout for content loading
       });
 
       // Generate PDF with professional settings
@@ -140,7 +146,8 @@ export class PdfGenerationService {
           left: '15mm'
         },
         printBackground: true,
-        preferCSSPageSize: true
+        preferCSSPageSize: true,
+        timeout: 60000 // 60 seconds timeout for PDF generation
       });
 
       return Buffer.from(pdfBuffer);
