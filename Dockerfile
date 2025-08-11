@@ -26,6 +26,7 @@ FROM node:18-alpine
 RUN apk update && apk add --no-cache openssl ttf-freefont chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 ENV CHROMIUM_PATH /usr/bin/chromium-browser
+ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium-browser
 
 ENV NODE_ENV=production
 WORKDIR /app
