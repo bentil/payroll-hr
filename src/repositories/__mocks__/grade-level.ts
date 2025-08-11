@@ -5,7 +5,7 @@ const dataStore: GradeLevel[] = [
   {
     'id': 1,
     'companyId': 1,
-    'companyLevelId': 2,
+    'companyLevelId': 1,
     'name': 'test1',
     'code': 'GMN01',
     'description': '',
@@ -37,8 +37,8 @@ const dataStore: GradeLevel[] = [
   },
   {
     'id': 4,
-    'companyId': 1,
-    'companyLevelId': 2,
+    'companyId': 2,
+    'companyLevelId': 3,
     'name': 'test4',
     'code': 'GMJ01',
     'description': '',
@@ -48,8 +48,8 @@ const dataStore: GradeLevel[] = [
   },
   {
     'id': 5,
-    'companyId': 1,
-    'companyLevelId': 2,
+    'companyId': 2,
+    'companyLevelId': 3,
     'name': 'test5',
     'code': 'GMJ02',
     'description': '',
@@ -74,6 +74,9 @@ export const find = jest.fn().mockImplementation(
     const paginate = skip !== undefined && take !== undefined;
     if (params.where?.id !== undefined) {
       result = result.filter((item) => item.id === params.where?.id);
+    } 
+    if (params.where?.companyLevelId !== undefined) {
+      result = result.filter((item) => item.companyLevelId === params.where?.companyLevelId);
     } 
 
     result = result.slice(params.skip);

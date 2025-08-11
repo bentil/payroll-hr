@@ -18,7 +18,7 @@ const dataStore: CompanyApproverDto[] = [
     'companyId': 1,
     'approverType': ApproverType.MANAGER,
     'companyLevelId': 2,
-    'level': 1,
+    'level': 2,
     'createdAt': new Date('2024-09-27T15:11:18.372Z'),
     'modifiedAt': new Date ('2024-09-27T15:11:18.372Z'),
   },

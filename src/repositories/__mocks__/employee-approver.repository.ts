@@ -14,7 +14,7 @@ const dataStore: EmployeeApproverDto[] = [
   },
   {
     'id': 2,
-    'employeeId': 6,
+    'employeeId': 3,
     'approverId': 2,
     'level': 1,
     'createdAt': new Date('2024-09-27T15:11:18.372Z'),
@@ -31,7 +31,7 @@ const dataStore: EmployeeApproverDto[] = [
   {
     'id': 4,
     'employeeId': 6,
-    'approverId': 6,
+    'approverId': 4,
     'level': 1,
     'createdAt': new Date('2024-09-27T15:11:18.372Z'),
     'modifiedAt': new Date ('2024-09-27T15:11:18.372Z'),

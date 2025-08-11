@@ -1,5 +1,6 @@
 import {  Prisma } from '@prisma/client';
 import { EmployeeDto } from '../../domain/events/employee.event';
+import { getListWithPagination, ListWithPagination } from '../types';
 
 const dataStore: EmployeeDto[] = [
   {
@@ -12,7 +13,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'kdsfj',
     'otherNames': null,
     'gender': 'MALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '',
     'taxIdentificationNumber': null,
@@ -98,7 +99,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '',
     'taxIdentificationNumber': '24223235555',
@@ -194,7 +195,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '',
     'taxIdentificationNumber': '24223235555',
@@ -290,7 +291,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
@@ -370,11 +371,11 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
-    'majorGradeLevelId': 4,
+    'majorGradeLevelId': 2,
     'minorGradeLevelId': 1,
     'nationality': 'English',
     'regionId': null,
@@ -450,11 +451,11 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
-    'majorGradeLevelId': 4,
+    'majorGradeLevelId': 3,
     'minorGradeLevelId': 1,
     'nationality': 'English',
     'regionId': null,
@@ -530,7 +531,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
@@ -610,7 +611,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
@@ -690,7 +691,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
@@ -770,7 +771,7 @@ const dataStore: EmployeeDto[] = [
     'lastName': 'Connor',
     'otherNames': null,
     'gender': 'FEMALE',
-    'dateOfBirth': new Date('1940-01-02T'),
+    'dateOfBirth': new Date('1940-01-02'),
     'photoUrl': null,
     'ssn': '3232323',
     'taxIdentificationNumber': '24223235555',
@@ -842,6 +843,10 @@ const dataStore: EmployeeDto[] = [
   },
 ];
 
+type inObject = {
+  in: number[];
+}
+
 export const findOne = jest.fn().mockImplementation(
   async (
     whereUniqueInput: Prisma.EmployeeWhereUniqueInput
@@ -862,14 +867,26 @@ export const findFirst = jest.fn().mockImplementation(
   async (
     whereInput: Prisma.EmployeeWhereInput,
   ): Promise<EmployeeDto | null> => {
-    const result: EmployeeDto | undefined = dataStore.find(item => {
-      return item.companyId === whereInput.companyId 
+    let result: EmployeeDto | undefined;
+    if (whereInput.companyId) {
+      result = dataStore.find(item => {
+        return item.companyId === whereInput.companyId 
           && item.employeeNumber === whereInput.employeeNumber;
-    });
+      });
+    } else if (whereInput.majorGradeLevelId && typeof whereInput === 'object') {
+      const where = whereInput.majorGradeLevelId as unknown as inObject;
+      result = dataStore.find(item => {
+        if(item.majorGradeLevelId) {
+          return where.in.includes(item.majorGradeLevelId);
+        }
+      });
+    }  
+    
   
     return result ?? null;
   }
 );
+
 
 export const count = jest.fn().mockImplementation(
   async (
@@ -886,3 +903,46 @@ export const count = jest.fn().mockImplementation(
 
     return count;
   });
+
+
+export const find = jest.fn().mockImplementation(
+  async (params: {
+    skip?: number,
+    take?: number,
+    where?: Prisma.EmployeeWhereInput,
+    orderBy?: Prisma.EmployeeOrderByWithRelationAndSearchRelevanceInput,
+    include?: Prisma.EmployeeInclude
+  }): Promise<ListWithPagination<EmployeeDto>> => {
+    let result: EmployeeDto[] = 
+    JSON.parse(JSON.stringify(dataStore)) as typeof dataStore;
+
+    const { skip, take } = params;
+    const paginate = skip !== undefined && take !== undefined;
+    if (params.where?.majorGradeLevelId !== undefined) {
+      if (typeof params.where.majorGradeLevelId === 'object') {
+        const param = params.where.majorGradeLevelId as unknown as inObject;
+        result = result.filter((item) => {
+          if (item.majorGradeLevelId && param.in.includes(item.majorGradeLevelId)) {
+            return true;
+          }
+        });
+      }else {
+        result = result.filter(
+          (item) => item.majorGradeLevelId === params.where?.majorGradeLevelId
+        );
+      }
+      
+    } 
+    
+    if (params.where?.id !== undefined) {
+      result = result.filter(
+        (item) => item?.id === params.where?.id
+      );
+    }
+    result = result.slice(params.skip);
+    result = result.slice(0, params.take);
+
+    const totalCount = paginate ? result.length : undefined;
+    return getListWithPagination(result, { skip, take, totalCount });
+  }
+);

@@ -17,7 +17,7 @@ const dataStore: CompanyLevel[] = [
     'id': 2,
     'organizationId': '39f2a042-747d-4200-9bdd-cac11538249a',
     'companyId': 1,
-    'levelNumber': 1,
+    'levelNumber': 2,
     'levelName': 'test name 2',
     'juniorLevel': false,
     'parentId': 2,
@@ -28,7 +28,7 @@ const dataStore: CompanyLevel[] = [
   {
     'id': 3,
     'organizationId': '39f2a042-747d-4200-9bdd-cac11538249a',
-    'companyId': 1,
+    'companyId': 2,
     'levelNumber': 1,
     'levelName': 'test name 3',
     'juniorLevel': false,
@@ -40,7 +40,7 @@ const dataStore: CompanyLevel[] = [
   {
     'id': 4,
     'organizationId': '3sdfddf-747d-4200-9bdd-cac11538249a',
-    'companyId': 5,
+    'companyId': 3,
     'levelNumber': 1,
     'levelName': 'test name 4',
     'juniorLevel': false,
@@ -52,7 +52,7 @@ const dataStore: CompanyLevel[] = [
   {
     'id': 5,
     'organizationId': '3sdfddf-747d-4200-9bdd-cac11538249a',
-    'companyId': 1,
+    'companyId': 4,
     'levelNumber': 1,
     'levelName': 'test name 5',
     'juniorLevel': false,
