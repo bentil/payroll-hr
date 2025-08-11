@@ -23,7 +23,9 @@ RUN npm run db:generate \
 ### FINAL STAGE
 FROM node:18-alpine
 
-RUN apk update && apk add --no-cache openssl
+RUN apk update && apk add --no-cache openssl ttf-freefont chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+ENV CHROMIUM_PATH /usr/bin/chromium-browser
 
 ENV NODE_ENV=production
 WORKDIR /app
