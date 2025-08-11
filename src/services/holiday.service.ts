@@ -38,7 +38,8 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
     startDate,
     endDate,
     considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday
+    considerWeekendAsWorkday,
+    organizationId
   } = params;
 
   
@@ -46,7 +47,8 @@ export async function countWorkingDays(params: CountQueryObject): Promise<number
     startDate,
     endDate,
     excludeHolidays: considerPublicHolidayAsWorkday,
-    excludeWeekends: considerWeekendAsWorkday
+    excludeWeekends: considerWeekendAsWorkday,
+    organizationId
   });
 
   const differenceInDays = await calculateDaysBetweenDates(startDate, endDate);
@@ -61,7 +63,8 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
     startDate,
     endDate,
     excludeHolidays,
-    excludeWeekends
+    excludeWeekends,
+    organizationId
   } = params;
   let exclude: Prisma.EnumHOLIDAY_TYPEFilter | undefined;
   if (excludeHolidays && excludeWeekends) {
@@ -75,6 +78,7 @@ export async function countNonWorkingDays(params: CountNonWorkingDaysQueryObject
   let nonWorkingDays: number;
   try {
     nonWorkingDays = await repository.count({
+      organizationId,
       date: {
         lte: endDate,
         gte: startDate,
