@@ -104,6 +104,7 @@ export class PdfGenerationService {
       const launchOptions: any = {
         headless: true,
         defaultViewport: { width: 1280, height: 720 },
+        protocolTimeout: 300000, // 300 seconds (5 minutes) timeout for network operations
         timeout: 300000, // 300 seconds browser launch timeout
         args: isDev ? [
           '--no-sandbox',
@@ -112,15 +113,16 @@ export class PdfGenerationService {
           ...chromium.args,
           '--no-sandbox',
           '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
+          '--disable-dev-shm-usage'
         ],
       };
 
       // Set executable path for production
-      if (!isDev) {
-        launchOptions.executablePath = await chromium.executablePath();
-      }
+      //if (!isDev) {
+      //  launchOptions.executablePath = await chromium.executablePath();
+      //  logger.info('Chromium executable path:', launchOptions.executablePath);
+      //  logger.info('Chromium executable exists:', fs.existsSync(launchOptions.executablePath));
+      //}
 
       browser = await puppeteer.launch(launchOptions);
 
