@@ -110,10 +110,16 @@ export class PdfGenerationService {
           '--no-sandbox',
           '--disable-setuid-sandbox',
         ] : [
-          ...chromium.args,
           '--no-sandbox',
           '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage'
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-javascript', // Skip JS if not needed
+          '--memory-pressure-off',
+          '--max_old_space_size=4096'
         ],
       };
 
