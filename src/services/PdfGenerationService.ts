@@ -177,7 +177,7 @@ export class PdfGenerationService {
       employees: Array<{
         name: string;
         jobTitle: string;
-        department: string;
+        department?: string;
       }>;
     }
   ): Promise<PdfGenerationResult> {

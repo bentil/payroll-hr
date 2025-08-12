@@ -303,7 +303,7 @@
                         <td class="row-number">{{this.rowNumber}}</td>
                         <td class="employee-name">{{this.name}}</td>
                         <td class="job-title">{{this.jobTitle}}</td>
-                        <td class="department">{{this.department}}</td>
+                        <td class="department">{{#if this.department}}{{this.department}}{{else}}No Department{{/if}}</td>
                     </tr>
                     {{/each}}
                 </tbody>
