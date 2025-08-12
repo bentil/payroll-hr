@@ -23,9 +23,9 @@ export interface LeaveTakenReportData {
       name?: string;
     };
     department: Array<{
-      id: number;
-      code: string;
-      name: string;
+      id?: number;
+      code?: string;
+      name?: string;
       employees: Array<{
         id: number;
         employeeNumber: string;

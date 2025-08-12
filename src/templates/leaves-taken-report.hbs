@@ -355,9 +355,13 @@
                             {{/if}}
                         </td>
                         <td class="department-cell">
-                            <strong>{{this.name}}</strong>
+                            <strong>{{#if this.name}}{{this.name}}{{else}}No Department{{/if}}</strong>
                             {{#if this.code}}
                             <br><small>({{this.code}})</small>
+                            {{else}}
+                            {{#unless this.name}}
+                            <br><small>(NODEPARTMENT)</small>
+                            {{/unless}}
                             {{/if}}
                         </td>
                         <td>
@@ -374,9 +378,13 @@
                     <!-- Subsequent department rows for this leave type -->
                     <tr class="department-row">
                         <td class="department-cell">
-                            <strong>{{this.name}}</strong>
+                            <strong>{{#if this.name}}{{this.name}}{{else}}No Department{{/if}}</strong>
                             {{#if this.code}}
                             <br><small>({{this.code}})</small>
+                            {{else}}
+                            {{#unless this.name}}
+                            <br><small>(NODEPARTMENT)</small>
+                            {{/unless}}
                             {{/if}}
                         </td>
                         <td>
