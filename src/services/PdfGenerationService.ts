@@ -267,7 +267,9 @@ export class PdfGenerationService {
       reportData.reportData.forEach(leaveTypeData => {
         totalDays += leaveTypeData.numberOfDaysPerCompany;
         leaveTypeData.department.forEach(dept => {
-          allDepartments.add(dept.id);
+          if (dept.id !== undefined) {
+            allDepartments.add(dept.id);
+          }
           dept.employees.forEach(emp => {
             allEmployees.add(emp.id);
           });
