@@ -1700,7 +1700,7 @@ export async function getEmployeeLeavesTakenReport(
               });
               logger.info(
                 'Found %d LeaveRequest(s) taken by employees of company[%s]',
-                companyId, result.data.length, { query }
+                result.data.length, companyId, { query }
               );
             } catch (err) {
               logger.warn(
@@ -1838,7 +1838,7 @@ export async function getLeavesBalanceReport(
                 });
                 logger.info(
                   'Found %d LeaveRequest(s) taken by employees of company[%s]',
-                  companyId, result.data.length
+                  result.data.length, companyId
                 );
               } catch (err) {
                 logger.warn(
