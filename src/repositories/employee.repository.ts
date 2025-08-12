@@ -55,8 +55,9 @@ export async function find(params: {
   skip?: number,
   take?: number,
   where?: Prisma.EmployeeWhereInput,
-  orderBy?: Prisma.EmployeeOrderByWithRelationAndSearchRelevanceInput
-}): Promise<ListWithPagination<Employee>> {
+  orderBy?: Prisma.EmployeeOrderByWithRelationAndSearchRelevanceInput,
+  include?: Prisma.EmployeeInclude
+}): Promise<ListWithPagination<EmployeeDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([

@@ -1623,7 +1623,7 @@ export async function getEmployeeLeavesTakenReport(
   const leaveTypes = await leaveTypeRepository.find({
     where: { 
       leavePackages: {
-        every: { companyId }
+        some: { companyId }
       },
     },
     include: { leavePackages: true }
@@ -1643,10 +1643,6 @@ export async function getEmployeeLeavesTakenReport(
           'Validating LeaveType[%s] failed',
           leaveType.id, { error: (err as Error).stack }
         );
-        if (err instanceof HttpError) {
-          err.message = `Approver: ${err.message}`;
-          throw err;
-        }
       }
       // Get employees leavePackages using employee companyLevel from majorGradeLevel
       if (employee?.majorGradeLevel?.companyLevelId && validateData) {
@@ -1655,7 +1651,7 @@ export async function getEmployeeLeavesTakenReport(
         // Get leavePackages for employe level and of leaveType
         const leavePackages = await leavePackageRepository.find({
           where: {
-            companyLevelLeavePackages: { every: { 
+            companyLevelLeavePackages: { some: { 
               leavePackage: { leaveTypeId: leaveType.id },
               companyLevelId 
             } }
@@ -1792,13 +1788,14 @@ export async function getLeavesBalanceReport(
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });
   const employees = await employeeRepository.find({
     where: scopedQuery,
+    include: { majorGradeLevel: { include: { companyLevel: true } } }
   });  
 
   // Get all available leaveTypes 
   const leaveTypes = await leaveTypeRepository.find({
     where: { 
       leavePackages: {
-        every: { companyId }
+        some: { companyId }
       },
     },
     include: { leavePackages: true }
@@ -1809,17 +1806,15 @@ export async function getLeavesBalanceReport(
   if (employees.data.length > 0) {
     for (const employee of employees.data) {
       const leaveTypeSummary: LeaveBalanceReportLeaveTypeObject[] = [];
-      if (leaveTypes.data.length > 0 ) {
+      if (leaveTypes.data.length > 0 && employee.majorGradeLevel?.companyLevelId) {
         for (const leaveType of leaveTypes.data) {
           const leavePackageSummary: LeaveBalanceReportLeavePackageObject[] = [];
           // get Leave packages available for employee for specific leave type
           const leavePackages = await leavePackageRepository.find({
             where: {
-              companyLevelLeavePackages: { every: { 
+              companyLevelLeavePackages: { some: { 
                 leavePackage: { leaveTypeId: leaveType.id },
-                companyLevelId: employee.majorGradeLevelId
-                  ? employee.majorGradeLevelId
-                  : undefined
+                companyLevelId: employee.majorGradeLevel.companyLevelId
               } }
             },
             include: { leaveType: true }
