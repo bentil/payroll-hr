@@ -31,6 +31,9 @@ import {
   UploadLeaveRequestViaSpreadsheetDto,
 } from '../domain/dto/leave-request.dto';
 import {
+  LeavePackageDto
+} from '../domain/dto/leave-package.dto';
+import {
   EmployeLeaveTypeSummary,
   ValidationReturnObject
 } from '../domain/dto/leave-type.dto';
@@ -1351,7 +1354,7 @@ export async function getLeavesTakenReport(
     leaveTypeRepository.find({
       where: { 
         leavePackages: {
-          every: { companyId }
+          some: { companyId }
         },
       },
       include: { leavePackages: true }
@@ -1364,9 +1367,31 @@ export async function getLeavesTakenReport(
   if (leaveTypes.data.length > 0 ) {
     logger.debug('[%s]LeaveTypes retrieved for company[%s]', leaveTypes.data.length, companyId);
     for (const leaveType of leaveTypes.data) {
-      if (leaveType.leavePackages) {
+      logger.info(
+        'Finding leavePackages of leaveType[%s] for Company[%s]', 
+        leaveType.id, companyId
+      );
+      let leavePackages: ListWithPagination<LeavePackageDto>;
+      try {
+        leavePackages = await leavePackageRepository.find({
+          where: {
+            leaveTypeId: leaveType.id,
+            companyId
+          },
+        });
+      } catch (err) {
+        logger.warn(
+          'Querying LeavePackage for leaveType[%s] by employees in Company[%s] failed',
+          leaveType.id, companyId, { error: err as Error }
+        );
+        throw new ServerError({
+          message: (err as Error).message,
+          cause: err
+        });
+      }
+      if (leavePackages.data.length > 0) {
         const leavePackageIds: number[] = [];
-        leaveType.leavePackages.forEach((pack) => {
+        leavePackages.data.forEach((pack) => {
           leavePackageIds.push(pack.id);
         });
         const deptSummary: LeaveTakenReportDepartmentObject[] = [];
@@ -1375,7 +1400,10 @@ export async function getLeavesTakenReport(
           let result: ListWithPagination<LeaveRequestDto>;
           try {
             // finding leaveRequests within the leaveType of interest for a company
-            logger.debug('Finding LeaveRequest(s) taken by employees in department[%s]', dep.id);
+            logger.debug(
+              `Finding LeaveRequest(s) under packages${leavePackageIds.join(', ')}` +
+              ` taken by employees in department${dep.id}`
+            );
             result = await leaveRequestRepository.find({
               where: { 
                 employee: {
@@ -1407,7 +1435,7 @@ export async function getLeavesTakenReport(
             });
             logger.info(
               'Found %d LeaveRequest(s) taken by employees of company[%s]',
-              companyId, result.data.length, { query }
+              result.data.length, companyId, { query }
             );
           } catch (err) {
             logger.warn(
@@ -1460,7 +1488,10 @@ export async function getLeavesTakenReport(
         let noDepartmentResult: ListWithPagination<LeaveRequestDto>;
         try {
           // finding leaveRequests within the leaveType of interest for a company
-          logger.debug('Finding LeaveRequest(s) taken by employees without department if any');
+          logger.debug(
+            `Finding LeaveRequest(s) under packages${leavePackageIds.join(', ')}` +
+            'taken by employees without department if any'
+          );
           noDepartmentResult = await leaveRequestRepository.find({
             where: { 
               employee: {
@@ -1492,7 +1523,7 @@ export async function getLeavesTakenReport(
           });
           logger.info(
             'Found %d LeaveRequest(s) taken by employees of company[%s]',
-            companyId, noDepartmentResult.data.length, { query }
+            noDepartmentResult.data.length, companyId, { query }
           );
         } catch (err) {
           logger.warn(
