@@ -149,7 +149,7 @@ export class LeaveTakenReportObject {
     code?: string,
     name?: string,
   };
-  department?:LeaveTakenReportDepartmentObject[] | string;
+  department!:LeaveTakenReportDepartmentObject[];
   numberOfDaysPerCompany!: number;
 }
 
