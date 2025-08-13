@@ -14,10 +14,10 @@ export async function getDisciplinaryActionsReport(
   res: Response, 
   next: NextFunction
 ): Promise<void> {
-  const { comapnyId } = req.params;
+  const { companyId } = req.params;
   try {
     const response = await controller.getDisciplinaryActionsReport(
-      +comapnyId,
+      +companyId,
       req.query as unknown as QueryDisciplinaryActionReportDto,
       req
     );
@@ -32,10 +32,10 @@ export async function getDisciplinaryActionsForEmployeeReport(
   res: Response, 
   next: NextFunction
 ): Promise<void> {
-  const { comapnyId, employeeId } = req.params;
+  const { companyId, employeeId } = req.params;
   try {
     const response = await controller.getDisciplinaryActionsForEmployeeReport(
-      +comapnyId,
+      +companyId,
       +employeeId,
       req.query as unknown as QueryDisciplinaryActionReportDto,
       req

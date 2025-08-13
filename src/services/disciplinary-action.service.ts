@@ -8,6 +8,7 @@ import {
   DisciplinaryActionDto,
   DisciplinaryActionsReportResponse,
   QueryDisciplinaryActionReportDto,
+  DisciplinaryActionsForEmployeeReportResponse,
 } from '../domain/dto/disciplinary-action.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
@@ -371,7 +372,6 @@ export async function getDisciplinaryActionsReport(
     'actionDate.gte': actionDateGte,
     'actionDate.lte': actionDateLte,
   } = query;
-
   const report: DisciplinaryActionsReportResponse[] = [];
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
     authUser, 
@@ -450,13 +450,19 @@ export async function getDisciplinaryActionsForEmployeeReport(
   employeeId: number,
   query: QueryDisciplinaryActionReportDto,
   authUser: AuthorizedUser  
-): Promise<DisciplinaryActionsReportResponse[]> {
+): Promise<DisciplinaryActionsForEmployeeReportResponse> {
   const {
     'actionDate.gte': actionDateGte,
     'actionDate.lte': actionDateLte,
   } = query;
-
-  const report: DisciplinaryActionsReportResponse[] = [];
+  logger.info('Validating Company[%s] and Employee[%s]', companyId, employeeId);
+  const [employee, _] = await Promise.all([
+    employeeService.validateEmployee(employeeId, authUser, { companyId }),
+    payrollCompanyService.getPayrollCompany(companyId)
+  ]);
+  logger.info('Company[%s] and Employee[%s] valid', companyId, employeeId);
+  const disciplinaryActions: Omit <DisciplinaryActionsReportResponse, 'employee'>[] = [];
+  
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
     authUser, 
     {
@@ -497,7 +503,7 @@ export async function getDisciplinaryActionsForEmployeeReport(
   if (result.data.length > 0) {
     result.data.forEach((disciplicaryAction) => {
       if (disciplicaryAction.employee && disciplicaryAction.actionType) {
-        report.push({
+        disciplinaryActions.push({
           disciplinaryAction: {
             id: disciplicaryAction.id,
             actionDate: disciplicaryAction.actionDate,
@@ -512,12 +518,6 @@ export async function getDisciplinaryActionsForEmployeeReport(
               reportNote: disciplicaryAction.grievanceReport.note
             }
             : null,
-          employee: {
-            id: disciplicaryAction.employee.id,
-            employeeNuber: disciplicaryAction.employee.employeeNumber,
-            name: 
-              `${disciplicaryAction.employee.lastName}, ${disciplicaryAction.employee.firstName}`,
-          },
           actionType: {
             id: disciplicaryAction.actionType.id,
             name: disciplicaryAction.actionType.name,
@@ -527,5 +527,12 @@ export async function getDisciplinaryActionsForEmployeeReport(
       }
     });
   }
-  return report;
+  return {
+    disciplinaryActions,
+    employee: {
+      id: employee.id,
+      employeeNuber: employee.employeeNumber,
+      name: `${employee.lastName}, ${employee.firstName}`,
+    },
+  };
 }

@@ -9,6 +9,7 @@ import {
 } from 'tsoa';
 import { ApiSuccessResponse } from '../../domain/api-responses';
 import {
+  DisciplinaryActionsForEmployeeReportResponse,
   DisciplinaryActionsReportResponse,
   QueryDisciplinaryActionReportDto,
 } from '../../domain/dto/disciplinary-action.dto';
@@ -56,7 +57,7 @@ export class DisciplinaryActionsReportV1Controller {
     @Path('employeeId') employeeId: number,
     @Queries() query: QueryDisciplinaryActionReportDto,
     @Request() req: Express.Request,
-  ): Promise<ApiSuccessResponse<DisciplinaryActionsReportResponse[]>> {
+  ): Promise<ApiSuccessResponse<DisciplinaryActionsForEmployeeReportResponse>> {
     this.logger.debug(
       'Received request to get report on DisciplinaryAction(s) matching query', { query }
     );

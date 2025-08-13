@@ -78,14 +78,21 @@ export class DisciplinaryActionsReportResponse {
     reportNote?: string;
     reportDate?: Date;
   } | null;
-  employee!: {
-    id: number;
-    employeeNuber: string;
-    name: string;
-  };
+  employee!: employeeSummary;
   actionType!: {
     id: number;
     name: string;
     code: string;
   };
+}
+
+export interface DisciplinaryActionsForEmployeeReportResponse {
+  disciplinaryActions: Omit <DisciplinaryActionsReportResponse, 'employee'>[],
+  employee: employeeSummary;
+}
+
+class employeeSummary {
+  id!: number;
+  employeeNuber!: string;
+  name!: string;
 }
