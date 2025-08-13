@@ -1,5 +1,4 @@
 import { 
-  CompanyCurrency, 
   Employee, 
   REIMBURESEMENT_REQUEST_STATUS, 
   ReimbursementRequest, 
@@ -9,6 +8,8 @@ import {
 import { Decimal } from '@prisma/client/runtime/library';
 import config from '../../config';
 import { RequestQueryMode } from './leave-request.dto';
+import { CompanyCurrencyEvent } from '../events/company-currency.event';
+import { EmployeeDto } from '../events/employee.event';
 
 export class CreateReimbursementRequestDto {
   employeeId!: number;
@@ -21,10 +22,10 @@ export class CreateReimbursementRequestDto {
 }
 
 export interface ReimbursementRequestDto extends ReimbursementRequest {
-  employee?: Employee;
+  employee?: EmployeeDto;
   approver?: Employee | null;
   completer?: Employee | null;
-  currency?: CompanyCurrency; 
+  currency?: CompanyCurrencyEvent; 
   requestAttachments?: ReimbursementRequestAttachment[];
   requestComments?: ReimbursementRequestComment[];
 }

@@ -60,3 +60,32 @@ export class SearchDisciplinaryActionDto {
   limit: number = config.pagination.limit;
   orderBy: DisciplinaryActionOrderBy = DisciplinaryActionOrderBy.CREATED_AT_DESC;
 }
+
+export interface QueryDisciplinaryActionReportDto extends Pick<
+  QueryDisciplinaryActionDto, 'actionDate.gte' | 'actionDate.lte'
+> {}
+
+export class DisciplinaryActionsReportResponse {
+  disciplinaryAction!: {
+    id: number;
+    actionDate: Date;
+    actionNumber: string;
+    notes: string;
+  };
+  grievanceReport?: {
+    id?: number;
+    reportNumber?: string;
+    reportNote?: string;
+    reportDate?: Date;
+  } | null;
+  employee!: {
+    id: number;
+    employeeNuber: string;
+    name: string;
+  };
+  actionType!: {
+    id: number;
+    name: string;
+    code: string;
+  };
+}

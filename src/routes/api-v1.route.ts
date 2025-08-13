@@ -24,6 +24,10 @@ import * as leaveReqV1Controller from '../controllers/leave-request-v1.api.contr
 import * as leaveTypeV1Controller from '../controllers/leave-type-v1.api';
 import * as reimbReqV1Controller from '../controllers/reimbursement-request-v1.api.controller';
 import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as disciplinaryActionReportV1Controller from '../controllers/disciplinary-action-report-v1.api.controller';
+import * as leaveReportV1controller from '../controllers/leave-report-v1.api.controller';
+import * as companyApproverV1Controller from '../controllers/company-approver-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -58,7 +62,8 @@ import {
   CREATE_DISCIPLINARY_ACTION_SCHEMA,
   QUERY_DISCIPLINARY_ACTION_SCHEMA,
   UPDATE_DISCIPLINARY_ACTION_SCHEMA,
-  SEARCH_DISCIPLINARY_ACTION_SCHEMA
+  SEARCH_DISCIPLINARY_ACTION_SCHEMA,
+  QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA
 } from '../domain/request-schema/disciplinary-action.schema';
 import {
   CREATE_EMPLOYEE_APPROVER_SCHEMA, 
@@ -113,6 +118,7 @@ import {
   ADJUST_DAYS_SCHEMA,
   CONVERT_LEAVE_PLAN_SCHEMA,
   FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA,
+  QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -142,7 +148,15 @@ import {
   validateRequestQuery
 } from '../middleware/request-validation.middleware';
 import validate from '../middleware/upload.validation';
-
+import {
+  CREATE_COMPANY_APPROVER_SCHEMA, 
+  QUERY_COMPANY_APPROVER_SCHEMA, 
+  UPDATE_COMPANY_APPROVER_SCHEMA 
+} from '../domain/request-schema/company-approver.schema';
+import { 
+  CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA, 
+  QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA
+} from '../domain/request-schema/announcement-read-event.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -1005,6 +1019,164 @@ router.get(
   }),
   validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
   uploadV1Controller.exportLeaveRequests
+);
+
+// ## DISCIPLINARY ACTION REPORT ROUTES
+router.get(
+  '/payroll-companies/:companyId/disciplinary-actions/reports',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA),
+  disciplinaryActionReportV1Controller.getDisciplinaryActionsReport
+);
+
+router.get(
+  '/payroll-companies/:companyId/disciplinary-actions/reports/employees/:employeeId',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA),
+  disciplinaryActionReportV1Controller.getDisciplinaryActionsForEmployeeReport
+);
+
+// ### LEAVE RESPONSE  ROUTES
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getLeavesTaken
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/employees/:employeeId',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getEmployeeLeavesTaken
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-balance',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  leaveReportV1controller.getLeavesBalance
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getLeavesTakenPdf
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-taken/employees/:employeeId/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  validateRequestQuery(QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA),
+  leaveReportV1controller.getEmployeeLeavesTakenPdf
+);
+
+router.get(
+  '/payroll-companies/:companyId/leave-requests/reports/leaves-balance/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+  }),
+  leaveReportV1controller.getLeavesBalancePdf
+);
+
+// ### COMPANY APPROVER ROUTES
+router.post(
+  '/payroll-companies/:companyId/approvers',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  validateRequestBody(CREATE_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.addCompanyApprover
+);
+
+router.get(
+  '/payroll-companies/:companyId/approvers',
+  authenticateUser(),
+  validateRequestQuery(QUERY_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.getCompanyApprovers
+);
+
+router.get(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser(),
+  companyApproverV1Controller.getCompanyApprover,
+);
+
+router.patch(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  validateRequestBody(UPDATE_COMPANY_APPROVER_SCHEMA),
+  companyApproverV1Controller.updateCompanyApprover
+);
+
+router.delete(
+  '/payroll-companies/:companyId/approvers/:id',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:hierarchy:write'
+  }),
+  companyApproverV1Controller.deleteCompanyApprover
+);
+
+// ### ANNOUNCEMENT-READ-EVENT ROUTES
+
+router.post(
+  '/announcements/:id/read-events',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'announcements:write'
+  }),
+  validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
+  announcementV1Controller.addNewAnnouncementReadEvent
+);
+
+router.get(
+  '/announcements/read-events/summary',
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  validateRequestQuery(QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA),
+  announcementV1Controller.getAnnouncementReadEventSummaryList
+);
+
+router.get(
+  '/announcements/:id/read-events/summary',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getAnnouncementReadEventSummary
+);
+
+router.get(
+  '/announcements/:id/read-events/details',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetails
+);
+
+router.get(
+  '/announcements/:id/read-events/details/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetailsPdf
 );
 
 export default router;

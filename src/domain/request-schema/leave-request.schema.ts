@@ -165,3 +165,31 @@ export const FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(LeaveRequestOrderBy)}`
     })
 });
+
+export const QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA = Joi.object({
+  'startDate.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  'startDate.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  'returnDate.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  'returnDate.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  'createdAt.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  'createdAt.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw()
+    .less(Date.now()),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(LeaveRequestOrderBy))
+    .default(LeaveRequestOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(LeaveRequestOrderBy)}`
+    })
+});
