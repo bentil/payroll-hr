@@ -11,7 +11,7 @@ export default {
     leaveRequestPath: process.env.LEAVE_REQUEST_TEMPLATE_PATH || '',
     leaveResponsePath: process.env.LEAVE_RESPONSE_TEMPLATE_PATH || '',
     reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
-    reimbursementResponsePath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
+    reimbursementResponsePath: process.env.REIMBURSEMENT_RESPONSE_TEMPLATE_PATH || '',
     defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || ''
   },
   log: {
@@ -71,7 +71,9 @@ export default {
   grievanceReportAlphaLength: parseInt(process.env.GRIEVANCE_REPORT_ALPHA_LENGTH || '4', 10),
   grievanceReportDigitsLength: parseInt(process.env.GRIEVANCE_REPORT_DIGITS_LENGTH || '2', 10),
   disciplinaryActionAlphaLength: parseInt(process.env.DISCIPLINARY_ACTION_ALPHA_LENGTH || '4', 10),
-  disciplinaryActionDigitsLength: parseInt(process.env.DISCIPLINARY_ACTION_DIGITS_LENGTH || '2', 10),
+  disciplinaryActionDigitsLength: parseInt(
+    process.env.DISCIPLINARY_ACTION_DIGITS_LENGTH || '2', 10
+  ),
   s3: {
     endpoint: process.env.S3_ENDPOINT || 'https://storage.akatua.com',
     bucketName: process.env.S3_BUCKET_NAME || 'hr-reports',
