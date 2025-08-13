@@ -24,6 +24,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
 import { validate } from './leave-type.service';
+import { EmployeeDto } from '../domain/events/employee.event';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -207,7 +208,7 @@ export async function updateLeavePlan(
 
   logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
   let leavePlan: LeavePlanDto | null,
-    employee: employeeRepository.EmployeeDto | null;
+    employee: EmployeeDto | null;
   try {
     [leavePlan, employee] = await Promise.all([
       leavePlanRepository.findOne(

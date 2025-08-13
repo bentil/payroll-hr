@@ -2,6 +2,7 @@ import { LeaveType, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
+import { LeaveTypeDto } from '../domain/dto/leave-type.dto';
 
 
 export async function create(
@@ -41,20 +42,12 @@ export async function find(params: {
   take?: number,
   where?: Prisma.LeaveTypeWhereInput,
   orderBy?: Prisma.LeaveTypeOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean
-}): Promise<ListWithPagination<LeaveType>> {
+  include?: Prisma.LeaveTypeInclude
+}): Promise<ListWithPagination<LeaveTypeDto>> {
   const { skip, take, } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.leaveType.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations ? { leavePackages: {
-        include: { leaveType: true }
-      } } : undefined
-    }),
+    prisma.leaveType.findMany(params),
     paginate
       ? prisma.leaveType.count({ where: params.where })
       : Promise.resolve(undefined),

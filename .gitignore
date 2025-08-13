@@ -20,5 +20,6 @@
 *~
 .DS_Store
 /.http
+template_sample.hbs
 
 build

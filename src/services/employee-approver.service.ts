@@ -1,4 +1,6 @@
 import {
+  ApproverType,
+  CompanyApprover,
   Employee,
   EmployeeApprover,
   PayrollCompany
@@ -20,16 +22,21 @@ import {
   ServerError
 } from '../errors/http-errors';
 import * as repository from '../repositories/employee-approver.repository';
-import { EmployeeDto } from '../repositories/employee.repository';
+import { EmployeeDto } from '../domain/events/employee.event';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import * as companyTreeService from './company-tree-node.service';
-import * as deptLeadershipService from './department-leadership.service';
 import * as employeeService from './employee.service';
 import * as departmentRepository from './../repositories/department.repository';
+import * as companyApproverRepository from './../repositories/company-approver.repository';
+import * as companyLevelRepository from './../repositories/company-level.repository';
+import * as employeeRepository from './../repositories/employee.repository';
+import * as deptLeadershipRepository from './../repositories/department-leadership.repository';
+import * as gradeLevelRepository from './../repositories/grade-level';
 import { DepartmentEvent } from '../domain/events/department.event';
+import { DepartmentLeadershipEvent } from '../domain/events/department-leadership.event';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -463,15 +470,175 @@ export async function getEmployeeApproversWithDefaults(params: {
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
   // Getting list of available and unavailable levels
-  const employeeApproverList = employeeApprovers.data;
-  const availableLevels = [...new Set(employeeApproverList.map(a => a.level))];
-  const unavailableLevels = allowedLevels.filter(
+  let employeeApproverList = employeeApprovers.data;
+  let availableLevels = [...new Set(employeeApproverList.map(a => a.level))];
+  let unavailableLevels = allowedLevels.filter(
     i => !availableLevels.includes(i)
   );
 
-  // Assigning default levels of employee as approver
+  // Assigning company approvers if no employee approver exists at level
   for (const x of unavailableLevels) {
-    logger.debug('No EmployeeApprover at Level %s. Getting default', x);
+    logger.debug('No EmployeeApprover at Level %s. Getting CompanyApprover', x);
+    let companyApprover: CompanyApprover | null;
+    try {
+      companyApprover = await companyApproverRepository.findFirst({
+        companyId: employee.companyId, 
+        level: x
+      });
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) {
+        throw err;
+      }
+      continue;
+    }
+    let data: Employee;
+    if (companyApprover) {
+      if (companyApprover.approverType === ApproverType.DEPARMENT_HEAD) {
+        try {
+          if (employee.departmentId) {
+            const data: DepartmentLeadershipEvent | null = await deptLeadershipRepository.findFirst(
+              { departmentId: employee.departmentId, rank: 0 },
+              { employee: true }
+            );
+            if (data && data.employeeId && data.employee) {
+              if (data.employeeId !== employeeId) {
+                employeeApproverList.push({
+                  employeeId,
+                  approverId: data.employeeId,
+                  level: x,
+                  employee: employee,
+                  approver: data.employee
+                });
+              }
+            }
+          }
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+          continue;
+        }
+      } else if (companyApprover.approverType === ApproverType.SUPERVISOR) {
+        try {
+          data = await companyTreeService.getParentEmployee(employeeId);
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+          continue;
+        }
+        if (data) {
+          employeeApproverList.push({
+            employeeId,
+            approverId: data.id,
+            level: x,
+            employee: employee,
+            approver: data
+          });
+        }
+      } else if (companyApprover.approverType === ApproverType.MANAGER) {
+        let data;
+        const gradeLevelIds: number[] = [];
+        // Find the parent companyLevelId for employees companyLevel
+        try {
+          const companyLevel = await companyLevelRepository.findFirst(
+            { 
+              companyId: employee.companyId, 
+              id: companyApprover.companyLevelId! 
+            },
+          );
+          // If companyLevel has a parent companyLevelI, find all employees within this level
+          if (companyLevel && companyLevel.parentId) {
+            const gradeLevel = await gradeLevelRepository.find({
+              where: { companyLevelId: companyLevel.parentId },
+            });
+            if (gradeLevel.data.length > 0) {
+              const gradeLevelIds = gradeLevel.data.map(gl => gl.id);
+              // Get employees with gradeLevelId in gradeLevelIds
+              const employees = await employeeRepository.find({
+                where: { 
+                  majorGradeLevelId: { in: gradeLevelIds }                  
+                },
+              });
+              if (employees.data.length > 0) {
+                employees.data.forEach(emp => {
+                  if (emp.id !== employeeId) {
+                    employeeApproverList.push({
+                      employeeId,
+                      approverId: emp.id,
+                      level: x,
+                      employee: employee,
+                      approver: emp
+                    });
+                  }
+                });
+              }
+            }
+            if (gradeLevelIds.length > 0) {
+              data = await employeeRepository.findFirst(
+                { majorGradeLevelId: { in: gradeLevelIds } },
+              );
+            }
+          }
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+          continue;
+        }
+        if (data && (data.id !== employeeId)) {
+          employeeApproverList.push({
+            employeeId,
+            approverId: data.id,
+            level: x,
+            employee: employee,
+            approver: data
+          });
+        }
+      } else if (companyApprover.approverType === ApproverType.HR) {
+        try {
+          const hrs: ListWithPagination<Employee> =
+          await employeeRepository.find({
+            where: { 
+              companyId: employee.companyId,
+              hr: true
+            },
+          });
+          if (hrs.data.length > 0) {
+            hrs.data.forEach((hr) => {
+              if (hr.id !== employeeId) {
+                employeeApproverList.push({
+                  employeeId,
+                  approverId: hr.id,
+                  level: x,
+                  employee: employee,
+                  approver: hr
+                });
+              }
+            });
+          }
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+          continue;
+        }
+      }
+    } else {
+      logger.warn(
+        'No CompanyApprover found for Employee[%s] at Level %s',
+        employeeId, x
+      );
+      continue;
+    }
+    // Getting list of available and unavailable levels
+    employeeApproverList = employeeApprovers.data;
+    availableLevels = [...new Set(employeeApproverList.map(a => a.level))];
+    unavailableLevels = allowedLevels.filter(
+      i => !availableLevels.includes(i)
+    );
+    // Assigning default levels of employee as approver
+    logger.debug('No CompanyApprover at Level %s. Getting default', x);
     if (x === 1) {
       let data: Employee;
       try {
@@ -482,7 +649,7 @@ export async function getEmployeeApproversWithDefaults(params: {
         }
         continue;
       }
-      if (data) {
+      if (data && (data.id !== employeeId)) {
         employeeApproverList.push({
           employeeId,
           approverId: data.id,
@@ -493,23 +660,27 @@ export async function getEmployeeApproversWithDefaults(params: {
       }
     } else if (x === 2) {
       if (employee.departmentId) {
-        const data = await deptLeadershipService
-          .getDepartmentLeaderships(
-            { departmentId: employee.departmentId, rank: 0 },
-            { includeEmployee: true }
-          );
-        if (data.length > 0 && data[0].employeeId) {
-          employeeApproverList.push({
-            employeeId,
-            approverId: data[0].employeeId,
-            level: x,
-            employee: employee,
-            approver: data[0].employee
-          });
+        const data: DepartmentLeadershipEvent | null = await deptLeadershipRepository.findFirst(
+          { departmentId: employee.departmentId, rank: 0 },
+          { employee: true }
+        );
+        if (data && data.employeeId && data.employee) {
+          if (data.employeeId !== employeeId) {
+            employeeApproverList.push({
+              employeeId,
+              approverId: data.employeeId,
+              level: x,
+              employee: employee,
+              approver: data.employee
+            });
+          }
+
         }
       }
     }
   }
+
+  
   logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
 
   return employeeApproverList;
@@ -520,6 +691,8 @@ export async function getEmployeesToApprove(params: {
   approvalType?: string,
   level?: number
 }): Promise<number[]> {
+  let approveeList: number[] = [];
+  let superviseeIdList: number[] = [];
   const { employeeId, approvalType, level } = params;
   const employee = await employeeService.getEmployee(
     employeeId,
@@ -529,7 +702,6 @@ export async function getEmployeesToApprove(params: {
   // Getting allowed approver level for employee's company
   const company = employee.company as PayrollCompany;
   let approverLevelsAllowed: number;
-  let approveeList: number[] = [];
   if (!approvalType) {
     approverLevelsAllowed = Math.max(
       company.leaveRequestApprovalsRequired,
@@ -550,124 +722,237 @@ export async function getEmployeesToApprove(params: {
     }
   }
 
-  // Get list of supervisees that do not have a custom approver at level 1
-  logger.debug(
-    'Getting details for Employee[%s] Supervisees without custom Approver at level 1', employeeId
-  );
-  let superviseeIds: number[] | undefined;
-  try {
-    const supervisees = await companyTreeService.getSupervisees(employeeId);
-    superviseeIds = supervisees.map(e => e.id);
-  } catch (err) {
-    if (!(err instanceof NotFoundError)) {
-      throw err;
-    }
-  }
-
-  let superviseesWithApproversAtLevelOne: ListWithPagination<EmployeeApproverDto>;
-  try {
-    superviseesWithApproversAtLevelOne = await repository.find({
-      where: { employeeId: { in: superviseeIds }, level: 1 },
-      include: { employee: true, approver: true }
-    });
-  } catch (err) {
-    logger.warn(
-      'Getting Employee[%s] Approvers failed',
-      employeeId, { error: (err as Error).stack }
-    );
-    throw new ServerError({ message: (err as Error).message, cause: err });
-  }
-  // Get list of supervisee Ids that have approvers at level 1 and clear duplicates
-  const superviseeList = superviseesWithApproversAtLevelOne.data.map(
-    (x) => x.employeeId
-  );
-  const superviseeIdList = 
-    superviseeList.filter((item, pos) => { return superviseeList.indexOf(item) == pos; });
-  
-  // Get list of supervisee at level that do not have approvers
-  const superviseesWithoutApprovers = 
-    superviseeIds?.filter((item) => { return !superviseeIdList.includes(item); });
-
-  if (superviseesWithoutApprovers) {
-    approveeList = approveeList.concat(superviseesWithoutApprovers);
-  }
-  
-  // Get list of employees with employeeId as approver at level 1
-  logger.debug('Getting employees whose Approver is Employee[%s]', employeeId);
-  let employeeApprovers: ListWithPagination<EmployeeApproverDto>;
-  try {
-    employeeApprovers = await repository.find({
-      where: { approverId: employeeId, level: 1 },
-      include: { employee: true, approver: true }
-    });
-  } catch (err) {
-    logger.warn(
-      'Getting Employee[%s] Approvers failed',
-      employeeId, { error: (err as Error).stack }
-    );
-    throw new ServerError({ message: (err as Error).message, cause: err });
-  }
-  employeeApprovers.data.forEach(e => superviseeIdList.push(e.employeeId));
-
-  // Get approvees of employee at level 2 if the company allows for more than one leve
-  if (allowedLevels.length > 1) {
-    // Get list of supervisees that do not have a custom approver at level 2
-    logger.debug(
-      'Getting details for Employee[%s] Supervisees without custom Approver at level 2', employeeId
-    );
-
-    let superviseesWithApproversAtLevelTwo: ListWithPagination<EmployeeApproverDto>;
-    const subordinates: Employee[] = [];
+  for (const x of allowedLevels) {
+    //Get company approver for employee's company at level x
+    logger.debug('Getting CompanyApprover for Employee[%s] at level [%s]', employee.id, x);
+    let companyApprover: CompanyApprover | null;
     try {
-      if (employee.departmentId) {
-        const data = await deptLeadershipService
-          .getDepartmentLeadership(employee.departmentId, employeeId);
-        if (data.rank === 0) {
-          const department: DepartmentEvent | null = await departmentRepository.findFirst(
-            { id: employee.departmentId },
-            { employees: true }
-          );
-          if (department) {
-            department.employees?.forEach(node => {
-              if (employeeId !== node.id) {
-                subordinates.push(node);
-              }
-              
-            });
-          }
-        }
-        // Get subordinates Id list 
-        const subordinateIds = subordinates.map(e => e.id);
-        // Get subordinates with approver and reduce it to a list of Ids
-        superviseesWithApproversAtLevelTwo = await repository.find({
-          where: { employeeId: { in: subordinateIds }, level: 2 },
-          include: { employee: true, approver: true }
-        });
-        const superviseeIdListLevelTwo = superviseesWithApproversAtLevelTwo.data.map(
-          x => x.employeeId
-        );
-        // Get subordinates of employee who have no approver
-        const subordinatesWithoutApprovers = 
-          subordinateIds.filter(x => !superviseeIdListLevelTwo.includes(x));
-        
-        approveeList = approveeList.concat(subordinatesWithoutApprovers);
-      }
+      companyApprover = await companyApproverRepository.findFirst({
+        companyId: employee.companyId,
+        level: x
+      });
     } catch (err) {
       logger.warn(
-        'Getting Employee[%s] Approvers failed',
-        employeeId, { error: (err as Error).stack }
+        'Getting CompanyApprover for Employee[%s] at level [%s] failed',
+        employeeId, x, { error: (err as Error).stack }
       );
-      if (!(err instanceof NotFoundError)) {
-        throw err;
-      }
+      throw new ServerError({ message: (err as Error).message, cause: err });
     }
 
-    // Get list of employees with employeeId as approver at level 2
-    logger.debug('Getting employees whose Approver is Employee[%s] at level 2', employeeId);
-    let employeeApprovers2: ListWithPagination<EmployeeApproverDto>;
+    // If company approver does not exist, 
+    // get list of supervisees without approvers and add to employee approvers at level x
+    if (!companyApprover) {
+      if (x === 1) {
+      // Get list of supervisees that do not have a custom approver at level 2
+        logger.debug(
+          'Getting details for Employee[%s] Supervisees without custom Approver at level [%s]',
+          employeeId, x
+        );
+        // Get list of supervisees Ids
+        let superviseeIds: number[] | undefined;
+        try {
+          const supervisees = await companyTreeService.getSupervisees(employeeId);
+          superviseeIds = supervisees.map(e => e.id);
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+        }
+
+        // Get list of supervisees with employee approvers at level 2
+        let superviseesWithEmployeeApproversAtLevelOne: ListWithPagination<EmployeeApproverDto>;
+        try {
+          superviseesWithEmployeeApproversAtLevelOne = await repository.find({
+            where: { employeeId: { in: superviseeIds }, level: x },
+            include: { employee: true, approver: true }
+          });
+        } catch (err) {
+          logger.warn(
+            'Getting Employee[%s] Approvers failed',
+            employeeId, { error: (err as Error).stack }
+          );
+          throw new ServerError({ message: (err as Error).message, cause: err });
+        }
+        // Get list of supervisee Ids with employee approvers at level 2 and clear duplicates
+        const superviseeList = superviseesWithEmployeeApproversAtLevelOne.data.map(
+          (sups) => sups.employeeId
+        );
+        superviseeIdList = 
+          superviseeList.filter((item, pos) => { return superviseeList.indexOf(item) == pos; });
+        
+        // Get list of supervisee at level x that do not have approvers
+        const superviseesWithoutEmployeeApprovers = 
+          superviseeIds?.filter((item) => { return !superviseeIdList.includes(item); });
+
+        if (superviseesWithoutEmployeeApprovers) {
+          approveeList = approveeList.concat(superviseesWithoutEmployeeApprovers);
+        }
+      } else if (x === 2) {
+        // Get list of supervisees that do not have a custom approver at level 2
+        logger.debug(
+          'Getting details for Employee[%s] Supervisees without custom Approver at level 2', 
+          employeeId
+        );
+
+        let superviseesWithApproversAtLevelTwo: ListWithPagination<EmployeeApproverDto>;
+        const subordinates: Employee[] = [];
+        try {
+          if (employee.departmentId) {
+            const data = await deptLeadershipRepository.findFirst(
+              {
+                departmentId: employee.departmentId,
+                employeeId,
+                rank: 0
+              }, 
+              { employee: true }
+            );
+            if (data) {
+              const department: DepartmentEvent | null = await departmentRepository.findFirst(
+                { id: employee.departmentId },
+                { employees: true }
+              );
+              if (department) {
+                department.employees?.forEach(node => {
+                  if (employeeId !== node.id) {
+                    subordinates.push(node);
+                  }
+                  
+                });
+              }
+            }
+            // Get subordinates Id list 
+            const subordinateIds = subordinates.map(e => e.id);
+            // Get subordinates with approver and reduce it to a list of Ids
+            superviseesWithApproversAtLevelTwo = await repository.find({
+              where: { employeeId: { in: subordinateIds }, level: 2 },
+              include: { employee: true, approver: true }
+            });
+            const superviseeIdListLevelTwo = superviseesWithApproversAtLevelTwo.data.map(
+              x => x.employeeId
+            );
+            // Get subordinates of employee who have no approver
+            const subordinatesWithoutApprovers = 
+              subordinateIds.filter(x => !superviseeIdListLevelTwo.includes(x));
+            
+            approveeList = approveeList.concat(subordinatesWithoutApprovers);
+          }
+        } catch (err) {
+          logger.warn(
+            'Getting Employee[%s] Approvers failed',
+            employeeId, { error: (err as Error).stack }
+          );
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+        }
+      }
+    } else {
+      // If company approver exists, add it to the list of employee approvers at level x
+      if (companyApprover.approverType === ApproverType.SUPERVISOR) {
+        // Get list of supervisees Ids
+        try {
+          const supervisees = await companyTreeService.getSupervisees(employeeId);
+          supervisees.forEach(supervisee => superviseeIdList.push(supervisee.id));
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+        }
+      } else if (companyApprover.approverType === ApproverType.DEPARMENT_HEAD) {
+        const list: number[] = [];
+        // Get department where employee is leader 
+        if (employee.departmentId) {
+          const data = await deptLeadershipRepository.findFirst(
+            { 
+              departmentId: employee.departmentId, 
+              employeeId,
+              rank: 0 
+            },
+            { employee: true }
+          );
+          // if employee is department head, get all employees in the department
+          if (data) {
+            const department: DepartmentEvent | null = await departmentRepository.findFirst(
+              { id: employee.departmentId },
+              { employees: true }
+            );
+            if (department && department.employees) {
+              department.employees.forEach(node => {
+                if (employeeId !== node.id) {
+                  list.push(node.id);
+                }
+              });
+              superviseeIdList = superviseeIdList.concat(list);
+            }
+          }
+        }
+      } else if (companyApprover.approverType === ApproverType.MANAGER) {
+        // Get childId of manager companyLevel
+        // Check if employees gradeLevel is under the companyApprover's companyLevel
+        const list: number[] = [];
+        try {
+          const companyLevel = await companyLevelRepository.findFirst(
+            { id: companyApprover.companyLevelId! },
+          );
+          if (companyLevel && companyLevel.childId) {
+            const gradeLevel = await gradeLevelRepository.find({
+              where: { id: companyLevel.childId },
+            });
+            if (gradeLevel.data.length > 0) {
+              const gradeLevelIds = gradeLevel.data.map(gl => gl.id);
+              // Get employees with gradeLevelId in gradeLevelIds
+              const employees = await employeeRepository.find({
+                where: { 
+                  majorGradeLevelId: { in: gradeLevelIds }                  
+                },
+              });
+              if (employees.data.length > 0) {
+                employees.data.forEach(emp => {
+                  if (emp.id !== employeeId) {
+                    list.push(emp.id);
+                  }
+                });
+                superviseeIdList = superviseeIdList.concat(list);
+              }
+            }
+          }
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+        }
+      } else if (companyApprover.approverType === ApproverType.HR) {
+        // check if employee is HR
+        const list: number[] = [];
+        if (employee.hr) {
+          // If employee is HR, get all employees in the company
+          const employees = await employeeRepository.find({
+            where: { companyId: employee.companyId },
+          });
+          if (employees.data.length > 0) {
+            employees.data.forEach(emp => {
+              if (emp.id !== employeeId) {
+                list.push(emp.id);
+              }
+            });
+            superviseeIdList = superviseeIdList.concat(list);
+          }
+        }
+      }
+      // filter superviseeIdList to remove duplicates
+      superviseeIdList = superviseeIdList.filter((item, pos) => {
+        return superviseeIdList.indexOf(item) === pos;
+      });
+      // Add company approver to approveeList
+      approveeList = approveeList.concat(superviseeIdList);
+
+    }
+    // Get list of employees with employeeId as employeeApprover at level x
+    logger.debug('Getting employees whose Approver is Employee[%s] at level [%s]', employeeId, x);
+    let employeeApprovers: ListWithPagination<EmployeeApproverDto>;
     try {
-      employeeApprovers2 = await repository.find({
-        where: { approverId: employeeId, level: 2 },
+      employeeApprovers = await repository.find({
+        where: { approverId: employeeId, level: x },
         include: { employee: true, approver: true }
       });
     } catch (err) {
@@ -677,8 +962,12 @@ export async function getEmployeesToApprove(params: {
       );
       throw new ServerError({ message: (err as Error).message, cause: err });
     }
-    employeeApprovers2.data.forEach(e => approveeList.push(e.employeeId)); 
+    if (employeeApprovers.data.length > 0) {
+      employeeApprovers.data.forEach(e => superviseeIdList.push(e.employeeId));
+    } 
   }
+
+  approveeList = Array.from(new Set(approveeList));
 
   return approveeList.sort((a, b) => a - b);
 }

@@ -1,4 +1,4 @@
-import { Announcement } from '@prisma/client';
+import { Announcement, AnnouncementReadEvent } from '@prisma/client';
 import {
   Body,
   Get,
@@ -29,8 +29,17 @@ import {
   QueryEmployeeAnnouncementDto
 } from '../../domain/dto/announcement.dto';
 import * as service from '../../services/announcement.service';
+import * as readEventService from '../../services/announcement-read-event.service';
+import PdfGenerationService from '../../services/PdfGenerationService';
 import { errors } from '../../utils/constants';
 import { rootLogger } from '../../utils/logger';
+import { 
+  //AnnouncementReadEventDto, 
+  AnnouncementReadEventResponseDto, 
+  CreateAnnouncementReadEventDto, 
+  QueryAnnouncementReadEventSummaryDto,
+  ReadEventSummmaryDto
+} from '../../domain/dto/announcement-read-event.dto';
 
 
 @Tags('announcements')
@@ -248,5 +257,123 @@ export class AnnouncementV1Controller {
     this.logger.debug('Received request to delete Announcement[%s]', id);
     await service.deleteAnnouncement(id, req.user!);
     this.logger.debug('Announcement[%s] deleted successfully', id);
+  }
+
+  /**
+   * Create an AnnouncementReadEvent
+   * 
+   * @param createData Request body
+   * @param req Request object
+   * @returns AnnouncementReadEvent
+   */
+  @Post('{id}/read-events')
+  @SuccessResponse(201, 'Created')
+  public async addAnnouncementReadEvent(
+    @Path('id') id: number,
+    @Body() createData: CreateAnnouncementReadEventDto,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<AnnouncementReadEvent>> {
+    this.logger.debug('Received request to add Announcement', { data: createData, });
+    const announcement = await readEventService.addAnnouncementReadEvent(id, createData, req.user!);
+    return { data: announcement };
+  }
+
+  /**
+   * Get a list of AnnouncementReadEventSummary for a company
+   * 
+   * @param query Request query parameters, including pagination and ordering details
+   * @param req Request object
+   * @returns List of AnnouncementReadEvent for company
+   */
+  @Get('/read-events/summary')
+  public async getAnnouncementReadEventSummaryList(
+    @Queries() query: QueryAnnouncementReadEventSummaryDto,
+    @Request() req: Express.Request
+  ): Promise<ApiSuccessResponse<AnnouncementReadEventResponseDto[]>> {
+    this.logger.debug('Received request to get list of AnnouncementReadEventSummary');
+    const summary = await readEventService.getAnnouncementReadEventSummaryList(
+      query, req.user!
+    );
+    this.logger.info('Returning list ofAnnouncementReadEventSummary');
+    return { data: summary };
+  }
+
+  /**
+   * Get an AnnouncementReadEventSummary
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns Announcement
+   */
+  @Get('/{id}/read-events/summary')
+  public async getAnnouncementReadEventSummary(
+    @Path('id') id: number,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<AnnouncementReadEventResponseDto>> {
+    this.logger.debug(
+      'Received request to get AnnouncementReadEventSummary for Announcement[%s]', id
+    );
+    const announcement = await readEventService.getAnnouncementReadEventSummary(id, req.user!);
+    return { data: announcement };
+  }
+
+  /**
+   * Get an AnnouncementReadEventDetails
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns Announcement
+   */
+  @Get('/{id}/read-events/details')
+  public async getReadEventDetails(
+    @Path('id') id: number,
+  ): Promise<ApiSuccessResponse<ReadEventSummmaryDto[]>> {
+    this.logger.debug(
+      'Received request to get AnnouncementReadEventDetails for Announcement[%s]', id
+    );
+    const details = await readEventService.getReadEventDetails(id);
+    return { data: details };
+  }
+
+  /**
+   * Generate PDF report of AnnouncementReadEvent details
+   * 
+   * @param id Announcement id
+   * @param req Request object
+   * @returns PDF report URL
+   */
+  @Get('/{id}/read-events/details/pdf')
+  public async getReadEventDetailsPdf(
+    @Path('id') id: number,
+    @Request() req: Express.Request,
+  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+    this.logger.debug(
+      'Received request to generate PDF for AnnouncementReadEvent for Announcement[%s]', id
+    );
+    
+    const announcement = await service.getAnnouncement(id, req.user!);
+    const details = await readEventService.getReadEventDetails(id);
+    
+    const employeeData = details.map(detail => ({
+      name: detail.employee.fullName,
+      jobTitle: detail.employee.jobTitle?.name || 'N/A',
+      department: detail.employee.department?.name || 'N/A'
+    }));
+
+    const pdfResult = await PdfGenerationService.generateAnnouncementReadEventsPdf({
+      announcementTitle: announcement.title,
+      publishDate: announcement.publishDate ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'Not published',
+      companyName: announcement.company?.name || 'N/A',
+      employees: employeeData
+    });
+
+    this.logger.info('PDF report generated for Announcement[%s]', id);
+    return { data: pdfResult };
   }
 }

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Balance Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #fff;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 25px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .company-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .company-info .detail {
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .company-info .label {
+            font-weight: 600;
+            color: #555;
+            display: inline-block;
+            width: 100px;
+        }
+        
+        .company-info .value {
+            color: #333;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        
+        .employee-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .employee-header {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 15px;
+        }
+        
+        .employee-header h3 {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .employee-number {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .leave-balance-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        
+        .leave-balance-table thead {
+            background-color: #ecf0f1;
+        }
+        
+        .leave-balance-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid #bdc3c7;
+            border-right: 1px solid #ddd;
+        }
+        
+        .leave-balance-table th:last-child {
+            border-right: none;
+        }
+        
+        .leave-balance-table tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .leave-balance-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .leave-balance-table tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .leave-balance-table td {
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #555;
+            border-right: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        .leave-balance-table td:last-child {
+            border-right: none;
+        }
+        
+        .leave-type-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .leave-type-code {
+            color: #7f8c8d;
+            font-size: 10px;
+            font-style: italic;
+        }
+        
+        .package-name {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .package-code {
+            color: #95a5a6;
+            font-size: 10px;
+            font-style: italic;
+        }
+        
+        .remaining-days {
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .remaining-days.high {
+            color: #27ae60;
+        }
+        
+        .remaining-days.medium {
+            color: #f39c12;
+        }
+        
+        .remaining-days.low {
+            color: #e74c3c;
+        }
+        
+        .no-leave-packages {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+            font-style: italic;
+            background-color: #f8f9fa;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 10px;
+        }
+        
+        .footer .timestamp {
+            margin-bottom: 4px;
+        }
+        
+        .footer .confidential {
+            color: #e74c3c;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+            
+            .employee-section {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+            }
+            
+            .leave-balance-table {
+                page-break-inside: auto;
+            }
+            
+            .leave-balance-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            .leave-balance-table thead {
+                display: table-header-group;
+            }
+        }
+        
+        .employee-summary {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .employee-summary td {
+            color: white !important;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+        
+        .section-spacing {
+            margin-bottom: 20px;
+        }
+        
+        .leave-type-group {
+            border-left: 3px solid #3498db;
+            background-color: #f8f9fa;
+        }
+        
+        .leave-type-group td:first-child {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Leave Balance Report</h1>
+            <div class="subtitle">Current Leave Entitlements by Employee</div>
+        </div>
+        
+        <!-- Company Information -->
+        <div class="company-info">
+            <div class="detail">
+                <span class="label">Company:</span>
+                <span class="value">{{companyName}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Report Period:</span>
+                <span class="value">{{reportPeriod}}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Generated:</span>
+                <span class="value">{{currentDate}}</span>
+            </div>
+        </div>
+        
+        <!-- Summary Statistics -->
+        <div class="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{totalEmployees}}</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalLeaveTypes}}</div>
+                <div class="stat-label">Leave Types</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalPackages}}</div>
+                <div class="stat-label">Leave Packages</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{totalRemainingDays}}</div>
+                <div class="stat-label">Total Remaining Days</div>
+            </div>
+        </div>
+        
+        <!-- Employee Sections -->
+        {{#if employees.length}}
+        {{#each employees}}
+        <div class="employee-section">
+            <div class="employee-header">
+                <h3>{{this.employee.name}}</h3>
+                <div class="employee-number">Employee Number: {{this.employee.employeeNumber}}</div>
+            </div>
+            
+            {{#if this.leaveTypes.length}}
+            <table class="leave-balance-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Leave Type</th>
+                        <th style="width: 40%;">Leave Package</th>
+                        <th style="width: 30%;">Remaining Days</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each this.leaveTypes}}
+                    {{#each this.leavePackages}}
+                    <tr class="{{#if @first}}leave-type-group{{/if}}">
+                        {{#if @first}}
+                        <td rowspan="{{../this.leavePackages.length}}">
+                            <div class="leave-type-name">{{../this.name}}</div>
+                            {{#if ../this.code}}
+                            <div class="leave-type-code">({{../this.code}})</div>
+                            {{/if}}
+                        </td>
+                        {{/if}}
+                        <td>
+                            <div class="package-name">{{this.name}}</div>
+                            {{#if this.code}}
+                            <div class="package-code">({{this.code}})</div>
+                            {{/if}}
+                        </td>
+                        <td class="remaining-days {{#if this.remainingLeaveDaysHigh}}high{{else}}{{#if this.remainingLeaveDaysMedium}}medium{{else}}low{{/if}}{{/if}}">
+                            {{this.remainingLeaveDays}} days
+                        </td>
+                    </tr>
+                    {{/each}}
+                    {{/each}}
+                    
+                    <!-- Employee Summary Row -->
+                    <tr class="employee-summary">
+                        <td colspan="2" style="text-align: right;">
+                            <strong>Total for {{this.employee.name}}:</strong>
+                        </td>
+                        <td style="text-align: center;">
+                            <strong>{{this.totalRemainingDays}} days</strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            {{else}}
+            <div class="no-leave-packages">
+                No leave packages assigned to this employee.
+            </div>
+            {{/if}}
+        </div>
+        {{/each}}
+        {{else}}
+        <div class="no-data">
+            No employee leave balance data available.
+        </div>
+        {{/if}}
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="timestamp">Report generated on {{currentDate}}</div>
+            <div class="company">{{companyName}}</div>
+            <div class="confidential">Confidential - Internal Use Only</div>
+        </div>
+    </div>
+
+</body>
+</html>

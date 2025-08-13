@@ -29,6 +29,7 @@ model PayrollCompany {
   workHoursInADay                       Int       @default(8) @map("work_hours_in_a_day")
   leaveRequestApprovalsRequired         Int       @default(1) @map("leave_request_approvals_required") @db.UnsignedTinyInt()
   reimbursementRequestApprovalsRequired Int       @default(1) @map("reimbursement_request_approvals_required") @db.UnsignedTinyInt()
+  notifyApproversOnRequestResponse      Boolean   @default(false) @map("notify_approvers_on_request_response")
   createdAt                             DateTime  @default(now()) @map("created_at")
   modifiedAt                            DateTime? @updatedAt @map("modified_at")
   statusLastModifiedAt                  DateTime? @map("status_last_modified_at")
@@ -44,6 +45,7 @@ model PayrollCompany {
   companyDocumentTypes    CompanyDocumentType[]
   announcements           Announcement[]
   departments             Department[]
+  companyApprovers        CompanyApprover[]
 
   @@map("payroll_company")
 }
@@ -115,6 +117,8 @@ model Employee {
   approvalRequesters              EmployeeApprover[]               @relation(name: "approver")
   department                      Department?                      @relation(fields: [departmentId], references: [id])
   departmentLeadership            DepartmentLeadership[]
+  announcementReadEvent           AnnouncementReadEvent[]
+  jobTitle                        JobTitle?                        @relation(fields: [jobTitleId], references: [id])
 
   @@fulltext([firstName, lastName, otherNames, employeeNumber])
   @@map("employee")
@@ -227,6 +231,7 @@ model CompanyLevel {
 
   companyLevelLeavePackages CompanyLevelLeavePackage[]
   gradeLevels               GradeLevel[]
+  companyApprovers          CompanyApprover[]
 
   @@map("company_level")
 }
@@ -529,6 +534,7 @@ model JobTitle {
   modifiedAt             DateTime? @updatedAt @map("modified_at")
 
   companyTreeNodes CompanyTreeNode[]
+  employees        Employee[]
 
   @@map("job_title")
 }
@@ -704,8 +710,9 @@ model Announcement {
 
   company PayrollCompany @relation(fields: [companyId], references: [id])
 
-  resources         AnnouncementResource[]
-  targetGradeLevels GradeLevel[]
+  resources             AnnouncementResource[]
+  targetGradeLevels     GradeLevel[]
+  announcementReadEvent AnnouncementReadEvent[]
 
   @@fulltext([title, body])
   @@map("announcement")
@@ -774,4 +781,40 @@ model DepartmentLeadership {
   employee   Employee?  @relation(fields: [employeeId], references: [id])
 
   @@map("department_leadership")
+}
+
+enum ApproverType {
+  SUPERVISOR
+  DEPARMENT_HEAD
+  HR
+  MANAGER
+}
+
+model CompanyApprover {
+  id             Int          @id @default(autoincrement()) @db.UnsignedInt()
+  companyId      Int          @map("company_id") @db.UnsignedInt()
+  approverType   ApproverType @map("approver_type")
+  companyLevelId Int?         @map("company_level_id") @db.UnsignedInt()
+  level          Int          @db.UnsignedTinyInt()
+  createdAt      DateTime     @default(now()) @map("created_at")
+  modifiedAt     DateTime?    @updatedAt @map("modified_at")
+
+  company      PayrollCompany @relation(fields: [companyId], references: [id])
+  companyLevel CompanyLevel?  @relation(fields: [companyLevelId], references: [id])
+
+  @@unique([companyId, companyLevelId, level])
+  @@map("company_approver")
+}
+
+model AnnouncementReadEvent {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId     Int      @map("employee_id") @db.UnsignedInt()
+  announcementId Int      @map("announcement_id") @db.UnsignedInt()
+  timestamp      DateTime @default(now())
+
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  announcement Announcement @relation(fields: [announcementId], references: [id])
+
+  @@unique([employeeId, announcementId])
+  @@map("announcement_read_event")
 }
