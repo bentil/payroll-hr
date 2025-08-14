@@ -17,6 +17,12 @@ const leaveRequestTemplate = fs.readFileSync(
 const reimbursementRequestTemplate = fs.readFileSync(
   config.templates.reimbursementRequestPath, 'utf8'
 );
+const leaveResponseTemplate = fs.readFileSync(
+  config.templates.leaveResponsePath, 'utf8'
+);
+const reimbursementResponseTemplate = fs.readFileSync(
+  config.templates.reimbursementResponsePath, 'utf8'
+);
 const NOTIFICATION_TOPIC = config.topics.notifications;
 
 interface NotificationMessage {
@@ -55,6 +61,29 @@ interface ReimbursementRequestDetail {
   amount: Decimal;
 }
 
+interface LeaveResponseDetail {
+  requestId: number;
+  recipientEmail: string;
+  recipientFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  startDate: Date;
+  endDate: Date;
+  leaveTypeName: string;
+  responseMessage: string;
+}
+
+interface ReimbursementResponseDetail {
+  requestId: number;
+  recipientEmail: string;
+  recipientFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  currencyCode: string;
+  amount: Decimal;
+  responseMessage: string;
+}
+
 const _logger = rootLogger.child({ context: 'NotificationUtil' });
 const kafkaService = KafkaService.getInstance();
 
@@ -88,7 +117,7 @@ export async function sendLeaveRequestEmail(
       from: config.notifications.emailSender,
       subject: config.notifications.leaveRequestSubject,
       body: emailBody,
-      emailRecipients: [ data.approverEmail ],
+      emailRecipients: [data.approverEmail],
     }
   };
   logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
@@ -126,7 +155,84 @@ export async function sendReimbursementRequestEmail(
       from: config.notifications.emailSender,
       subject: config.notifications.reimbursementRequestSubject,
       body: emailBody,
-      emailRecipients: [ data.approverEmail ],
+      emailRecipients: [data.approverEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendLeaveResponseEmail(
+  data: LeaveResponseDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendLeaveResponseEmail' });
+  const link = new URL(config.actionUrls.leaveRequest);
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(leaveResponseTemplate, {
+    recipientFirstName: data.recipientFirstName,
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    startDate: dayjs(data.startDate).format('MMM DD YYYY'),
+    endDate: dayjs(data.endDate).format('MMM DD YYYY'),
+    leaveTypeName: data.leaveTypeName,
+    actionUrl: link,
+    responseMessage: data.responseMessage,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.leaveRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.recipientEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendReimbursementResponseEmail(
+  data: ReimbursementResponseDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendReimbursementResponseEmail' });
+  const link = new URL(config.actionUrls.reimbursementRequest);
+  // eslint-disable-next-line quotes
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(reimbursementResponseTemplate, {
+    recipientFirstName: data.recipientFirstName ?? 'User',
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    responseMessage: data.responseMessage,
+    currencyCode: data.currencyCode,
+    amount: data.amount,
+    actionUrl: link,
+    date: dayjs(new Date()).format('Do MMMM YYYY')
+  });
+
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.reimbursementRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.recipientEmail],
     }
   };
   logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);

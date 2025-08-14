@@ -108,7 +108,7 @@ export async function getAnnouncements(
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
 
   const { employeeId, category } = authUser;
-  const adminUser = category === UserCategory.HR;
+  const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
   let gradeLevelId: number | undefined, active: boolean | undefined;
   if (adminUser) {
     gradeLevelId = targetGradeLevelId;
@@ -179,9 +179,9 @@ export async function getAnnouncement(
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   const { employeeId, category } = authUser;
-  const adminUser = category === UserCategory.HR;
+  const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
   let gradeLevelId: number | undefined, active: boolean | undefined;
-  if (adminUser) {
+  if (!adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ? employee.majorGradeLevelId : undefined;
     active = true;
@@ -238,7 +238,7 @@ export async function searchAnnouncements(
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
 
   const { employeeId, category } = authUser;
-  const adminUser = category === UserCategory.HR;
+  const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
   let gradeLevelId: number | undefined, active: boolean | undefined;
   if (!adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);

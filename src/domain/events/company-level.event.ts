@@ -1,4 +1,4 @@
-import { CompanyLevelLeavePackage, LeavePackage } from '@prisma/client';
+import { CompanyLevelLeavePackage, GradeLevel, LeavePackage } from '@prisma/client';
 
 export type CompanyLevel = {
   id: number;
@@ -18,5 +18,6 @@ export interface CompanyLevelLeavePackageDto extends CompanyLevelLeavePackage {
 }
 
 export interface CompanyLevelEvent extends CompanyLevel {
-  companyLevelLeavePackages?: CompanyLevelLeavePackageDto[]
+  companyLevelLeavePackages?: CompanyLevelLeavePackageDto[],
+  gradeLevels?: GradeLevel[]
 }

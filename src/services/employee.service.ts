@@ -71,6 +71,7 @@ export async function getEmployee(
   id: number,
   options?: {
     includeCompany?: boolean;
+    includeMajorGradeLevel?: boolean;
   }
 ): Promise<EmployeeDto> {
   logger.debug('Getting details for Employee[%s]', id);
@@ -79,7 +80,14 @@ export async function getEmployee(
   try {
     employee = await repository.findOne(
       { id },
-      options?.includeCompany ? { company: true } : undefined
+      {
+        company: options?.includeCompany ? 
+          true 
+          : undefined,
+        majorGradeLevel: options?.includeMajorGradeLevel 
+          ? { include: { companyLevel: true } } 
+          : undefined,
+      }
     );
   } catch (err) {
     logger.warn(
@@ -202,4 +210,37 @@ export async function deleteEmployee(id: number): Promise<void> {
     logger.error('Deleting Employee[%] failed', id);
     throw new ServerError({ message: (err as Error).message, cause: err });
   }
+}
+
+export async function countEmployees(
+  options: {
+    gradeLevels?: number[],
+    companyId?: number,
+  }
+): Promise<number> {
+  const { gradeLevels, companyId } = options;
+  logger.debug('Getting count for Employee based on ', options);
+  let employeeCount: number;
+
+  try {
+    employeeCount = await repository.count(
+      {
+        companyId,
+        OR: gradeLevels ?
+          [
+            { majorGradeLevelId: { in: gradeLevels } },
+            { minorGradeLevelId: { in: gradeLevels } }
+          ]
+          : undefined
+      }
+    );
+  } catch (err) {
+    logger.warn(
+      'Getting Employee count failed'
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  logger.info('EmployeeCount retrieved!');
+  return employeeCount;
 }

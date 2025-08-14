@@ -7,7 +7,7 @@ import {
   UpdateLeavePlanDto,
 } from '../domain/dto/leave-plan.dto';
 import { RequestQueryMode } from '../domain/dto/leave-request.dto';
-import { AuthorizedUser } from '../domain/user.domain';
+import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
   FailedDependencyError,
   ForbiddenError, 
@@ -24,6 +24,7 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { countWorkingDays } from './holiday.service';
 import { validate } from './leave-type.service';
+import { EmployeeDto } from '../domain/events/employee.event';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -35,9 +36,11 @@ const events = {
 } as const;
 
 export async function addLeavePlan(
-  payload: CreateLeavePlanDto
+  payload: CreateLeavePlanDto,
+  authorizedUser: AuthorizedUser
 ): Promise<LeavePlanDto> {
   const { employeeId, leaveTypeId } = payload;
+  const { organizationId } = authorizedUser;
   
   // VALIDATION
   const validateData = await validate({ leaveTypeId, employeeId });
@@ -56,7 +59,8 @@ export async function addLeavePlan(
     startDate: payload.intendedStartDate, 
     endDate: payload.intendedReturnDate, 
     considerPublicHolidayAsWorkday,
-    considerWeekendAsWorkday 
+    considerWeekendAsWorkday,
+    organizationId
   });
   const creatData: leavePlanRepository.CreateLeavePlanObject = {
     employeeId: payload.employeeId,
@@ -111,7 +115,9 @@ export async function getLeavePlans(
   const skip = helpers.getSkip(page, take);
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
-    authorizedUser, { employeeId, queryMode }
+    authorizedUser, 
+    { employeeId, queryMode },
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   let result: ListWithPagination<LeavePlanDto>;
@@ -161,7 +167,8 @@ export async function getLeavePlan(
   let leavePlan: LeavePlanDto | null;
   const { scopedQuery } = await helpers.applySupervisionScopeToQuery(
     authorizedUser,
-    { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL }
+    { id, queryMode: options?.queryMode ?? RequestQueryMode.ALL },
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
   try {
@@ -197,11 +204,11 @@ export async function updateLeavePlan(
 ): Promise<LeavePlanDto> {
   const { leaveTypeId, ...remainingData } = updateData;
   const { intendedStartDate, intendedReturnDate } = remainingData;
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
 
   logger.debug('Validating LeavePlan[%s] & Employee[%s]', id, employeeId);
   let leavePlan: LeavePlanDto | null,
-    employee: employeeRepository.EmployeeDto | null;
+    employee: EmployeeDto | null;
   try {
     [leavePlan, employee] = await Promise.all([
       leavePlanRepository.findOne(
@@ -269,21 +276,24 @@ export async function updateLeavePlan(
       startDate: intendedStartDate, 
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (intendedStartDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: intendedStartDate, 
       endDate: leavePlan.intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   } else if (intendedReturnDate) {
     numberOfDays = await countWorkingDays({ 
       startDate: leavePlan.intendedStartDate, 
       endDate: intendedReturnDate, 
       considerPublicHolidayAsWorkday,
-      considerWeekendAsWorkday 
+      considerWeekendAsWorkday,
+      organizationId
     });
   }
   

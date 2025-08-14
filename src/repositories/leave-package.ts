@@ -1,7 +1,7 @@
 import { LeavePackage, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { CreateLeavePackageDto } from '../domain/dto/leave-package.dto';
+import { CreateLeavePackageDto, LeavePackageDto } from '../domain/dto/leave-package.dto';
 import { ListWithPagination, getListWithPagination } from './types';
 
 
@@ -49,8 +49,9 @@ export async function findOne(
 
 export async function findFirst(
   where: Prisma.LeavePackageWhereInput,
+  include?: Prisma.LeavePackageInclude
 ): Promise<LeavePackage | null> {
-  return prisma.leavePackage.findFirst({ where });
+  return prisma.leavePackage.findFirst({ where, include });
 }
 
 export async function find(params: {
@@ -59,7 +60,7 @@ export async function find(params: {
   include?: Prisma.LeavePackageInclude,
   where?: Prisma.LeavePackageWhereInput,
   orderBy?: Prisma.LeavePackageOrderByWithRelationAndSearchRelevanceInput
-}): Promise<ListWithPagination<LeavePackage>> {
+}): Promise<ListWithPagination<LeavePackageDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([

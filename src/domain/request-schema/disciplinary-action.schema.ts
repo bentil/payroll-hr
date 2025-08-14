@@ -108,3 +108,10 @@ export const SEARCH_DISCIPLINARY_ACTION_SCHEMA = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(DisciplinaryActionOrderBy)}`
     })
 });
+
+export const QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA = Joi.object({
+  'actionDate.gte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+  'actionDate.lte': joi.date().optional()
+    .format('YYYY-MM-DD').utc().raw(),
+});

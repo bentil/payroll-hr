@@ -6,6 +6,8 @@ import {
   UpdateDisciplinaryActionDto,
   SearchDisciplinaryActionDto,
   DisciplinaryActionDto,
+  DisciplinaryActionsReportResponse,
+  QueryDisciplinaryActionReportDto,
 } from '../domain/dto/disciplinary-action.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
@@ -358,4 +360,172 @@ export async function deleteDisciplinaryAction(id: number): Promise<void> {
   logger.debug(`Emitting ${events.deleted} event`);
   kafkaService.send(events.deleted, deletedAction);
   logger.info(`${events.deleted} event created successfully!`);
+}
+
+export async function getDisciplinaryActionsReport(
+  companyId: number,
+  query: QueryDisciplinaryActionReportDto,
+  authUser: AuthorizedUser  
+): Promise<DisciplinaryActionsReportResponse[]> {
+  const {
+    'actionDate.gte': actionDateGte,
+    'actionDate.lte': actionDateLte,
+  } = query;
+
+  const report: DisciplinaryActionsReportResponse[] = [];
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
+    authUser, 
+    {
+      companyId
+    }
+  );
+  let result: ListWithPagination<DisciplinaryActionDto>;
+  try {
+    logger.debug('Finding DisciplinaryAction(s) that matched query', { query });
+    result = await repository.find({
+      where: { 
+        ...scopedQuery, 
+        actionDate: {
+          gte: actionDateGte && new Date(actionDateGte),
+          lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
+        } 
+      },
+      include: { 
+        actionType: true, 
+        employee: true, 
+        grievanceReport: { include: { grievanceType: true } } 
+      }
+    });
+    logger.info(
+      'Found %d DisciplinaryAction(s) that matched query', result.data.length, { query }
+    );
+  } catch (err) {
+    logger.warn(
+      'Querying DisciplinaryAction with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  if (result.data.length > 0) {
+    result.data.forEach((disciplicaryAction) => {
+      if (disciplicaryAction.employee && disciplicaryAction.actionType) {
+        report.push({
+          disciplinaryAction: {
+            id: disciplicaryAction.id,
+            actionDate: disciplicaryAction.actionDate,
+            actionNumber: disciplicaryAction.actionNumber,
+            notes: disciplicaryAction.notes,
+          },
+          grievanceReport: disciplicaryAction.grievanceReport
+            ? {
+              id: disciplicaryAction.grievanceReport.id,
+              reportDate: disciplicaryAction.grievanceReport.reportDate,
+              reportNumber: disciplicaryAction.grievanceReport.reportNumber,
+              reportNote: disciplicaryAction.grievanceReport.note
+            }
+            : null,
+          employee: {
+            id: disciplicaryAction.employee.id,
+            employeeNuber: disciplicaryAction.employee.employeeNumber,
+            name: 
+              `${disciplicaryAction.employee.lastName}, ${disciplicaryAction.employee.firstName}`,
+          },
+          actionType: {
+            id: disciplicaryAction.actionType.id,
+            name: disciplicaryAction.actionType.name,
+            code: disciplicaryAction.actionType.code
+          }
+        });
+      }
+    });
+  }
+  return report;
+}
+
+export async function getDisciplinaryActionsForEmployeeReport(
+  companyId: number,
+  employeeId: number,
+  query: QueryDisciplinaryActionReportDto,
+  authUser: AuthorizedUser  
+): Promise<DisciplinaryActionsReportResponse[]> {
+  const {
+    'actionDate.gte': actionDateGte,
+    'actionDate.lte': actionDateLte,
+  } = query;
+
+  const report: DisciplinaryActionsReportResponse[] = [];
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(
+    authUser, 
+    {
+      companyId
+    }
+  );
+  let result: ListWithPagination<DisciplinaryActionDto>;
+  try {
+    logger.debug('Finding DisciplinaryAction(s) that matched query', { query });
+    result = await repository.find({
+      where: { 
+        ...scopedQuery,
+        employeeId, 
+        actionDate: {
+          gte: actionDateGte && new Date(actionDateGte),
+          lt: actionDateLte && dateutil.getDate(new Date(actionDateLte), { days: 1 }),
+        } 
+      },
+      include: { 
+        actionType: true, 
+        employee: true, 
+        grievanceReport: { include: { grievanceType: true } } 
+      }
+    });
+    logger.info(
+      'Found %d DisciplinaryAction(s) that matched query', result.data.length, { query }
+    );
+  } catch (err) {
+    logger.warn(
+      'Querying DisciplinaryAction with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  if (result.data.length > 0) {
+    result.data.forEach((disciplicaryAction) => {
+      if (disciplicaryAction.employee && disciplicaryAction.actionType) {
+        report.push({
+          disciplinaryAction: {
+            id: disciplicaryAction.id,
+            actionDate: disciplicaryAction.actionDate,
+            actionNumber: disciplicaryAction.actionNumber,
+            notes: disciplicaryAction.notes,
+          },
+          grievanceReport: disciplicaryAction.grievanceReport
+            ? {
+              id: disciplicaryAction.grievanceReport.id,
+              reportDate: disciplicaryAction.grievanceReport.reportDate,
+              reportNumber: disciplicaryAction.grievanceReport.reportNumber,
+              reportNote: disciplicaryAction.grievanceReport.note
+            }
+            : null,
+          employee: {
+            id: disciplicaryAction.employee.id,
+            employeeNuber: disciplicaryAction.employee.employeeNumber,
+            name: 
+              `${disciplicaryAction.employee.lastName}, ${disciplicaryAction.employee.firstName}`,
+          },
+          actionType: {
+            id: disciplicaryAction.actionType.id,
+            name: disciplicaryAction.actionType.name,
+            code: disciplicaryAction.actionType.code
+          }
+        });
+      }
+    });
+  }
+  return report;
 }

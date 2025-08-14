@@ -86,7 +86,12 @@ export async function updateLeavePackage(id: number,
     where: { id },
     data: updateLeavePackageDto,
     include: {
-      leaveType: true
+      leaveType: true,
+      companyLevelLeavePackages: {
+        include: {
+          companyLevel: true,
+        }
+      },
     }
   });
 
@@ -115,7 +120,12 @@ export async function getLeavePackages (
       take,
       where: { ...queryParam },
       include: {
-        leaveType: true
+        leaveType: true,
+        companyLevelLeavePackages: {
+          include: {
+            companyLevel: true,
+          }
+        },
       },
       orderBy: orderByInput
     });
@@ -191,11 +201,21 @@ export async function getApplicableLeavePackage(
     );
     if (employee?.majorGradeLevel?.companyLevelId) {
       const companyLevelId = employee?.majorGradeLevel?.companyLevelId;
-      leavePackage = await repository.findFirst({
-        leaveTypeId,
-        companyLevelLeavePackages:  { some: { companyLevelId } 
-        } 
-      });
+      leavePackage = await repository.findFirst(
+        {
+          leaveTypeId,
+          companyLevelLeavePackages:  { some: { companyLevelId } 
+          } 
+        },
+        {
+          leaveType: true,
+          companyLevelLeavePackages: {
+            include: {
+              companyLevel: true,
+            }
+          },
+        },
+      );
     } else {
       leavePackage = null;
     }
@@ -235,7 +255,12 @@ export async function searchLeavePackages(
       take,
       orderBy: orderByInput,
       include: {
-        leaveType: true
+        leaveType: true,
+        companyLevelLeavePackages: {
+          include: {
+            companyLevel: true,
+          }
+        },
       },
     }, searchParam);
 

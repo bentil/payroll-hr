@@ -1,11 +1,11 @@
 import { 
-  Employee,
   LEAVE_REQUEST_STATUS, 
   LeaveRequest, 
   LeaveResponse
 } from '@prisma/client';
 import config from '../../config';
 import { LeavePackageDto } from './leave-package.dto';
+import { EmployeeDto } from '../events/employee.event';
 
 export class CreateLeaveRequestDto {
   employeeId!: number;
@@ -63,7 +63,7 @@ export class LeaveResponseInputDto {
 }
 
 export interface LeaveRequestDto extends LeaveRequest {
-	employee?: Employee;
+	employee?: EmployeeDto;
 	leavePackage?: LeavePackageDto;
   leaveResponses?: LeaveResponse[];
 }
@@ -132,4 +132,83 @@ export class FilterLeaveRequestForExportDto {
   page: number = 1;
   limit: number = config.pagination.limit;
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+}
+export class QueryLeaveRequestForReportDto {
+  'startDate.gte'?: string;
+  'startDate.lte'?: string;
+  'returnDate.gte'?: string;
+  'returnDate.lte'?: string;
+  'createdAt.gte'?: string;
+  'createdAt.lte'?: string;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
+}
+
+export class LeaveTakenReportObject {
+  leaveType!: {
+    id: number,
+    code?: string,
+    name?: string,
+  };
+  department!:LeaveTakenReportDepartmentObject[];
+  numberOfDaysPerCompany!: number;
+}
+
+export class LeaveTakenReportDepartmentObject {
+  id?: number;
+  code?: string;
+  name?: string;
+  employees!: LeaveTakenReportEmployeeObject[];
+  numberOfDaysPerDepartment!: number;
+}
+
+export class LeaveTakenReportEmployeeObject {
+  id!: number;
+  employeeNumber!: string;
+  name!: string;
+  numberOfDays!: number;
+}
+
+export class LeaveTakenWithPackageReportObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  leavePackages!: EmployeeLeavePackageObject[];
+}
+
+export class EmployeeLeaveTakenReportObject {
+  leaveType!: LeaveTakenWithPackageReportObject[];
+  employee!: Omit <LeaveTakenReportEmployeeObject, 'numberOfDays'>;
+}
+
+export class EmployeeLeavePackageObject {
+  id!: number;
+  name!: string;
+  code!: string;
+  daysUsed!: number;
+  daysApprovedButNotUsed!: number;
+  daysPendingApproval!: number;
+  daysAvailable!: number;
+}
+
+export class LeaveBalanceReportObject {
+  employee!: {
+    id: number;
+    employeeNumber: string;
+    name: string;
+  };
+  leaveTypes!: LeaveBalanceReportLeaveTypeObject[];
+}
+
+export class LeaveBalanceReportLeaveTypeObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  leavePackages!: LeaveBalanceReportLeavePackageObject[];
+}
+
+export class LeaveBalanceReportLeavePackageObject {
+  id!: number;
+  code?: string;
+  name?: string;
+  remainingLeaveDays!: number;
 }
