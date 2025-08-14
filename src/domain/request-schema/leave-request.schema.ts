@@ -168,23 +168,17 @@ export const FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA = Joi.object({
 
 export const QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA = Joi.object({
   'startDate.gte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   'startDate.lte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   'returnDate.gte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   'returnDate.lte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   'createdAt.gte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   'createdAt.lte': joi.date().optional()
-    .format('YYYY-MM-DD').utc().raw()
-    .less(Date.now()),
+    .format('YYYY-MM-DD').utc().raw(),
   orderBy: Joi.string()
     .optional()
     .valid(...Object.values(LeaveRequestOrderBy))

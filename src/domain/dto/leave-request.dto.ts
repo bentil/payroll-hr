@@ -143,6 +143,11 @@ export class QueryLeaveRequestForReportDto {
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
 
+export type numberOfDaysObject = {
+  numberOfDaysUsed: number;
+  numberOfDaysNotUsed: number;
+}
+
 export class LeaveTakenReportObject {
   leaveType!: {
     id: number,
@@ -150,7 +155,7 @@ export class LeaveTakenReportObject {
     name?: string,
   };
   department!:LeaveTakenReportDepartmentObject[];
-  numberOfDaysPerCompany!: number;
+  numberOfDaysPerCompany!: numberOfDaysObject;
 }
 
 export class LeaveTakenReportDepartmentObject {
@@ -158,14 +163,14 @@ export class LeaveTakenReportDepartmentObject {
   code?: string;
   name?: string;
   employees!: LeaveTakenReportEmployeeObject[];
-  numberOfDaysPerDepartment!: number;
+  numberOfDaysPerDepartment!: numberOfDaysObject;
 }
 
 export class LeaveTakenReportEmployeeObject {
   id!: number;
   employeeNumber!: string;
   name!: string;
-  numberOfDays!: number;
+  numberOfDays!: numberOfDaysObject;
 }
 
 export class LeaveTakenWithPackageReportObject {
