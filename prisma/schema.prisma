@@ -802,7 +802,7 @@ model CompanyApprover {
   company      PayrollCompany @relation(fields: [companyId], references: [id])
   companyLevel CompanyLevel?  @relation(fields: [companyLevelId], references: [id])
 
-  @@unique([companyId, companyLevelId, level])
+  @@unique([companyId, companyLevelId, level, approverType])
   @@map("company_approver")
 }
 
