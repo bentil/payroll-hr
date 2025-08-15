@@ -30,11 +30,20 @@ export interface LeaveTakenReportData {
         id: number;
         employeeNumber: string;
         name: string;
-        numberOfDays: number;
+        numberOfDays: {
+          numberOfDaysUsed: number;
+          numberOfDaysNotUsed: number;
+        };
       }>;
-      numberOfDaysPerDepartment: number;
+      numberOfDaysPerDepartment: {
+        numberOfDaysUsed: number;
+        numberOfDaysNotUsed: number;
+      };
     }>;
-    numberOfDaysPerCompany: number;
+    numberOfDaysPerCompany: {
+      numberOfDaysUsed: number;
+      numberOfDaysNotUsed: number;
+    };
   }>;
 }
 
@@ -273,7 +282,7 @@ export class PdfGenerationService {
       let totalDays = 0;
 
       reportData.reportData.forEach(leaveTypeData => {
-        totalDays += leaveTypeData.numberOfDaysPerCompany;
+        totalDays += leaveTypeData.numberOfDaysPerCompany.numberOfDaysUsed + leaveTypeData.numberOfDaysPerCompany.numberOfDaysNotUsed;
         leaveTypeData.department.forEach(dept => {
           if (dept.id !== undefined) {
             allDepartments.add(dept.id);
