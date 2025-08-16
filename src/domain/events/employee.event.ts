@@ -40,3 +40,8 @@ export interface EmployeeDto extends Employee {
   department?: Department;
   majorGradeLevel?: GradeLevel,
 }
+
+export class QueryEmployeesNoPaginationDto {
+  gradeLevels?: number[];
+  companyId?: number;
+}

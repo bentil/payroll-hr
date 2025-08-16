@@ -362,13 +362,15 @@ export class AnnouncementV1Controller {
 
     const pdfResult = await PdfGenerationService.generateAnnouncementReadEventsPdf({
       announcementTitle: announcement.title,
-      publishDate: announcement.publishDate ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) : 'Not published',
+      publishDate: announcement.publishDate 
+        ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) 
+        : 'Not published',
       companyName: announcement.company?.name || 'N/A',
       employees: employeeData
     });

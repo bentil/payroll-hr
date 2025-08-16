@@ -1,5 +1,9 @@
 import {  Employee } from '@prisma/client';
-import { EmployeeDto, EmployeeEvent } from '../domain/events/employee.event';
+import { 
+  EmployeeDto, 
+  EmployeeEvent, 
+  QueryEmployeesNoPaginationDto 
+} from '../domain/events/employee.event';
 import { AuthorizedUser } from '../domain/user.domain';
 import {
   ForbiddenError,
@@ -213,13 +217,10 @@ export async function deleteEmployee(id: number): Promise<void> {
 }
 
 export async function countEmployees(
-  options: {
-    gradeLevels?: number[],
-    companyId?: number,
-  }
+  query: QueryEmployeesNoPaginationDto
 ): Promise<number> {
-  const { gradeLevels, companyId } = options;
-  logger.debug('Getting count for Employee based on ', options);
+  const { gradeLevels, companyId } = query;
+  logger.debug('Getting count for Employee based on ', query);
   let employeeCount: number;
 
   try {

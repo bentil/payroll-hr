@@ -3,11 +3,10 @@ import {
   AnnouncementReadEventDto,
   AnnouncementReadEventResponseDto,
   CreateAnnouncementReadEventDto,
-  QueryAnnouncementReadEventSummaryDto,
   ReadEventSummmaryDto,
 } from '../domain/dto/announcement-read-event.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
-import { ForbiddenError, ServerError } from '../errors/http-errors';
+import { ServerError } from '../errors/http-errors';
 import * as repository from '../repositories/announcement-read-event.repository';
 import * as announcementRepository from '../repositories/announcement.repository';
 import { ListWithPagination } from '../repositories/types';
@@ -17,6 +16,8 @@ import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
+import { QueryAnnouncementDto } from '../domain/dto/announcement.dto';
+import { QueryEmployeesNoPaginationDto } from '../domain/events/employee.event';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -69,9 +70,42 @@ export async function addAnnouncementReadEvent(
 export async function getAnnouncementReadEventSummary(
   announcementId: number,
   authUser: AuthorizedUser,
-  query?: QueryAnnouncementReadEventSummaryDto
-): Promise<AnnouncementReadEventResponseDto> {
-  logger.debug('Getting details for Announcement[%s]', announcementId);
+): Promise<AnnouncementReadEventResponseDto> {  
+  const announcement = await announcementService.getAnnouncement(announcementId, authUser);
+  const targetGradeLevels = announcement.targetGradeLevels;
+  const targetGradeLevelIds: number[] | undefined = [];
+  targetGradeLevels?.forEach((gradeLevel) => {
+    targetGradeLevelIds.push(gradeLevel.id);
+  });
+  let countEmployeesObject: QueryEmployeesNoPaginationDto;
+  if (announcement.public === true) {
+    countEmployeesObject = {
+      gradeLevels: targetGradeLevelIds,
+      companyId: announcement.companyId
+    };
+  } else {
+    countEmployeesObject = { companyId: announcement.companyId };
+  }
+
+  const recipientCount = await employeeService.countEmployees(countEmployeesObject);
+  const readCount = await repository.count({ 
+    announcementId,
+    employee: { ...countEmployeesObject }
+  });
+  const readRatio: Decimal = new Decimal((readCount/recipientCount)*100);
+  return {
+    recipientCount,
+    readCount,
+    readRatio,
+    announcement
+  }; 
+}
+
+export async function getAnnouncementReadEventSummaryList(
+  query: Omit <QueryAnnouncementDto, 'orderBy'>,
+  authUser: AuthorizedUser,
+): Promise<AnnouncementReadEventResponseDto[]> {
+  const { companyId } = query;
   const publishDateGte = query ? query?.['publishDate.gte'] : undefined;
   const publishDateLte = query ? query?.['publishDate.lte'] : undefined;
   const { employeeId, category } = authUser;
@@ -85,26 +119,10 @@ export async function getAnnouncementReadEventSummary(
     gradeLevelId = employee.majorGradeLevelId ?? undefined;
     active = true;
   }
-  const announcement = await announcementService.getAnnouncement(announcementId, authUser);
-  const targetGradeLevels = announcement.targetGradeLevels;
-  const targetGradeLevelIds: number[] | undefined = [];
-  targetGradeLevels?.forEach((gradeLevel) => {
-    targetGradeLevelIds.push(gradeLevel.id);
-  });
-  let countEmployeesObject;
-  if (targetGradeLevelIds.length > 0) {
-    countEmployeesObject = {
-      gradeLevels: targetGradeLevelIds,
-      companyId: announcement.companyId
-    };
-  } else {
-    countEmployeesObject = { companyId: announcement.companyId };
-  }
-
-  const recipientCount = await employeeService.countEmployees(countEmployeesObject);
-  const readCount = await repository.count({ 
-    announcementId,
-    announcement: {
+  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
+  const announcements = await announcementRepository.find({
+    where: {
+      ...scopedQuery,
       companyId: query?.companyId,
       OR: (query?.public === undefined && gradeLevelId) ? [
         { targetGradeLevels: { some: { id: gradeLevelId } } },
@@ -120,35 +138,10 @@ export async function getAnnouncementReadEventSummary(
       } 
     }
   });
-  const readRatio: Decimal = new Decimal((readCount/recipientCount)*100);
-  return {
-    recipientCount,
-    readCount,
-    readRatio,
-    announcement
-  }; 
-}
-
-export async function getAnnouncementReadEventSummaryList(
-  query: QueryAnnouncementReadEventSummaryDto,
-  authUser: AuthorizedUser,
-): Promise<AnnouncementReadEventResponseDto[]> {
-  const { companyId } = query;
-  const { companyIds } = authUser;
-  if (!companyIds.includes(companyId)) {
-    logger.warn('You do not belong to Company[%s]. You cant perform this action', companyId);
-    throw new ForbiddenError({
-      message: 'You are not allowed to perform this action'
-    }); 
-  }
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
-  const announcements = await announcementRepository.find({
-    where: scopedQuery
-  });
   const announcementSummaryList: AnnouncementReadEventResponseDto[] = [];
   for (const announcement of announcements.data) {
     const summary = await getAnnouncementReadEventSummary(
-      announcement.id, authUser, query
+      announcement.id, authUser
     );
     announcementSummaryList.push(summary);
   }

@@ -1,8 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { AnnouncementReadEvent } from '@prisma/client';
-import config from '../../config';
 import { EmployeeDto } from '../events/employee.event';
-import { AnnouncementDto } from './announcement.dto';
+import { AnnouncementDto, QueryAnnouncementDto } from './announcement.dto';
 
 export class CreateAnnouncementReadEventDto {
   employeeId!: number;
@@ -32,17 +31,8 @@ export class ReadEventSummmaryDto {
   timestamp!: Date;
 }
 
-export class QueryAnnouncementReadEventSummaryDto {
-  'publishDate.gte'?: string;
-  'publishDate.lte'?: string;
-  companyId!: number;
-  active?: boolean;
-  public?: boolean;
-  targetGradeLevelId?: number;
-  page: number = 1;
-  limit: number = config.pagination.limit;
-  orderBy: AnnouncementReadEventOrderBy = AnnouncementReadEventOrderBy.TIMESTAMP_DESC;
-}
+export interface QueryAnnouncementReadEventSummaryDto 
+  extends Omit<QueryAnnouncementDto, 'orderBy'> {}
 
 export enum AnnouncementReadEventOrderBy {
   TIMESTAMP_ASC = 'timestamp:asc',

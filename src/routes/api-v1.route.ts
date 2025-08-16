@@ -155,7 +155,7 @@ import {
 } from '../domain/request-schema/company-approver.schema';
 import { 
   CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA, 
-  QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA
+  QUERY_READ_EVENTS_SUMMARY_SCHEMA
 } from '../domain/request-schema/announcement-read-event.schema';
 
 const router = Router();
@@ -954,6 +954,46 @@ router.delete(
   announcementV1Controller.deleteAnnouncement
 );
 
+// ### ANNOUNCEMENT-READ-EVENT ROUTES
+
+router.post(
+  '/announcements/:id/read-events',
+  authenticateUser({ isEmployee: true }),
+  validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
+  announcementV1Controller.addNewAnnouncementReadEvent
+);
+
+router.get(
+  '/announcements/read-events/summary',
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  validateRequestQuery(QUERY_READ_EVENTS_SUMMARY_SCHEMA),
+  announcementV1Controller.getAnnouncementReadEventSummaryList
+);
+
+router.get(
+  '/announcements/:id/read-events/summary',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getAnnouncementReadEventSummary
+);
+
+router.get(
+  '/announcements/:id/read-events/details',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetails
+);
+
+router.get(
+  '/announcements/:id/read-events/details/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetailsPdf
+);
+
 // ### EMPLOYEE APPROVER ROUTES
 
 router.post(
@@ -1143,49 +1183,6 @@ router.delete(
     permissions: 'company_configs:hierarchy:write'
   }),
   companyApproverV1Controller.deleteCompanyApprover
-);
-
-// ### ANNOUNCEMENT-READ-EVENT ROUTES
-
-router.post(
-  '/announcements/:id/read-events',
-  authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-    permissions: 'announcements:write'
-  }),
-  validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
-  announcementV1Controller.addNewAnnouncementReadEvent
-);
-
-router.get(
-  '/announcements/read-events/summary',
-  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
-  validateRequestQuery(QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA),
-  announcementV1Controller.getAnnouncementReadEventSummaryList
-);
-
-router.get(
-  '/announcements/:id/read-events/summary',
-  authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-  }),
-  announcementV1Controller.getAnnouncementReadEventSummary
-);
-
-router.get(
-  '/announcements/:id/read-events/details',
-  authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-  }),
-  announcementV1Controller.getReadEventDetails
-);
-
-router.get(
-  '/announcements/:id/read-events/details/pdf',
-  authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-  }),
-  announcementV1Controller.getReadEventDetailsPdf
 );
 
 export default router;
