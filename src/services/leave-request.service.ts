@@ -981,7 +981,7 @@ export async function uploadLeaveRequests(
 
   try {
     const collectedRows: UploadLeaveRequestViaSpreadsheetDto[] = [];
-    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer);
+    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer as any);
     const worksheet = sheet.getWorksheet('leave_requests');
     if (!worksheet) {
       throw new NotFoundError({
