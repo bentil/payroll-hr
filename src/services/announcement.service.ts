@@ -454,13 +454,14 @@ export async function getAnnouncementRecipientCount(
       message: 'Announcement does not exist'
     });
   }
-  const targetGradeLevels = announcement.targetGradeLevels;
+  const { public: _public, targetGradeLevels } = announcement;
   const targetGradeLevelIds: number[] | undefined = [];
   targetGradeLevels?.forEach((gradeLevel) => {
     targetGradeLevelIds.push(gradeLevel.id);
   });
+  
   let countEmployeesObject;
-  if (announcement.public !== true) {
+  if (!_public) {
     countEmployeesObject = {
       gradeLevels: targetGradeLevelIds,
       companyId: announcement.companyId
@@ -470,6 +471,6 @@ export async function getAnnouncementRecipientCount(
   }
   logger.debug('Getting Announcement[%s] recipient count', announcementId);
   const count = await employeeService.countEmployees(countEmployeesObject);
-  logger.info('Announcement[%s] Resource recipient count retrieved successfully!', announcementId);
+  logger.info('Announcement[%s] recipient count retrieved successfully!', announcementId);
   return count;
 }
