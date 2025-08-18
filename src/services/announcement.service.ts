@@ -1,4 +1,4 @@
-import { Announcement } from '@prisma/client';
+import { Announcement, Prisma } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementDto,
@@ -445,7 +445,7 @@ export async function getAnnouncementRecipientCount(
   logger.debug('Getting Announcement[%s]', announcementId);
   const announcement = await repository.findOne(
     { id: announcementId },
-    { company : true }
+    { targetGradeLevels: true }
   );
   if (!announcement) {
     logger.warn('Announcement[%s] does not exist', announcementId);
@@ -455,15 +455,14 @@ export async function getAnnouncementRecipientCount(
     });
   }
   const { public: _public, targetGradeLevels } = announcement;
-  const targetGradeLevelIds: number[] | undefined = [];
-  targetGradeLevels?.forEach((gradeLevel) => {
-    targetGradeLevelIds.push(gradeLevel.id);
-  });
+  const targetGradeLevelIds = targetGradeLevels?.map((gradeLevel) => gradeLevel.id);
   
-  let countEmployeesObject;
+  let countEmployeesObject: Prisma.EmployeeWhereInput;
   if (!_public) {
     countEmployeesObject = {
-      gradeLevels: targetGradeLevelIds,
+      majorGradeLevelId: targetGradeLevelIds ?
+        { in: targetGradeLevelIds }
+        : undefined,
       companyId: announcement.companyId
     };
   } else {

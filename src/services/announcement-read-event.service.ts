@@ -18,7 +18,6 @@ import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
 
-
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementReadEventService' });
 const events = {
@@ -96,22 +95,8 @@ export async function getAnnouncementReadEventSummary(
     active = true;
   }
   const announcement = await announcementService.getAnnouncement(announcementId, authUser);
-  const targetGradeLevels = announcement.targetGradeLevels;
-  const targetGradeLevelIds: number[] | undefined = [];
-  targetGradeLevels?.forEach((gradeLevel) => {
-    targetGradeLevelIds.push(gradeLevel.id);
-  });
-  let countEmployeesObject;
-  if (targetGradeLevelIds.length > 0) {
-    countEmployeesObject = {
-      gradeLevels: targetGradeLevelIds,
-      companyId: announcement.companyId
-    };
-  } else {
-    countEmployeesObject = { companyId: announcement.companyId };
-  }
 
-  const recipientCount = await employeeService.countEmployees(countEmployeesObject);
+  const recipientCount = await announcementService.getAnnouncementRecipientCount(announcementId);
   const readCount = await repository.count({ 
     announcementId,
     announcement: {
