@@ -381,9 +381,9 @@
                 <thead>
                     <tr>
                         <th style="width: 25%;">Leave Package</th>
-                        <th style="width: 15%;">Days Used</th>
-                        <th style="width: 20%;">Days Approved But Not Used</th>
-                        <th style="width: 20%;">Days Pending Approval</th>
+                        <th style="width: 15%;">Days Approved</th>
+                        <th style="width: 20%;">Days Used</th>
+                        <th style="width: 20%;">Days Pending</th>
                         <th style="width: 20%;">Days Available</th>
                     </tr>
                 </thead>
@@ -396,8 +396,8 @@
                             <div class="package-code">({{this.code}})</div>
                             {{/if}}
                         </td>
-                        <td class="days-used">{{this.daysUsed}}</td>
                         <td class="days-approved">{{this.daysApprovedButNotUsed}}</td>
+                        <td class="days-used">{{this.daysUsed}}</td>
                         <td class="days-pending">{{this.daysPendingApproval}}</td>
                         <td class="days-available">{{this.daysAvailable}}</td>
                     </tr>
@@ -405,8 +405,8 @@
                     {{#if this.showTotals}}
                     <tr class="totals-row">
                         <td><strong>Total for {{this.name}}</strong></td>
-                        <td class="days-used"><strong>{{this.totalUsed}}</strong></td>
                         <td class="days-approved"><strong>{{this.totalApproved}}</strong></td>
+                        <td class="days-used"><strong>{{this.totalUsed}}</strong></td>
                         <td class="days-pending"><strong>{{this.totalPending}}</strong></td>
                         <td class="days-available"><strong>{{this.totalAvailable}}</strong></td>
                     </tr>
@@ -426,12 +426,12 @@
             <h4>Overall Leave Summary</h4>
             <div class="totals-grid">
                 <div class="total-item">
-                    <div class="total-value">{{grandTotalUsed}}</div>
-                    <div class="total-label">Total Days Used</div>
-                </div>
-                <div class="total-item">
                     <div class="total-value">{{grandTotalApproved}}</div>
                     <div class="total-label">Total Days Approved</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-value">{{grandTotalUsed}}</div>
+                    <div class="total-label">Total Days Used</div>
                 </div>
                 <div class="total-item">
                     <div class="total-value">{{grandTotalPending}}</div>
