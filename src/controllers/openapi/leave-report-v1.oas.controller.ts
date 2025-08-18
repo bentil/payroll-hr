@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import {
   Get,
   Path,
@@ -116,8 +117,12 @@ export class LeaveReportV1Controller {
     // Format report period from query parameters
     let reportPeriod = 'All Time';
     if (query['startDate.gte'] || query['startDate.lte']) {
-      const startDate = query['startDate.gte'] ? new Date(query['startDate.gte']).toLocaleDateString() : 'Beginning';
-      const endDate = query['startDate.lte'] ? new Date(query['startDate.lte']).toLocaleDateString() : 'Present';
+      const startDate = query['startDate.gte'] 
+        ? new Date(query['startDate.gte']).toLocaleDateString() 
+        : 'Beginning';
+      const endDate = query['startDate.lte'] 
+        ? new Date(query['startDate.lte']).toLocaleDateString() 
+        : 'Present';
       reportPeriod = `${startDate} - ${endDate}`;
     }
 
@@ -148,11 +153,14 @@ export class LeaveReportV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<{}>> {
     this.logger.debug(
-      'Received request to generate PDF for employee leaves taken report for Employee[%s] in Company[%s]', 
+      'Received request to generate PDF for employee leaves' +
+      ' taken report for Employee[%s] in Company[%s]', 
       employeeId, companyId
     );
     
-    const reportData = await service.getEmployeeLeavesTakenReport(companyId, employeeId, query, req.user!);
+    const reportData = await service.getEmployeeLeavesTakenReport(
+      companyId, employeeId, query, req.user!
+    );
     
     // Get company information
     const company = await payrollCompanyService.getPayrollCompany(companyId);
@@ -161,8 +169,12 @@ export class LeaveReportV1Controller {
     // Format report period from query parameters
     let reportPeriod = 'All Time';
     if (query['startDate.gte'] || query['startDate.lte']) {
-      const startDate = query['startDate.gte'] ? new Date(query['startDate.gte']).toLocaleDateString() : 'Beginning';
-      const endDate = query['startDate.lte'] ? new Date(query['startDate.lte']).toLocaleDateString() : 'Present';
+      const startDate = query['startDate.gte'] 
+        ? new Date(query['startDate.gte']).toLocaleDateString() 
+        : 'Beginning';
+      const endDate = query['startDate.lte'] 
+        ? new Date(query['startDate.lte']).toLocaleDateString() 
+        : 'Present';
       reportPeriod = `${startDate} - ${endDate}`;
     }
 

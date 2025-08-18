@@ -24,7 +24,7 @@ export default function validate(sheetName: string) {
       }
 
       const workbook = new Excel.Workbook();
-      const sheet = await workbook.xlsx.load(file.buffer);
+      const sheet = await workbook.xlsx.load(file.buffer as any);
       const worksheet = sheet.getWorksheet(sheetName);
       if (worksheet == null) {
         throw new InputError({

@@ -478,6 +478,7 @@ export async function getEmployeeApproversWithDefaults(params: {
 
   // Assigning company approvers if no employee approver exists at level
   for (const x of unavailableLevels) {
+    console.log('leve ', x);
     logger.debug('No EmployeeApprover at Level %s. Getting CompanyApprover', x);
     let companyApprover: CompanyApprover | null;
     try {
@@ -537,7 +538,6 @@ export async function getEmployeeApproversWithDefaults(params: {
           });
         }
       } else if (companyApprover.approverType === ApproverType.MANAGER) {
-        let data;
         const gradeLevelIds: number[] = [];
         // Find the parent companyLevelId for employees companyLevel
         try {
@@ -550,10 +550,14 @@ export async function getEmployeeApproversWithDefaults(params: {
           // If companyLevel has a parent companyLevelI, find all employees within this level
           if (companyLevel && companyLevel.parentId) {
             const gradeLevel = await gradeLevelRepository.find({
-              where: { companyLevelId: companyLevel.parentId },
+              where: { 
+                companyId: companyLevel.companyId ? companyLevel.companyId : undefined,
+                companyLevelId: companyLevel.parentId 
+              },
             });
             if (gradeLevel.data.length > 0) {
-              const gradeLevelIds = gradeLevel.data.map(gl => gl.id);
+              gradeLevel.data.map(gl => gradeLevelIds.push(gl.id));
+              console.log(gradeLevelIds);
               // Get employees with gradeLevelId in gradeLevelIds
               const employees = await employeeRepository.find({
                 where: { 
@@ -572,12 +576,8 @@ export async function getEmployeeApproversWithDefaults(params: {
                     });
                   }
                 });
+                console.log('amp', employeeApproverList);
               }
-            }
-            if (gradeLevelIds.length > 0) {
-              data = await employeeRepository.findFirst(
-                { majorGradeLevelId: { in: gradeLevelIds } },
-              );
             }
           }
         } catch (err) {
@@ -585,15 +585,6 @@ export async function getEmployeeApproversWithDefaults(params: {
             throw err;
           }
           continue;
-        }
-        if (data && (data.id !== employeeId)) {
-          employeeApproverList.push({
-            employeeId,
-            approverId: data.id,
-            level: x,
-            employee: employee,
-            approver: data
-          });
         }
       } else if (companyApprover.approverType === ApproverType.HR) {
         try {
@@ -682,6 +673,7 @@ export async function getEmployeeApproversWithDefaults(params: {
 
   
   logger.info('Employee[%s] Approver(s) retrieved!', employeeId);
+  console.log('rest', employeeApproverList);
 
   return employeeApproverList;
 }

@@ -981,7 +981,7 @@ export async function uploadLeaveRequests(
 
   try {
     const collectedRows: UploadLeaveRequestViaSpreadsheetDto[] = [];
-    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer);
+    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer as any);
     const worksheet = sheet.getWorksheet('leave_requests');
     if (!worksheet) {
       throw new NotFoundError({
@@ -1449,6 +1449,7 @@ export async function getLeavesTakenReport(
   query: QueryLeaveRequestForReportDto,
   authorizedUser: AuthorizedUser
 ): Promise<LeaveTakenReportObject[]> {
+  const { organizationId } = authorizedUser;
   const {
     'createdAt.gte': createdAtGte,
     'createdAt.lte': createdAtLte,
@@ -1458,6 +1459,8 @@ export async function getLeavesTakenReport(
     'returnDate.lte': returnDateLte,
     orderBy
   } = query;
+  //validate company 
+  const company = await companyService.validatePayrollCompany(companyId);
   const orderByInput = helpers.getOrderByInput(orderBy);
   await helpers.applyCompanyScopeToQuery(authorizedUser, { companyId });
   // Get departments in the company and list of all the ids
@@ -1545,7 +1548,8 @@ export async function getLeavesTakenReport(
                   include: {
                     department: true,
                   } 
-                }
+                },
+                leavePackage: true
               }
             });
             logger.info(
@@ -1562,40 +1566,78 @@ export async function getLeavesTakenReport(
               cause: err
             });
           }
-          const employeeSummary: LeaveTakenReportEmployeeObject [] = [];
+          let employeeSummary: LeaveTakenReportEmployeeObject [] = [];
           if (result.data.length > 0) {
-            // clear duplicate employeeIds 
-            const cleanLeaveRequestList = Object.values(
-              result.data.reduce((acc, curr) => {
-                if (!acc[curr.employeeId]) {
-                  acc[curr.employeeId] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
-                } else {
-                  acc[curr.employeeId].numberOfDays = (
-                    acc[curr.employeeId].numberOfDays ?? 0) + (curr.numberOfDays ?? 0
-                  );
-                }
-                return acc;
-              }, {} as Record<number, LeaveRequestDto>)
-            );
-            cleanLeaveRequestList.forEach((req) => {
-              employeeSummary.push({
+            // Get employee summary for each Employees
+            const today = new Date();
+            const nextDay = new Date(today);
+            const summary: LeaveTakenReportEmployeeObject [] = [];
+            nextDay.setHours(0, 0, 0, 0);
+            nextDay.setDate(today.getDate() + 1);
+            for (const req of result.data) {
+              let numberOfDaysNotUsed = 0, numberOfDaysUsed = 0;
+              if (req.returnDate <= new Date())
+                numberOfDaysUsed = req.numberOfDays!;
+              else if (req.startDate > today) 
+                numberOfDaysNotUsed = req.numberOfDays!;
+              else if (req.startDate < today && req.returnDate > today) {
+                const daysLeft = await countWorkingDays({ 
+                  startDate: nextDay, 
+                  endDate: req.returnDate, 
+                  considerPublicHolidayAsWorkday: company.considerPublicHolidayAsWorkday,
+                  considerWeekendAsWorkday: company.considerWeekendAsWorkday,
+                  organizationId
+                });
+                const daysElapsed = req.numberOfDays! - daysLeft;
+                numberOfDaysUsed += daysElapsed;
+                numberOfDaysNotUsed = daysLeft;
+              }
+              summary.push({
                 id: req.employee!.id,
                 employeeNumber: req.employee!.employeeNumber,
                 name: `${req.employee!.lastName} ${req.employee!.firstName}`,
-                numberOfDays: req.numberOfDays ?? 0
+                numberOfDays: {
+                  numberOfDaysUsed,
+                  numberOfDaysNotUsed
+                }
               });
-            });
+            }
+            
+            // Clear duplicate requests and add number of days for each employee
+            employeeSummary = Object.values(
+              summary.reduce((acc, curr) => {
+                if (!acc[curr.id]) {
+                  acc[curr.id] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
+                } else {
+                  acc[curr.id].numberOfDays.numberOfDaysNotUsed = (
+                    acc[curr.id].numberOfDays.numberOfDaysNotUsed ?? 0) 
+                    + (curr.numberOfDays.numberOfDaysNotUsed ?? 0
+                    );
+                  acc[curr.id].numberOfDays.numberOfDaysUsed = (
+                    acc[curr.id].numberOfDays.numberOfDaysUsed ?? 0) 
+                    + (curr.numberOfDays.numberOfDaysUsed ?? 0
+                    );
+                }
+                return acc;
+              }, {} as Record<number, LeaveTakenReportEmployeeObject>)
+            );
           }
           if (employeeSummary.length > 0) {
-            let numberOfDaysPerDepartment = 0;
-            employeeSummary.forEach((empSumm) => numberOfDaysPerDepartment += empSumm.numberOfDays);
+            let numberOfDaysUsed = 0, numberOfDaysNotUsed = 0;
+            employeeSummary.forEach((empSumm) => {
+              numberOfDaysUsed += empSumm.numberOfDays.numberOfDaysUsed;
+              numberOfDaysNotUsed += empSumm.numberOfDays.numberOfDaysNotUsed;
+            });
 
             deptSummary.push({
               id: dep.id,
               code: dep.code,
               name: dep.name,
               employees: employeeSummary,
-              numberOfDaysPerDepartment
+              numberOfDaysPerDepartment: {
+                numberOfDaysNotUsed,
+                numberOfDaysUsed
+              }
             });
           }
         }
@@ -1650,46 +1692,87 @@ export async function getLeavesTakenReport(
             cause: err
           });
         }
-        const employeeNoDepartmentSummary: LeaveTakenReportEmployeeObject [] = [];
+        let employeeNoDepartmentSummary: LeaveTakenReportEmployeeObject[] = [];
         if (noDepartmentResult.data.length > 0) {
-          // clear duplicate employeeIds 
-          const cleanLeaveRequestList = Object.values(
-            noDepartmentResult.data.reduce((acc, curr) => {
-              if (!acc[curr.employeeId]) {
-                acc[curr.employeeId] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
-              } else {
-                acc[curr.employeeId].numberOfDays = (
-                  acc[curr.employeeId].numberOfDays ?? 0) + (curr.numberOfDays ?? 0
-                );
-              }
-              return acc;
-            }, {} as Record<number, LeaveRequestDto>)
-          );
-          cleanLeaveRequestList.forEach((req) => {
-            employeeNoDepartmentSummary.push({
+          const today = new Date();
+          const nextDay = new Date(today);
+          nextDay.setHours(0, 0, 0, 0);
+          nextDay.setDate(today.getDate() + 1);
+          // Get employee summary for leaveRequests for employees without department
+          const employeeSummary: LeaveTakenReportEmployeeObject [] = [];
+          for (const req of noDepartmentResult.data) {
+            let numberOfDaysNotUsed = 0, numberOfDaysUsed = 0;
+            if (req.returnDate <= new Date())
+              numberOfDaysUsed = req.numberOfDays!;
+            else if (req.startDate > today) 
+              numberOfDaysNotUsed = req.numberOfDays!;
+            else if (req.startDate < today && req.returnDate > today) {
+              const daysLeft = await countWorkingDays({ 
+                startDate: nextDay, 
+                endDate: req.returnDate, 
+                considerPublicHolidayAsWorkday: company.considerPublicHolidayAsWorkday,
+                considerWeekendAsWorkday: company.considerWeekendAsWorkday,
+                organizationId
+              });
+              const daysElapsed = req.numberOfDays! - daysLeft;
+              numberOfDaysUsed += daysElapsed;
+              numberOfDaysNotUsed = daysLeft;
+            }
+            employeeSummary.push({
               id: req.employee!.id,
               employeeNumber: req.employee!.employeeNumber,
               name: `${req.employee!.lastName} ${req.employee!.firstName}`,
-              numberOfDays: req.numberOfDays ?? 0
+              numberOfDays: {
+                numberOfDaysUsed,
+                numberOfDaysNotUsed
+              }
             });
-          });
+          }
+          
+          // Clear duplicates by adding individual employee number of days values
+          employeeNoDepartmentSummary = Object.values(
+            employeeSummary.reduce((acc, curr) => {
+              if (!acc[curr.id]) {
+                acc[curr.id] = { ...curr, numberOfDays: curr.numberOfDays ?? 0 };
+              } else {
+                acc[curr.id].numberOfDays.numberOfDaysNotUsed = (
+                  acc[curr.id].numberOfDays.numberOfDaysNotUsed ?? 0) 
+                  + (curr.numberOfDays.numberOfDaysNotUsed ?? 0
+                  );
+                acc[curr.id].numberOfDays.numberOfDaysUsed = (
+                  acc[curr.id].numberOfDays.numberOfDaysUsed ?? 0) 
+                  + (curr.numberOfDays.numberOfDaysUsed ?? 0
+                  );
+              }
+              return acc;
+            }, {} as Record<number, LeaveTakenReportEmployeeObject>)
+          );
         }
         if (employeeNoDepartmentSummary.length > 0) {
-          let numberOfDaysPerDepartment = 0;
+          let numberOfDaysNotUsed = 0, numberOfDaysUsed = 0;
           employeeNoDepartmentSummary.forEach(
-            (empSumm) => numberOfDaysPerDepartment += empSumm.numberOfDays
+            (empSumm) => {
+              numberOfDaysUsed += empSumm.numberOfDays.numberOfDaysUsed;
+              numberOfDaysNotUsed += empSumm.numberOfDays.numberOfDaysNotUsed;
+            }
           );
 
           deptSummary.push({
             code: 'NODEPARTMENT',
             name: 'No Department',
             employees: employeeNoDepartmentSummary,
-            numberOfDaysPerDepartment
+            numberOfDaysPerDepartment: {
+              numberOfDaysNotUsed,
+              numberOfDaysUsed
+            }
           });
         }
         if (deptSummary.length > 0) {
-          let numberOfDaysPerCompany = 0;
-          deptSummary.forEach((x) => numberOfDaysPerCompany += x.numberOfDaysPerDepartment);
+          let numberOfDaysNotUsed = 0, numberOfDaysUsed = 0;
+          deptSummary.forEach((x) => {
+            numberOfDaysUsed += x.numberOfDaysPerDepartment.numberOfDaysUsed;
+            numberOfDaysNotUsed += x.numberOfDaysPerDepartment.numberOfDaysNotUsed;
+          });
 
           report.push({
             leaveType: {
@@ -1698,7 +1781,10 @@ export async function getLeavesTakenReport(
               name: leaveType.name
             },
             department: deptSummary,
-            numberOfDaysPerCompany
+            numberOfDaysPerCompany: {
+              numberOfDaysNotUsed,
+              numberOfDaysUsed
+            }
           });
         }
       }

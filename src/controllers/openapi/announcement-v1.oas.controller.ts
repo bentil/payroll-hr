@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Announcement, AnnouncementReadEvent } from '@prisma/client';
 import {
   Body,
@@ -346,7 +347,7 @@ export class AnnouncementV1Controller {
   public async getReadEventDetailsPdf(
     @Path('id') id: number,
     @Request() req: Express.Request,
-  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+  ): Promise<ApiSuccessResponse<{}>> {
     this.logger.debug(
       'Received request to generate PDF for AnnouncementReadEvent for Announcement[%s]', id
     );
@@ -376,6 +377,6 @@ export class AnnouncementV1Controller {
     });
 
     this.logger.info('PDF report generated for Announcement[%s]', id);
-    return { data: pdfResult };
+    return { data: pdfResult.presignedUrl };
   }
 }

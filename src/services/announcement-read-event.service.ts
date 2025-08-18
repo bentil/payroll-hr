@@ -19,7 +19,6 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { QueryAnnouncementDto } from '../domain/dto/announcement.dto';
 import { QueryEmployeesNoPaginationDto } from '../domain/events/employee.event';
 
-
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementReadEventService' });
 const events = {
@@ -33,13 +32,23 @@ export async function addAnnouncementReadEvent(
 ): Promise<AnnouncementReadEventDto> {
   const { employeeId } = creatData;
 
-  logger.debug('Validating Announcement[%s] & Employee[%s]', announcementId, employeeId);
-  await Promise.all([
+  logger.debug(
+    'Validating Announcement[%s], Employee[%s] & checking if ReadEvent already exist', 
+    announcementId, employeeId
+  );
+  const [_, __, announcementReadEvent] = await Promise.all([
     employeeService.validateEmployee(employeeId, authUser),
-    announcementService.getAnnouncement(announcementId, authUser)
+    announcementService.getAnnouncement(announcementId, authUser),
+    repository.findOne(
+      { employeeId_announcementId: { announcementId, employeeId } }, 
+      { employee: true, announcement: true } 
+    ),
   ]);
   logger.info('Announcement[%s] & Employee[%s] validated', announcementId, employeeId);
  
+  if (announcementReadEvent) {
+    return announcementReadEvent;
+  }
   logger.debug('Adding new AnnouncementReadEvent to the database...');
   let newAnnouncementReadEvent: AnnouncementReadEventDto;
   try {
@@ -87,7 +96,7 @@ export async function getAnnouncementReadEventSummary(
     countEmployeesObject = { companyId: announcement.companyId };
   }
 
-  const recipientCount = await employeeService.countEmployees(countEmployeesObject);
+  const recipientCount = await announcementService.getAnnouncementRecipientCount(announcementId);
   const readCount = await repository.count({ 
     announcementId,
     employee: { ...countEmployeesObject }

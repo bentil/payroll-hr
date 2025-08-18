@@ -1185,4 +1185,46 @@ router.delete(
   companyApproverV1Controller.deleteCompanyApprover
 );
 
+// ### ANNOUNCEMENT-READ-EVENT ROUTES
+
+router.post(
+  '/announcements/:id/read-events',
+  authenticateUser({
+    isEmployee: true,
+  }),
+  validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
+  announcementV1Controller.addNewAnnouncementReadEvent
+);
+
+router.get(
+  '/announcements/read-events/summary',
+  authenticateUser({ category: [UserCategory.HR, UserCategory.OPERATIONS] }),
+  validateRequestQuery(QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA),
+  announcementV1Controller.getAnnouncementReadEventSummaryList
+);
+
+router.get(
+  '/announcements/:id/read-events/summary',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getAnnouncementReadEventSummary
+);
+
+router.get(
+  '/announcements/:id/read-events/details',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetails
+);
+
+router.get(
+  '/announcements/:id/read-events/details/pdf',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+  }),
+  announcementV1Controller.getReadEventDetailsPdf
+);
+
 export default router;
