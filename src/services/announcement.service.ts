@@ -438,3 +438,38 @@ export async function updateAnnouncementResource(
 
   return updatedAnnouncementResource;
 }
+
+export async function getAnnouncementResourceReciepientCount(
+  announcementId: number,
+): Promise<number> {
+  logger.debug('Getting Announcement[%s]', announcementId);
+  const announcement = await repository.findOne(
+    { id: announcementId },
+    { company : true }
+  );
+  if (!announcement) {
+    logger.warn('Announcement[%s] does not exist', announcementId);
+    throw new NotFoundError({
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
+      message: 'Announcement does not exist'
+    });
+  }
+  const targetGradeLevels = announcement.targetGradeLevels;
+  const targetGradeLevelIds: number[] | undefined = [];
+  targetGradeLevels?.forEach((gradeLevel) => {
+    targetGradeLevelIds.push(gradeLevel.id);
+  });
+  let countEmployeesObject;
+  if (announcement.public === true) {
+    countEmployeesObject = {
+      gradeLevels: targetGradeLevelIds,
+      companyId: announcement.companyId
+    };
+  } else {
+    countEmployeesObject = { companyId: announcement.companyId };
+  }
+  logger.debug('Getting Announcement[%s] recipient count', announcementId);
+  const count = await employeeService.countEmployees(countEmployeesObject);
+  logger.info('Announcement[%s] Resource recipient count retrieved successfully!', announcementId);
+  return count;
+}
