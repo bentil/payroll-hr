@@ -5,19 +5,16 @@ import {
   CreateAnnouncementReadEventDto,
   ReadEventSummmaryDto,
 } from '../domain/dto/announcement-read-event.dto';
-import { AuthorizedUser, UserCategory } from '../domain/user.domain';
+import { AuthorizedUser } from '../domain/user.domain';
 import { ServerError } from '../errors/http-errors';
 import * as repository from '../repositories/announcement-read-event.repository';
-import * as announcementRepository from '../repositories/announcement.repository';
 import { ListWithPagination } from '../repositories/types';
 import * as employeeService from '../services/employee.service';
 import * as announcementService from '../services/announcement.service';
-import * as dateutil from '../utils/date.util';
-import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
 import { QueryAnnouncementDto } from '../domain/dto/announcement.dto';
-import { QueryEmployeesNoPaginationDto } from '../domain/events/employee.event';
+import { Prisma } from '@prisma/client';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementReadEventService' });
@@ -81,15 +78,15 @@ export async function getAnnouncementReadEventSummary(
   authUser: AuthorizedUser,
 ): Promise<AnnouncementReadEventResponseDto> {  
   const announcement = await announcementService.getAnnouncement(announcementId, authUser);
-  const targetGradeLevels = announcement.targetGradeLevels;
-  const targetGradeLevelIds: number[] | undefined = [];
-  targetGradeLevels?.forEach((gradeLevel) => {
-    targetGradeLevelIds.push(gradeLevel.id);
-  });
-  let countEmployeesObject: QueryEmployeesNoPaginationDto;
-  if (announcement.public === true) {
+  const { public: _public, targetGradeLevels } = announcement;
+  
+  const targetGradeLevelIds = targetGradeLevels?.map((gradeLevel) => gradeLevel.id);
+  let countEmployeesObject: Prisma.EmployeeWhereInput;
+  if (!_public) {
     countEmployeesObject = {
-      gradeLevels: targetGradeLevelIds,
+      majorGradeLevelId: targetGradeLevelIds ?
+        { in: targetGradeLevelIds }
+        : undefined,
       companyId: announcement.companyId
     };
   } else {
@@ -111,42 +108,13 @@ export async function getAnnouncementReadEventSummary(
 }
 
 export async function getAnnouncementReadEventSummaryList(
-  query: Omit <QueryAnnouncementDto, 'orderBy'>,
+  query: QueryAnnouncementDto,
   authUser: AuthorizedUser,
 ): Promise<AnnouncementReadEventResponseDto[]> {
-  const { companyId } = query;
-  const publishDateGte = query ? query?.['publishDate.gte'] : undefined;
-  const publishDateLte = query ? query?.['publishDate.lte'] : undefined;
-  const { employeeId, category } = authUser;
-  const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
-  let gradeLevelId: number | undefined, active: boolean | undefined;
-  if (adminUser) {
-    gradeLevelId = query?.targetGradeLevelId;
-    active = query?.active;
-  } else {
-    const employee = await employeeService.getEmployee(employeeId!);
-    gradeLevelId = employee.majorGradeLevelId ?? undefined;
-    active = true;
-  }
-  const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, { companyId });
-  const announcements = await announcementRepository.find({
-    where: {
-      ...scopedQuery,
-      companyId: query?.companyId,
-      OR: (query?.public === undefined && gradeLevelId) ? [
-        { targetGradeLevels: { some: { id: gradeLevelId } } },
-        { public: true },
-      ] : (gradeLevelId !== undefined) ? [
-        { targetGradeLevels: { some: { id: gradeLevelId } } }
-      ] : undefined,
-      public: query?.public,
-      active,
-      publishDate: {
-        gte: publishDateGte && new Date(publishDateGte),
-        lt: publishDateLte && dateutil.getDate(new Date(publishDateLte), { days: 1 })
-      } 
-    }
-  });
+  const announcements = await announcementService.getAnnouncements(
+    query,
+    authUser
+  );
   const announcementSummaryList: AnnouncementReadEventResponseDto[] = [];
   for (const announcement of announcements.data) {
     const summary = await getAnnouncementReadEventSummary(

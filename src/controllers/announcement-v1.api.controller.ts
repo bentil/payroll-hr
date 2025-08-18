@@ -6,7 +6,6 @@ import {
 import {
   AnnouncementV1Controller
 } from './openapi/announcement-v1.oas.controller';
-import { QueryAnnouncementReadEventSummaryDto } from '../domain/dto/announcement-read-event.dto';
 
 
 const controller = new AnnouncementV1Controller();
@@ -170,7 +169,7 @@ export async function getAnnouncementReadEventSummaryList(
 ): Promise<void> {
   try {
     const response = await controller.getAnnouncementReadEventSummaryList(
-      req.query as unknown as QueryAnnouncementReadEventSummaryDto,
+      req.query as unknown as QueryAnnouncementDto,
       req
     );
     res.json(response);

@@ -38,7 +38,6 @@ import {
   //AnnouncementReadEventDto, 
   AnnouncementReadEventResponseDto, 
   CreateAnnouncementReadEventDto, 
-  QueryAnnouncementReadEventSummaryDto,
   ReadEventSummmaryDto
 } from '../../domain/dto/announcement-read-event.dto';
 
@@ -288,7 +287,7 @@ export class AnnouncementV1Controller {
    */
   @Get('/read-events/summary')
   public async getAnnouncementReadEventSummaryList(
-    @Queries() query: QueryAnnouncementReadEventSummaryDto,
+    @Queries() query: QueryAnnouncementDto,
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<AnnouncementReadEventResponseDto[]>> {
     this.logger.debug('Received request to get list of AnnouncementReadEventSummary');
