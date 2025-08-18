@@ -460,7 +460,7 @@ export async function getAnnouncementResourceReciepientCount(
     targetGradeLevelIds.push(gradeLevel.id);
   });
   let countEmployeesObject;
-  if (announcement.public === true) {
+  if (announcement.public !== true) {
     countEmployeesObject = {
       gradeLevels: targetGradeLevelIds,
       companyId: announcement.companyId
