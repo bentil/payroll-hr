@@ -439,7 +439,7 @@ export async function updateAnnouncementResource(
   return updatedAnnouncementResource;
 }
 
-export async function getAnnouncementResourceReciepientCount(
+export async function getAnnouncementRecipientCount(
   announcementId: number,
 ): Promise<number> {
   logger.debug('Getting Announcement[%s]', announcementId);
