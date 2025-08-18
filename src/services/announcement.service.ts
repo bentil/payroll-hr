@@ -1,4 +1,4 @@
-import { Announcement } from '@prisma/client';
+import { Announcement, Prisma } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementDto,
@@ -437,4 +437,39 @@ export async function updateAnnouncementResource(
   logger.info(`${events.resourceModified} event emitted successfully!`);
 
   return updatedAnnouncementResource;
+}
+
+export async function getAnnouncementRecipientCount(
+  announcementId: number,
+): Promise<number> {
+  logger.debug('Getting Announcement[%s]', announcementId);
+  const announcement = await repository.findOne(
+    { id: announcementId },
+    { targetGradeLevels: true }
+  );
+  if (!announcement) {
+    logger.warn('Announcement[%s] does not exist', announcementId);
+    throw new NotFoundError({
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
+      message: 'Announcement does not exist'
+    });
+  }
+  const { public: _public, targetGradeLevels } = announcement;
+  const targetGradeLevelIds = targetGradeLevels?.map((gradeLevel) => gradeLevel.id);
+  
+  let countEmployeesObject: Prisma.EmployeeWhereInput;
+  if (!_public) {
+    countEmployeesObject = {
+      majorGradeLevelId: targetGradeLevelIds ?
+        { in: targetGradeLevelIds }
+        : undefined,
+      companyId: announcement.companyId
+    };
+  } else {
+    countEmployeesObject = { companyId: announcement.companyId };
+  }
+  logger.debug('Getting Announcement[%s] recipient count', announcementId);
+  const count = await employeeService.countEmployees(countEmployeesObject);
+  logger.info('Announcement[%s] recipient count retrieved successfully!', announcementId);
+  return count;
 }
