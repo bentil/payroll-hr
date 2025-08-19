@@ -134,7 +134,12 @@ export async function getReadEventDetails(
     result = await repository.find({
       where: { announcementId },
       include: { 
-        employee: { include: { jobTitle: true } },
+        employee: { 
+          include: { 
+            jobTitle: true,
+            department: true
+          },
+        },
         announcement: { include: { targetGradeLevels: true } }
       }
     });
@@ -146,27 +151,25 @@ export async function getReadEventDetails(
       cause: err
     });
   }
-  const summary: ReadEventSummmaryDto[] = [];
-  result.data.forEach((readEvent) => {
-    if ( readEvent.employee) {
-      summary.push({
-        employee: {
-          fullName: `${readEvent.employee?.firstName} ${readEvent.employee?.lastName}`,
-          jobTitle: {
-            id: readEvent.employee.jobTitle?.id,
-            code : readEvent.employee.jobTitle?.code,
-            name : readEvent.employee.jobTitle?.name
-          },
-          department: {
-            id : readEvent.employee.department?.id,
-            code : readEvent.employee.department?.code,
-            name : readEvent.employee.department?.name
-          },
+  const summary: ReadEventSummmaryDto[] = result.data.map((readEvent) => {
+    const { employee: readEventEmployee } = readEvent;
+    const employee = readEventEmployee!;
+    return  {
+      employee: {
+        fullName: `${readEvent.employee?.firstName} ${readEvent.employee?.lastName}`,
+        jobTitle: {
+          id: employee.jobTitle?.id,
+          code : employee.jobTitle?.code,
+          name : employee.jobTitle?.name
         },
-        timestamp: readEvent.timestamp
-      });
-    }
+        department: {
+          id : employee.department?.id,
+          code : employee.department?.code,
+          name : employee.department?.name
+        },
+      },
+      timestamp: readEvent.timestamp
+    };
   });
-
   return summary;
 }
