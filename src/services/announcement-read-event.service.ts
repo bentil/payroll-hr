@@ -15,6 +15,7 @@ import { rootLogger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
 import { QueryAnnouncementDto } from '../domain/dto/announcement.dto';
 import { Prisma } from '@prisma/client';
+import { EmployeeDto } from '../domain/events/employee.event';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'AnnouncementReadEventService' });
@@ -153,10 +154,10 @@ export async function getReadEventDetails(
   }
   const summary: ReadEventSummmaryDto[] = result.data.map((readEvent) => {
     const { employee: readEventEmployee } = readEvent;
-    const employee = readEventEmployee!;
+    const employee = readEventEmployee as EmployeeDto;
     return  {
       employee: {
-        fullName: `${readEvent.employee?.firstName} ${readEvent.employee?.lastName}`,
+        fullName: `${employee.firstName} ${employee.lastName}`,
         jobTitle: {
           id: employee.jobTitle?.id,
           code : employee.jobTitle?.code,

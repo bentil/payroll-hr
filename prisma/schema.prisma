@@ -117,7 +117,7 @@ model Employee {
   approvalRequesters              EmployeeApprover[]               @relation(name: "approver")
   department                      Department?                      @relation(fields: [departmentId], references: [id])
   departmentLeadership            DepartmentLeadership[]
-  announcementReadEvent           AnnouncementReadEvent[]
+  readEvent           AnnouncementReadEvent[]
   jobTitle                        JobTitle?                        @relation(fields: [jobTitleId], references: [id])
 
   @@fulltext([firstName, lastName, otherNames, employeeNumber])
@@ -712,7 +712,7 @@ model Announcement {
 
   resources             AnnouncementResource[]
   targetGradeLevels     GradeLevel[]
-  announcementReadEvent AnnouncementReadEvent[]
+  readEvent AnnouncementReadEvent[]
 
   @@fulltext([title, body])
   @@map("announcement")
