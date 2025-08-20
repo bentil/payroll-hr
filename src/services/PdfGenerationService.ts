@@ -30,11 +30,20 @@ export interface LeaveTakenReportData {
         id: number;
         employeeNumber: string;
         name: string;
-        numberOfDays: number;
+        numberOfDays: {
+          numberOfDaysUsed: number;
+          numberOfDaysNotUsed: number;
+        };
       }>;
-      numberOfDaysPerDepartment: number;
+      numberOfDaysPerDepartment: {
+        numberOfDaysUsed: number;
+        numberOfDaysNotUsed: number;
+      };
     }>;
-    numberOfDaysPerCompany: number;
+    numberOfDaysPerCompany: {
+      numberOfDaysUsed: number;
+      numberOfDaysNotUsed: number;
+    };
   }>;
 }
 
@@ -174,6 +183,7 @@ export class PdfGenerationService {
       announcementTitle: string;
       publishDate: string;
       companyName: string;
+      totalEmployeesInCompany?: number;
       employees: Array<{
         name: string;
         jobTitle: string;
@@ -197,16 +207,23 @@ export class PdfGenerationService {
         rowNumber: index + 1
       }));
 
-      const uniqueDepartments = new Set(announcementData.employees.map(e => e.department));
-      const totalEmployees = announcementData.employees.length;
+      const uniqueDepartments = new Set(announcementData.employees.map(e => e.department?.trim()).filter(dept => dept));
+      const totalReadersCount = announcementData.employees.length;
+      const totalEmployeesInCompany = announcementData.totalEmployeesInCompany || totalReadersCount;
+      
+      // Calculate read percentage based on total employees in company
+      const readPercentage = totalEmployeesInCompany > 0 
+        ? Math.round((totalReadersCount / totalEmployeesInCompany) * 100)
+        : 0;
 
       const templateData = {
         ...announcementData,
         employees: employeesWithRowNumbers,
         currentDate,
-        totalReaders: totalEmployees,
+        totalReaders: totalReadersCount,
+        totalEmployeesInCompany,
         totalDepartments: uniqueDepartments.size,
-        readPercentage: 100
+        readPercentage
       };
 
       const html = template(templateData);
@@ -265,7 +282,7 @@ export class PdfGenerationService {
       let totalDays = 0;
 
       reportData.reportData.forEach(leaveTypeData => {
-        totalDays += leaveTypeData.numberOfDaysPerCompany;
+        totalDays += leaveTypeData.numberOfDaysPerCompany.numberOfDaysUsed + leaveTypeData.numberOfDaysPerCompany.numberOfDaysNotUsed;
         leaveTypeData.department.forEach(dept => {
           if (dept.id !== undefined) {
             allDepartments.add(dept.id);

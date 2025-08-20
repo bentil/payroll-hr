@@ -1150,8 +1150,7 @@ router.delete(
 router.post(
   '/announcements/:id/read-events',
   authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-    permissions: 'announcements:write'
+    isEmployee: true,
   }),
   validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
   announcementV1Controller.addNewAnnouncementReadEvent
