@@ -6,12 +6,14 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  { departmentId, companyId,  ...dtoData }: EmployeeEvent
+  { departmentId, companyId, jobTitleId, majorGradeLevelId, ...dtoData }: EmployeeEvent
 ): Promise<Employee> {
   const data: Prisma.EmployeeCreateInput = {
     ...dtoData,
     company: { connect: { id: companyId } },
-    department: departmentId ? { connect: { id: departmentId } } : undefined
+    department: departmentId ? { connect: { id: departmentId } } : undefined,
+    jobTitle: jobTitleId ? { connect: { id: jobTitleId } } : undefined,
+    majorGradeLevel: majorGradeLevelId ? { connect: { id: majorGradeLevelId } } : undefined
   };
   try {
     return await prisma.employee.create({ data });
