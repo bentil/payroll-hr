@@ -166,7 +166,7 @@ export async function getReadEventDetails(
       }
     });
     logger.info(
-      'Found %d AnnouncementReadEvent(s)for Announcement[%s]',
+      'Found %d AnnouncementReadEvent(s) for Announcement[%s]',
       result.data.length, announcementId
     );
   } catch (err) {
