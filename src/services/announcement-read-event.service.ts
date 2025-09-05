@@ -153,7 +153,9 @@ export async function getAnnouncementReadEventSummaryList(
 export async function getReadEventDetails(
   announcementId: number,
 ): Promise<ReadEventSummmaryDto[]> {
-  logger.debug('Getting AnnouncementReadEvent for Announcement[%s]', announcementId);
+  logger.debug(
+    'Getting AnnouncementReadEvents for Announcement[%s]', announcementId
+  );
   let result: ListWithPagination<AnnouncementReadEventDto>;
   try {
     result = await repository.find({
@@ -163,9 +165,15 @@ export async function getReadEventDetails(
         announcement: { include: { targetGradeLevels: true } }
       }
     });
-    logger.info('Found %d AnnouncementReadEvent(s)for Announcement[%s]', announcementId);
+    logger.info(
+      'Found %d AnnouncementReadEvent(s) for Announcement[%s]',
+      result.data.length, announcementId
+    );
   } catch (err) {
-    logger.warn('Getting AnnouncementReadEvent for Announcement[%s]', announcementId);
+    logger.warn(
+      'Getting AnnouncementReadEvents for Announcement[%s]',
+      announcementId, { error: err }
+    );
     throw new ServerError({
       message: (err as Error).message,
       cause: err
