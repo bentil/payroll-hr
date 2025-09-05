@@ -159,7 +159,7 @@ export async function getReadEventDetails(
     result = await repository.find({
       where: { announcementId },
       include: { 
-        employee: { include: { jobTitle: true } },
+        employee: { include: { jobTitle: true, department: true } },
         announcement: { include: { targetGradeLevels: true } }
       }
     });
