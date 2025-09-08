@@ -21,6 +21,11 @@ import * as dateutil from '../utils/date.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { validateGradeLevels } from './grade-level.service';
+import { EmployeeDto } from '../domain/events/employee.event';
+import * as employeeRepository from '../repositories/employee.repository';
+import { sendAnnouncementEmail } from '../utils/notification.util';
+import { CronJob } from 'cron';
+import config from '../config';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -473,3 +478,67 @@ export async function getAnnouncementRecipientCount(
   logger.info('Announcement[%s] recipient count retrieved successfully!', announcementId);
   return count;
 }
+
+export async function getAnnouncementRecipients(
+  announcementId: number,
+): Promise<EmployeeDto[]> {
+  logger.debug('Getting Announcement[%s]', announcementId);
+  const announcement = await repository.findOne(
+    { id: announcementId },
+    { targetGradeLevels: true }
+  );
+  if (!announcement) {
+    logger.warn('Announcement[%s] does not exist', announcementId);
+    throw new NotFoundError({
+      name: errors.ANNOUNCEMENT_NOT_FOUND,
+      message: 'Announcement does not exist'
+    });
+  }
+  const { public: _public, targetGradeLevels } = announcement;
+  const targetGradeLevelIds = targetGradeLevels?.map((gradeLevel) => gradeLevel.id);
+  
+  let queryEmployeesObject: Prisma.EmployeeWhereInput;
+  if (!_public) {
+    queryEmployeesObject = {
+      majorGradeLevelId: targetGradeLevelIds ?
+        { in: targetGradeLevelIds }
+        : undefined,
+      companyId: announcement.companyId
+    };
+  } else {
+    queryEmployeesObject = { companyId: announcement.companyId };
+  }
+  logger.debug('Getting Announcement[%s] recipients', announcementId);
+  const employees = await employeeRepository.find({
+    where: queryEmployeesObject
+  });
+  logger.info('Announcement[%s] recipients retrieved successfully!', announcementId);
+  return employees.data;
+}
+
+export const announcementDailyJob = new CronJob(
+  config.dailyCronJobTime, // cronTime
+  async function () {
+    logger.debug('Starting announcement daily job');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const announcements = await repository.find({ 
+      where: {
+        active: true,
+        publishDate: today,
+      }
+    });
+    for (const announcement of announcements.data) {
+      const recipients = await getAnnouncementRecipients(announcement.id);
+      for (const recipient of recipients) {
+        if (recipient.email) {
+          await sendAnnouncementEmail({
+            recipientEmail: recipient.email,
+            recipientFirstName: recipient.firstName,
+            announcementId: announcement.id
+          });
+        }
+      }
+    }
+  },
+);

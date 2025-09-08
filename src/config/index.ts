@@ -12,6 +12,7 @@ export default {
     leaveResponsePath: process.env.LEAVE_RESPONSE_TEMPLATE_PATH || '',
     reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
     reimbursementResponsePath: process.env.REIMBURSEMENT_RESPONSE_TEMPLATE_PATH || '',
+    announcementPath: process.env.ANNOUNCEMENT_TEMPLATE_PATH || '',
     defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || ''
   },
   log: {
@@ -45,6 +46,7 @@ export default {
   actionUrls: {
     leaveRequest: process.env.LEAVE_REQUEST_URL || '',
     reimbursementRequest: process.env.REIMBURSEMENT_REQUEST_URL || '',
+    announcement: process.env.ANNOUNCEMENT_URL || '',
   },
   rpc: {
     serverAddress: process.env.RPC_SERVER_ADDRESS || 'localhost:50000',
@@ -61,6 +63,7 @@ export default {
     leaveRequestSubject: process.env.LEAVE_REQUEST_SUBJECT || 'Akatua Leave Request',
     // eslint-disable-next-line max-len
     reimbursementRequestSubject: process.env.REIMBURSEMENT_REQUEST_SUBJECT || 'Akatua Reimbursement Request',
+    announcementSubject: process.env.LEAVE_REQUEST_SUBJECT || 'Akatua Announcement',
   },
   messages: {
     serverError: process.env.SERVER_ERROR_MESSAGE || 'An error occurred while processing request',
@@ -80,5 +83,6 @@ export default {
     accessKeyId: process.env.S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     region: process.env.S3_REGION || 'EUROPE-1',
-  }
+  },
+  dailyCronJobTime: process.env.DAILY_CRON_JOB_TIME || '0 * * * *', //Default every day at 9:00AMGMT
 };

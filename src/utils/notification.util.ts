@@ -23,6 +23,9 @@ const leaveResponseTemplate = fs.readFileSync(
 const reimbursementResponseTemplate = fs.readFileSync(
   config.templates.reimbursementResponsePath, 'utf8'
 );
+const announcementTemplate = fs.readFileSync(
+  config.templates.announcementPath, 'utf8'
+);
 const NOTIFICATION_TOPIC = config.topics.notifications;
 
 interface NotificationMessage {
@@ -82,6 +85,12 @@ interface ReimbursementResponseDetail {
   currencyCode: string;
   amount: Decimal;
   responseMessage: string;
+}
+
+interface AnnouncementDetail {
+  announcementId: number;
+  recipientEmail: string;
+  recipientFirstName: string;
 }
 
 const _logger = rootLogger.child({ context: 'NotificationUtil' });
@@ -231,6 +240,38 @@ export async function sendReimbursementResponseEmail(
     payload: {
       from: config.notifications.emailSender,
       subject: config.notifications.reimbursementRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.recipientEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendAnnouncementEmail(
+  data: AnnouncementDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendAnnouncementEmail' });
+  const link = new URL(config.actionUrls.announcement);
+  link.searchParams.append('id', `${data.announcementId}`);
+  const emailBody = StringUtil.render(announcementTemplate, {
+    recipient: data.recipientFirstName,
+    actionUrl: link,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.announcementSubject,
       body: emailBody,
       emailRecipients: [data.recipientEmail],
     }
