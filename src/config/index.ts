@@ -63,7 +63,7 @@ export default {
     leaveRequestSubject: process.env.LEAVE_REQUEST_SUBJECT || 'Akatua Leave Request',
     // eslint-disable-next-line max-len
     reimbursementRequestSubject: process.env.REIMBURSEMENT_REQUEST_SUBJECT || 'Akatua Reimbursement Request',
-    announcementSubject: process.env.LEAVE_REQUEST_SUBJECT || 'Akatua Announcement',
+    announcementSubject: process.env.ANNOUNCEMENT_SUBJECT || 'Akatua Announcement',
   },
   messages: {
     serverError: process.env.SERVER_ERROR_MESSAGE || 'An error occurred while processing request',
