@@ -84,5 +84,5 @@ export default {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     region: process.env.S3_REGION || 'EUROPE-1',
   },
-  dailyCronJobTime: process.env.DAILY_CRON_JOB_TIME || '0 * * * *', //Default every day at 9:00AMGMT
+  dailyCronJobTime: process.env.DAILY_CRON_JOB_TIME || '0 9 * * *', //Default every day at 9:00AMGMT
 };
