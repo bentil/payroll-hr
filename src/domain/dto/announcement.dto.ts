@@ -41,6 +41,7 @@ export class UpdateAnnouncementDto {
   removeResourcesIds?: number[];
   unassignedTargetGradeLevelIds?: number[];
   assignedTargetGradeLevelIds?: number[];
+  recipientsNotified?: boolean;
 }
 
 export enum AnnouncementOrderBy {

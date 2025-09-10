@@ -1,4 +1,4 @@
-import { Announcement, Prisma } from '@prisma/client';
+import { Announcement, AnnouncementReadEvent, Prisma } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
   AnnouncementDto,
@@ -10,7 +10,7 @@ import {
   UpdateAnnouncementResourceDto,
 } from '../domain/dto/announcement.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
-import { NotFoundError, ServerError } from '../errors/http-errors';
+import { ForbiddenError, NotFoundError, ServerError } from '../errors/http-errors';
 import * as resourceRepository from '../repositories/announcement-resource.repository';
 import * as repository from '../repositories/announcement.repository';
 import { ListWithPagination } from '../repositories/types';
@@ -26,6 +26,7 @@ import * as employeeRepository from '../repositories/employee.repository';
 import { sendAnnouncementEmail } from '../utils/notification.util';
 import { CronJob } from 'cron';
 import config from '../config';
+import * as readEventRepository from '../repositories/announcement-read-event.repository';
 
 
 const kafkaService = KafkaService.getInstance();
@@ -84,6 +85,37 @@ export async function addAnnouncement(
     });
   }
 
+  // Send email to recipients if daily announcement job has run already
+  const now = new Date();
+  const timeString = now.toTimeString().split(' ')[0];
+  if(timeString > config.dailyCronJobTime) {
+    logger.debug('Sending announcement email to recipients...');
+    const recipients = await getAnnouncementRecipients(newAnnouncement.id);
+    for (const recipient of recipients) {
+      if (recipient.email) {
+        await sendAnnouncementEmail({
+          recipientEmail: recipient.email,
+          recipientFirstName: recipient.firstName,
+          announcementId: newAnnouncement.id
+        });
+      }
+    }
+    logger.debug('Announcement email sent to recipients');
+    logger.debug('Setting announcement.recipientsNotified to true');
+    try {
+      await repository.update({
+        where: { id: newAnnouncement.id },
+        data: { recipientsNotified: true }
+      });
+      logger.info('Announcement[%s] recipientsNotified set to true', newAnnouncement.id);
+    } catch (err) {
+      logger.error(
+        'Setting Announcement[%s] recipientsNotified to true failed',
+        newAnnouncement.id, { error: err }
+      );
+    }
+  }
+
   // Emit event.Announcement.created event
   logger.debug(`Emitting ${events.created} event`);
   kafkaService.send(events.created, newAnnouncement);
@@ -114,14 +146,45 @@ export async function getAnnouncements(
 
   const { employeeId, category } = authUser;
   const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
-  let gradeLevelId: number | undefined, active: boolean | undefined;
+  let gradeLevelId: number | undefined, active: boolean | undefined,
+    defaultPublishDateLte: Date | undefined;
   if (adminUser) {
     gradeLevelId = targetGradeLevelId;
     active = queryActive;
+    defaultPublishDateLte = publishDateLte 
+      ? dateutil.getDate(new Date(publishDateLte), { days: 1 })
+      : undefined;
   } else {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ?? undefined;
     active = true;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (publishDateGte) {
+      const publishDate = new Date(publishDateGte);
+      publishDate.setHours(0, 0, 0, 0);
+      if (publishDate > today) {
+        throw new ForbiddenError({
+          message: 'You are not allowed to access this resource'
+        });
+      }
+    }
+
+    if (publishDateLte) {
+      const publishDate = new Date(publishDateLte);
+      publishDate.setHours(0, 0, 0, 0);
+      if (publishDate > today) {
+        throw new ForbiddenError({
+          message: 'You are not allowed to access this resource'
+        });
+      } else {
+        defaultPublishDateLte = publishDateLte 
+          ? dateutil.getDate(new Date(publishDateLte), { days: 1 })
+          : undefined;
+      }
+    } else {
+      defaultPublishDateLte = dateutil.getDate(new Date(), { days: 1 });
+    }
   }
 
   logger.debug('Finding Announcement(s) that match query', { query });
@@ -142,7 +205,7 @@ export async function getAnnouncements(
         active,
         publishDate: {
           gte: publishDateGte && new Date(publishDateGte),
-          lt: publishDateLte && dateutil.getDate(new Date(publishDateLte), { days: 1 })
+          lt: defaultPublishDateLte
         } 
       },
       orderBy: orderByInput,
@@ -244,11 +307,13 @@ export async function searchAnnouncements(
 
   const { employeeId, category } = authUser;
   const adminUser = category === UserCategory.HR || category === UserCategory.OPERATIONS;
-  let gradeLevelId: number | undefined, active: boolean | undefined;
+  let gradeLevelId: number | undefined, active: boolean | undefined,
+    defaultPublishDateLte: Date | undefined;
   if (!adminUser) {
     const employee = await employeeService.getEmployee(employeeId!);
     gradeLevelId = employee.majorGradeLevelId ?? undefined;
     active = true;
+    defaultPublishDateLte = dateutil.getDate(new Date(), { days: 1 });
   }
 
   logger.debug('Finding Announcement(s) that match search query', { query });
@@ -260,6 +325,9 @@ export async function searchAnnouncements(
       orderBy: orderByInput,
       where: {
         ...scopedQuery,
+        publishDate: {
+          lt: defaultPublishDateLte
+        },
         OR: (!adminUser) ? [
           { targetGradeLevels: { some: { id: gradeLevelId } } },
           { public: true },
@@ -306,6 +374,16 @@ export async function updateAnnouncement(
     unassignedTargetGradeLevelIds = [],
     public: _public
   } = updateData;
+  let announcementReadEvent: AnnouncementReadEvent | null;
+  try {
+    announcementReadEvent = await readEventRepository.findFirst({ id });
+  } catch (err) {
+    logger.warn(
+      'Getting AnnouncementReadEvent for Announcement[%s] failed', 
+      id, { error: (err as Error).stack }
+    );
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
 
   logger.debug('Finding Announcement[%s] to update', id);
   const { scopedQuery } = await helpers.applyCompanyScopeToQuery(authUser, {});
@@ -318,6 +396,16 @@ export async function updateAnnouncement(
     });
   }
   logger.info('Announcement[%s] to update exists', id);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Prevent update if announcement publish date is in the future
+  // and announcement has been read by any employee
+  if (announcement.publishDate < today && announcementReadEvent) {
+    throw new ForbiddenError({
+      message: 'You are not allowed to update this resource'
+    });
+  }
 
   // If updating announcement to public,
   // clear target grade level ids to assign
@@ -539,6 +627,59 @@ export const announcementDailyJob = new CronJob(
           });
         }
       }
+      logger.debug('Announcement email sent to recipients');
+      logger.debug('Setting announcement.recipientsNotified to true');
+      try {
+        await repository.update({
+          where: { id: announcement.id },
+          data: { recipientsNotified: true }
+        });
+        logger.info('Announcement[%s] recipientsNotified set to true', announcement.id);
+      } catch (err) {
+        logger.error(
+          'Setting Announcement[%s] recipientsNotified to true failed',
+          announcement.id, { error: err }
+        );
+      }
     }
   },
 );
+
+export async function mannuallySendAnnouncementEmail(): Promise<void> {
+  logger.debug('Starting process to send announcement notification email to recipients');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const announcements = await repository.find({ 
+    where: {
+      active: true,
+      publishDate: today,
+      recipientsNotified: false,
+    }
+  });
+  for (const announcement of announcements.data) {
+    const recipients = await getAnnouncementRecipients(announcement.id);
+    for (const recipient of recipients) {
+      if (recipient.email) {
+        await sendAnnouncementEmail({
+          recipientEmail: recipient.email,
+          recipientFirstName: recipient.firstName,
+          announcementId: announcement.id
+        });
+      }
+    }
+    logger.debug('Announcement email sent to recipients');
+    logger.debug('Setting announcement.recipientsNotified to true');
+    try {
+      await repository.update({
+        where: { id: announcement.id },
+        data: { recipientsNotified: true }
+      });
+      logger.info('Announcement[%s] recipientsNotified set to true', announcement.id);
+    } catch (err) {
+      logger.error(
+        'Setting Announcement[%s] recipientsNotified to true failed',
+        announcement.id, { error: err }
+      );
+    }
+  }
+}

@@ -954,6 +954,15 @@ router.delete(
   announcementV1Controller.deleteAnnouncement
 );
 
+router.post(
+  '/announcements/send-emails',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'announcements:write'
+  }),
+  announcementV1Controller.mannuallySendAnnouncementEmail
+);
+
 // ### EMPLOYEE APPROVER ROUTES
 
 router.post(
