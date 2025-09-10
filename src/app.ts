@@ -8,6 +8,7 @@ import morganMiddleware from './middleware/http-logger';
 import { appErrorHandler } from './middleware/error-handler.middleware';
 import appRouter from './routes';
 import { rootLogger } from './utils/logger';
+import { announcementDailyJob } from './services/announcement.service';
 
 const logger = rootLogger.child({ context: 'App' });
 
@@ -41,6 +42,8 @@ export default async function startApp(
     console.error('Failed to start some service(s)', err);
     process.exit(1);
   }
+
+  announcementDailyJob.start(); // Start daily announcemnt job
 
   const server = app.listen(config.port, async () => {
     logger.info(`App started successfully at http://**:${port}/`);

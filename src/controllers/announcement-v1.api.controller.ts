@@ -220,3 +220,16 @@ export async function getReadEventDetailsPdf(
     next(err);
   }
 }
+
+export async function mannuallySendAnnouncementEmail(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  try {
+    await controller.mannuallySendAnnouncementEmail();
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
