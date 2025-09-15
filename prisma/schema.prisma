@@ -705,6 +705,7 @@ model Announcement {
   active      Boolean   @default(true)
   public      Boolean   @default(false)
   publishDate DateTime  @map("publish_date")
+  recipientsNotified Boolean   @default(false) @map("recipients_notified")
   createdAt   DateTime  @default(now()) @map("created_at")
   modifiedAt  DateTime? @updatedAt @map("modified_at")
 
