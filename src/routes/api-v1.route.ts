@@ -165,7 +165,10 @@ router.use(authenticateClient);
 
 router.post(
   '/grievance-types',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(CREATE_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.addNewGrievanceType
 );
@@ -192,14 +195,20 @@ router.get(
 
 router.patch(
   '/grievance-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:conduct:write' 
+  }),
   validateRequestBody(UPDATE_GRIEVANCE_TYPE_SCHEMA),
   grievanceTypeV1Controller.updateGrievanceType
 );
 
 router.delete(
   '/grievance-types/:id',
-  authenticateUser({ permissions: 'company_configs:conduct:write' }),
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'company_configs:conduct:write' 
+  }),
   grievanceTypeV1Controller.deleteGrievanceType
 );
 
@@ -265,7 +274,7 @@ router.delete(
 router.post(
   '/disciplinary-action-types',
   authenticateUser({ 
-    category: [UserCategory.HR], 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:conduct:write' 
   }),
   validateRequestBody(CREATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
@@ -274,28 +283,28 @@ router.post(
 
 router.get(
   '/disciplinary-action-types',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(QUERY_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/search',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   validateRequestQuery(SEARCH_DISCIPLINARY_ACTION_TYPE_SCHEMA),
   disciplinaryActionTypeV1Controller.searchDisciplinaryActionTypes
 );
 
 router.get(
   '/disciplinary-action-types/:id',
-  authenticateUser({ isEmployee: true }),
+  authenticateUser(),
   disciplinaryActionTypeV1Controller.getDisciplinaryActionType
 );
 
 router.patch(
   '/disciplinary-action-types/:id',
   authenticateUser({ 
-    category: [UserCategory.HR], 
+    category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:conduct:write' 
   }),
   validateRequestBody(UPDATE_DISCIPLINARY_ACTION_TYPE_SCHEMA),
@@ -305,7 +314,7 @@ router.patch(
 router.delete(
   '/disciplinary-action-types/:id',
   authenticateUser({
-    category: [UserCategory.HR],
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'company_configs:conduct:write'
   }),
   disciplinaryActionTypeV1Controller.deleteDisciplinaryActionType
@@ -945,6 +954,15 @@ router.delete(
   announcementV1Controller.deleteAnnouncement
 );
 
+router.post(
+  '/announcements/send-emails',
+  authenticateUser({
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'announcements:write'
+  }),
+  announcementV1Controller.mannuallySendAnnouncementEmail
+);
+
 // ### EMPLOYEE APPROVER ROUTES
 
 router.post(
@@ -1141,8 +1159,7 @@ router.delete(
 router.post(
   '/announcements/:id/read-events',
   authenticateUser({
-    category: [UserCategory.HR, UserCategory.OPERATIONS],
-    permissions: 'announcements:write'
+    isEmployee: true,
   }),
   validateRequestBody(CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA),
   announcementV1Controller.addNewAnnouncementReadEvent

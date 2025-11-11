@@ -1,4 +1,4 @@
-import {  Employee } from '@prisma/client';
+import {  Employee, Prisma } from '@prisma/client';
 import { EmployeeDto, EmployeeEvent } from '../domain/events/employee.event';
 import { AuthorizedUser } from '../domain/user.domain';
 import {
@@ -213,26 +213,14 @@ export async function deleteEmployee(id: number): Promise<void> {
 }
 
 export async function countEmployees(
-  options: {
-    gradeLevels?: number[],
-    companyId?: number,
-  }
+  query: Prisma.EmployeeWhereInput
 ): Promise<number> {
-  const { gradeLevels, companyId } = options;
-  logger.debug('Getting count for Employee based on ', options);
+  logger.debug('Getting count for Employee based on ', query);
   let employeeCount: number;
 
   try {
     employeeCount = await repository.count(
-      {
-        companyId,
-        OR: gradeLevels ?
-          [
-            { majorGradeLevelId: { in: gradeLevels } },
-            { minorGradeLevelId: { in: gradeLevels } }
-          ]
-          : undefined
-      }
+      query
     );
   } catch (err) {
     logger.warn(

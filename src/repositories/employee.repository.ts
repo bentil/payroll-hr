@@ -6,12 +6,14 @@ import { ListWithPagination, getListWithPagination } from './types';
 
 
 export async function create(
-  { departmentId, companyId,  ...dtoData }: EmployeeEvent
+  { departmentId, companyId, jobTitleId, majorGradeLevelId, ...dtoData }: EmployeeEvent
 ): Promise<Employee> {
   const data: Prisma.EmployeeCreateInput = {
     ...dtoData,
     company: { connect: { id: companyId } },
-    department: departmentId ? { connect: { id: departmentId } } : undefined
+    department: departmentId ? { connect: { id: departmentId } } : undefined,
+    jobTitle: jobTitleId ? { connect: { id: jobTitleId } } : undefined,
+    majorGradeLevel: majorGradeLevelId ? { connect: { id: majorGradeLevelId } } : undefined
   };
   try {
     return await prisma.employee.create({ data });
@@ -33,6 +35,7 @@ export async function createOrUpdate(
     majorGradeLevelId,
     companyId,
     departmentId,
+    jobTitleId,
     ...dtoData
   }: Omit<EmployeeEvent, 'createdAt' | 'modifiedAt'>
 ): Promise<Employee> {
@@ -41,7 +44,8 @@ export async function createOrUpdate(
     majorGradeLevel: majorGradeLevelId
       ? { connect: { id: majorGradeLevelId } } : undefined,
     company: { connect: { id: companyId } },
-    department: departmentId ? { connect: { id: departmentId } } : undefined
+    department: departmentId ? { connect: { id: departmentId } } : undefined,
+    jobTitle: jobTitleId ? { connect: { id: jobTitleId } } : undefined,
   };
   const { id, ...dataWithoutId } = data;
   return prisma.employee.upsert({

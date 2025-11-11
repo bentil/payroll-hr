@@ -346,7 +346,7 @@ export class AnnouncementV1Controller {
   public async getReadEventDetailsPdf(
     @Path('id') id: number,
     @Request() req: Express.Request,
-  ): Promise<ApiSuccessResponse<{ presignedUrl: string; s3Key: string; bucket: string }>> {
+  ): Promise<any> {
     this.logger.debug(
       'Received request to generate PDF for AnnouncementReadEvent for Announcement[%s]', id
     );
@@ -362,18 +362,31 @@ export class AnnouncementV1Controller {
 
     const pdfResult = await PdfGenerationService.generateAnnouncementReadEventsPdf({
       announcementTitle: announcement.title,
-      publishDate: announcement.publishDate ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) : 'Not published',
+      publishDate: announcement.publishDate 
+        ? new Date(announcement.publishDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) 
+        : 'Not published',
       companyName: announcement.company?.name || 'N/A',
       employees: employeeData
     });
 
     this.logger.info('PDF report generated for Announcement[%s]', id);
-    return { data: pdfResult };
+    return { data: pdfResult.presignedUrl };
+  }
+
+  /**
+   * Manually send Announcement notification to employees
+   * 
+   * @returns Nothing
+   */
+  @Post('/send-emails')
+  public async mannuallySendAnnouncementEmail(): Promise<void> {
+    this.logger.debug('Received request to get send Announcement Emails manually');
+    await service.mannuallySendAnnouncementEmail();
   }
 }

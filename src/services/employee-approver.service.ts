@@ -479,7 +479,7 @@ export async function getEmployeeApproversWithDefaults(params: {
   // Assigning company approvers if no employee approver exists at level
   for (const x of unavailableLevels) {
     logger.debug('No EmployeeApprover at Level %s. Getting CompanyApprover', x);
-    let companyApprover: CompanyApprover | null;
+    let companyApprover: CompanyApprover | null = null;
     try {
       companyApprover = await companyApproverRepository.findFirst({
         companyId: employee.companyId, 
@@ -489,9 +489,7 @@ export async function getEmployeeApproversWithDefaults(params: {
       if (!(err instanceof NotFoundError)) {
         throw err;
       }
-      continue;
     }
-    let data: Employee;
     if (companyApprover) {
       if (companyApprover.approverType === ApproverType.DEPARMENT_HEAD) {
         try {
@@ -515,29 +513,26 @@ export async function getEmployeeApproversWithDefaults(params: {
         } catch (err) {
           if (!(err instanceof NotFoundError)) {
             throw err;
-          }
-          continue;
+          }          
         }
       } else if (companyApprover.approverType === ApproverType.SUPERVISOR) {
         try {
-          data = await companyTreeService.getParentEmployee(employeeId);
+          const data = await companyTreeService.getParentEmployee(employeeId);
+          if (data) {
+            employeeApproverList.push({
+              employeeId,
+              approverId: data.id,
+              level: x,
+              employee: employee,
+              approver: data
+            });
+          }
         } catch (err) {
           if (!(err instanceof NotFoundError)) {
             throw err;
           }
-          continue;
-        }
-        if (data) {
-          employeeApproverList.push({
-            employeeId,
-            approverId: data.id,
-            level: x,
-            employee: employee,
-            approver: data
-          });
         }
       } else if (companyApprover.approverType === ApproverType.MANAGER) {
-        let data;
         const gradeLevelIds: number[] = [];
         // Find the parent companyLevelId for employees companyLevel
         try {
@@ -550,10 +545,13 @@ export async function getEmployeeApproversWithDefaults(params: {
           // If companyLevel has a parent companyLevelI, find all employees within this level
           if (companyLevel && companyLevel.parentId) {
             const gradeLevel = await gradeLevelRepository.find({
-              where: { companyLevelId: companyLevel.parentId },
+              where: { 
+                companyId: companyLevel.companyId ? companyLevel.companyId : undefined,
+                companyLevelId: companyLevel.parentId 
+              },
             });
             if (gradeLevel.data.length > 0) {
-              const gradeLevelIds = gradeLevel.data.map(gl => gl.id);
+              gradeLevel.data.map(gl => gradeLevelIds.push(gl.id));
               // Get employees with gradeLevelId in gradeLevelIds
               const employees = await employeeRepository.find({
                 where: { 
@@ -574,26 +572,12 @@ export async function getEmployeeApproversWithDefaults(params: {
                 });
               }
             }
-            if (gradeLevelIds.length > 0) {
-              data = await employeeRepository.findFirst(
-                { majorGradeLevelId: { in: gradeLevelIds } },
-              );
-            }
           }
         } catch (err) {
           if (!(err instanceof NotFoundError)) {
             throw err;
           }
-          continue;
-        }
-        if (data && (data.id !== employeeId)) {
-          employeeApproverList.push({
-            employeeId,
-            approverId: data.id,
-            level: x,
-            employee: employee,
-            approver: data
-          });
+          
         }
       } else if (companyApprover.approverType === ApproverType.HR) {
         try {
@@ -621,7 +605,7 @@ export async function getEmployeeApproversWithDefaults(params: {
           if (!(err instanceof NotFoundError)) {
             throw err;
           }
-          continue;
+          
         }
       }
     } else {
@@ -629,7 +613,7 @@ export async function getEmployeeApproversWithDefaults(params: {
         'No CompanyApprover found for Employee[%s] at Level %s',
         employeeId, x
       );
-      continue;
+      
     }
     // Getting list of available and unavailable levels
     employeeApproverList = employeeApprovers.data;

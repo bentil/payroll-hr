@@ -40,6 +40,7 @@
     "@sparticuz/chromium": "^138.0.2",
     "@types/uuid": "^10.0.0",
     "cls-rtracer": "^2.6.3",
+    "cron": "^4.3.3",
     "dayjs": "^1.11.13",
     "dotenv": "^16.3.1",
     "exceljs": "^4.4.0",
@@ -50,6 +51,7 @@
     "kafkajs": "^2.2.4",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
     "puppeteer": "^24.16.1",
     "puppeteer-core": "^24.16.0",
     "swagger-ui-express": "^5.0.0",
@@ -60,7 +62,9 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@jest/globals": "^29.5.0",
     "@types/express": "^4.17.19",
+    "@types/jest": "^29.5.1",
     "@types/morgan": "^1.9.6",
     "@types/node": "^20.8.6",
     "@types/swagger-ui-express": "^4.1.4",
@@ -69,9 +73,11 @@
     "concurrently": "^8.2.2",
     "eslint": "^8.51.0",
     "husky": "^8.0.0",
+    "jest": "^29.5.0",
     "lint-staged": "^15.0.1",
     "nodemon": "^3.0.1",
     "prisma": "~5.4.2",
+    "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },

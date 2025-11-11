@@ -1,7 +1,11 @@
 import { LeavePackage, Prisma, } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { AlreadyExistsError, RecordInUse } from '../errors/http-errors';
-import { CreateLeavePackageDto, LeavePackageDto } from '../domain/dto/leave-package.dto';
+import { 
+  CreateLeavePackageDto, 
+  LeavePackageDto, 
+  UpdateLeavePackageDto 
+} from '../domain/dto/leave-package.dto';
 import { ListWithPagination, getListWithPagination } from './types';
 
 
@@ -109,14 +113,28 @@ export async function search(
 
 export async function update(params: {
   where: Prisma.LeavePackageWhereUniqueInput,
-  data: Prisma.LeavePackageUpdateInput,
+  data: UpdateLeavePackageDto,
   include?: Prisma.LeavePackageInclude,
 }): Promise<LeavePackage> {
   const { where, data, include } = params;
+  const { 
+    addCompanyLevelIds,
+    removeCompanyLevelIds,
+    ...remainingData
+  } = data;
+  const _data: Prisma.LeavePackageUpdateInput = {
+    ...remainingData,
+    companyLevelLeavePackages: {
+      create: addCompanyLevelIds?.map((companyLevelId) => ({ companyLevelId })),
+      deleteMany: removeCompanyLevelIds 
+        ? removeCompanyLevelIds.map((companyLevelId) => ({ companyLevelId }))
+        : undefined
+    }
+  };
   try {
     return await prisma.leavePackage.update({
       where,
-      data,
+      data: _data,
       include
     });
   } catch (err) {

@@ -107,12 +107,12 @@ export async function validateCompanyLevels(
 
   if (foundEmployees.data.length !== companyList.size) {
     logger.warn(
-      'Received %d employees id(s), but found %d',
+      'Received %d CompanyLevel id(s), but found %d',
       companyList.size, foundEmployees.data.length
     );
     throw new NotFoundError({
       name: errors.COMPANY_LEVEL_NOT_FOUND,
-      message: 'At least one Employee Id passed does not exist'
+      message: 'At least one CompanyLevel Id passed does not exist'
     });
   }
 }

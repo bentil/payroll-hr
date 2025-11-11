@@ -27,6 +27,8 @@ export class UpdateLeavePackageDto {
   accrued?: boolean;
   carryOverDaysValue?: number;
   carryOverDaysPercent?: number;
+  addCompanyLevelIds?: number[];
+  removeCompanyLevelIds?: number[];
 }
 
 
