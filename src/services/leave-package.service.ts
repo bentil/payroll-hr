@@ -73,15 +73,24 @@ export async function createLeavePackage(
   return leavePackage;
 }
 
-export async function updateLeavePackage(id: number,
+export async function updateLeavePackage(
+  id: number,
   updateLeavePackageDto: UpdateLeavePackageDto,
 ): Promise<LeavePackageDto> {
-
+  const { addCompanyLevelIds, removeCompanyLevelIds } = updateLeavePackageDto;
   const leavePackage = await repository.findOne({ id });
   if (!leavePackage) {
     logger.warn('LeavePackage[%s] to update does not exist', id);
     throw new NotFoundError({ message: 'Leave package to update does not exist' });
   }
+  await Promise.all([
+    addCompanyLevelIds
+      ? companyLevelService.validateCompanyLevels(addCompanyLevelIds)
+      : Promise.resolve(undefined),
+    removeCompanyLevelIds
+      ? companyLevelService.validateCompanyLevels(removeCompanyLevelIds)
+      : Promise.resolve(undefined)
+  ]);
   const updatedLeavePackage = await repository.update({
     where: { id },
     data: updateLeavePackageDto,

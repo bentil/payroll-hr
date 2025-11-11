@@ -65,8 +65,13 @@ export const UPDATE_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .optional(),
   carryOverDaysPercent: Joi.number()
     .optional(),
-}).or('code', 'name', 'description', 'leaveTypeId', 'maxDays', 'paid', 'redeemable',
-  'accrued', 'carryOverDaysValue', 'carryOverDaysPercent');
+  addCompanyLevelIds: Joi.array()
+    .optional(),
+  removeCompanyLevelIds: Joi.array()
+    .optional()
+}).or('code', 'name', 'description', 'leaveTypeId', 'maxDays', 'paid', 'redeemable', 'accrued',
+  'carryOverDaysValue', 'carryOverDaysPercent', 'addCompanyLevelIds', 'removeCompanyLevelIds'
+);
 
 
 export const QUERY_LEAVE_PACKAGE_SCHEMA = Joi.object({
