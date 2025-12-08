@@ -30,6 +30,8 @@ model PayrollCompany {
   leaveRequestApprovalsRequired         Int       @default(1) @map("leave_request_approvals_required") @db.UnsignedTinyInt()
   reimbursementRequestApprovalsRequired Int       @default(1) @map("reimbursement_request_approvals_required") @db.UnsignedTinyInt()
   notifyApproversOnRequestResponse      Boolean   @default(false) @map("notify_approvers_on_request_response")
+  notifyHrOnLeaveRequest                Boolean   @default(false) @map("notify_hr_on_leave_request")
+  notifyHrOnReimbursementRequest        Boolean   @default(false) @map("notify_hr_on_reimbursement_request")
   createdAt                             DateTime  @default(now()) @map("created_at")
   modifiedAt                            DateTime? @updatedAt @map("modified_at")
   statusLastModifiedAt                  DateTime? @map("status_last_modified_at")

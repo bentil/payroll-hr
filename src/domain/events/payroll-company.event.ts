@@ -18,6 +18,9 @@ export interface PayrollCompanyMessage {
   workHoursInADay: number
   leaveRequestApprovalsRequired: number
   reimbursementRequestApprovalsRequired: number
+  notifyApproversOnRequestResponse: boolean
+  notifyHrOnLeaveRequest: boolean
+  notifyHrOnReimbursementRequest: boolean
 }
 
 export interface PayrollCompanyCreatedEvent extends PayrollCompanyMessage {
