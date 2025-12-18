@@ -476,6 +476,9 @@ export async function getEmployeeApproversWithDefaults(params: {
     i => !availableLevels.includes(i)
   );
 
+  // Placeholder to check if HR is not a companyApprover at any level
+  let isHrCompanyApprover: boolean = false;
+
   // Assigning company approvers if no employee approver exists at level
   for (const x of unavailableLevels) {
     logger.debug('No EmployeeApprover at Level %s. Getting CompanyApprover', x);
@@ -600,6 +603,7 @@ export async function getEmployeeApproversWithDefaults(params: {
                 });
               }
             });
+            isHrCompanyApprover = true;
           }
         } catch (err) {
           if (!(err instanceof NotFoundError)) {
@@ -662,6 +666,42 @@ export async function getEmployeeApproversWithDefaults(params: {
         }
       }
     }
+
+    if (
+      (approvalType === 'leave' && company.notifyHrOnLeaveRequest) || 
+      (approvalType === 'reimbursement' && company.notifyHrOnReimbursementRequest)
+    ) {
+      if (isHrCompanyApprover === false) {
+        try {
+          const hrs: ListWithPagination<Employee> =
+          await employeeRepository.find({
+            where: { 
+              companyId: employee.companyId,
+              hr: true
+            },
+          });
+          if (hrs.data.length > 0) {
+            hrs.data.forEach((hr) => {
+              if (hr.id !== employeeId) {
+                employeeApproverList.push({
+                  employeeId,
+                  approverId: hr.id,
+                  level: 0,
+                  employee: employee,
+                  approver: hr
+                });
+              }
+            });
+          }
+        } catch (err) {
+          if (!(err instanceof NotFoundError)) {
+            throw err;
+          }
+          
+        }
+      }
+    }
+    
   }
 
   
