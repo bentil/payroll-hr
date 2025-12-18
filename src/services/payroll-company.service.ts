@@ -31,7 +31,10 @@ export async function createOrUpdatePayrollCompany(
     enableEmployeeLogin: data.enableEmployeeLogin,
     workHoursInADay: data.workHoursInADay,
     leaveRequestApprovalsRequired: data.leaveRequestApprovalsRequired,
-    reimbursementRequestApprovalsRequired: data.reimbursementRequestApprovalsRequired
+    reimbursementRequestApprovalsRequired: data.reimbursementRequestApprovalsRequired,
+    notifyApproversOnRequestResponse: data.notifyApproversOnRequestResponse,
+    notifyHrOnLeaveRequest: data.notifyHrOnLeaveRequest,
+    notifyHrOnReimbursementRequest: data.notifyHrOnReimbursementRequest
   });
   logger.info(
     'PayrollCompany[%s] saved for Organization[%s]',
