@@ -93,6 +93,7 @@ model Employee {
   username                String?   @unique() @db.VarChar(50)
   userId                  String?   @unique() @map("user_id")
   excludeFromPayrollRun   Boolean   @default(false) @map("exclude_from_payroll_run")
+  maritalStatus           String?   @map("marital_status")
   statusLastModifiedAt    DateTime? @map("status_last_modified_at")
   createdAt               DateTime  @default(now()) @map("created_at")
   modifiedAt              DateTime? @updatedAt @map("modified_at")

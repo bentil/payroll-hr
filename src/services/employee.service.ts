@@ -61,6 +61,7 @@ export async function createOrUpdateEmployee(
     userId: data.userId,
     username: data.username,
     excludeFromPayrollRun: data.excludeFromPayrollRun,
+    maritalStatus: data.maritalStatus
   });
   logger.info('Employee[%s] saved', data.id);
 
