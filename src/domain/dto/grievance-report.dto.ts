@@ -59,3 +59,12 @@ export enum GrievanceReportOrderBy {
   MODIFIED_AT_ASC = 'modifiedAt:asc',
   MODIFIED_AT_DESC = 'modifiedAt:desc',
 }
+
+export class ExportGrievanceReportQueryDto {
+  grievanceTypeCode?: boolean;
+  reportNumber?: boolean;
+  reportingEmployeeNumber?: boolean;
+  reportDate?: boolean;
+  note?: boolean;
+  orderBy: GrievanceReportOrderBy = GrievanceReportOrderBy.CREATED_AT_DESC;
+}

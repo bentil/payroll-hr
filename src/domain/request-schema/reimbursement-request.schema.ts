@@ -162,3 +162,48 @@ export const SEARCH_REIMBURSEMENT_REQUEST_SCHEMA = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(ReimbursementRequestOrderBy)}`
     })
 });
+
+export const EXPORT_REIMBURSEMENT_REQUEST_QUERY_SCHEMA = Joi.object({
+  employeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  title: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  description: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  currencyCode: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  amount: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  staus: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  expenditureDate: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  approverEmployeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  completerEmployeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  approvalsRequired: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(ReimbursementRequestOrderBy))
+    .default(ReimbursementRequestOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(ReimbursementRequestOrderBy)}`
+    })
+}).or(
+  'employeeNumber', 'title', 'description', 'currencyCode', 'amount', 'status', 'expenditureDate',
+  'approverEmployeeNumber', 'completerEmployeeNumber', 'approvalsRequired'
+);

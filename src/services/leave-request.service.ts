@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   LEAVE_REQUEST_STATUS,
   LeaveRequest,
@@ -12,6 +13,7 @@ import {
   CreateLeaveRequestDto,
   EmployeeLeavePackageObject,
   EmployeeLeaveTakenReportObject,
+  ExportLeaveRequestQueryDto,
   FilterLeaveRequestForExportDto,
   LeaveBalanceReportLeavePackageObject,
   LeaveBalanceReportLeaveTypeObject,
@@ -1355,29 +1357,29 @@ const createLeaveRequestPayloadStructure = (
 
 export async function exportLeaveRequests(
   companyId: number,
-  query: FilterLeaveRequestForExportDto,
+  query: ExportLeaveRequestQueryDto,
   authorizedUser: AuthorizedUser,
 ) {
   const {
-    page,
-    limit: take,
     orderBy,
-    employeeId: qEmployeeId,
-    leavePackageId,
-    status,
     queryMode,
-    'startDate.gte': startDateGte,
-    'startDate.lte': startDateLte,
-    'returnDate.gte': returnDateGte,
-    'returnDate.lte': returnDateLte,
-    'createdAt.gte': createdAtGte,
-    'createdAt.lte': createdAtLte,
+    ...exportData
   } = query;
-  const skip = helpers.getSkip(page, take);
+  const {
+    employeeNumber,
+    leaveTypeCode,
+    startDate,
+    returnDate,
+    comment,
+    status,
+    cancelledByEmployeeNumber,
+    approvalsRequired,
+    numberOfDays,
+  } = exportData;
   const orderByInput = helpers.getOrderByInput(orderBy);
   const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
     authorizedUser, 
-    { companyId, queryMode, qEmployeeId },
+    { companyId, queryMode },
     { extendAdminCategories: [UserCategory.OPERATIONS] }
   );
 
@@ -1385,32 +1387,23 @@ export async function exportLeaveRequests(
   try {
     logger.debug('Finding LeaveRequest(s) that matched query', { query });
     result = await leaveRequestRepository.find({
-      skip,
-      take,
       where: { 
         ...scopedQuery,
-        leavePackageId, 
-        status, 
-        startDate: {
-          gte: startDateGte && new Date(startDateGte),
-          lt: startDateLte && dateutil.getDate(new Date(startDateLte), { days: 1 }),
-        }, 
-        returnDate: {
-          gte: returnDateGte && new Date(returnDateGte),
-          lt: returnDateLte && dateutil.getDate(new Date(returnDateLte), { days: 1 }),
-        },
-        createdAt: {
-          gte: createdAtGte && new Date(createdAtGte),
-          lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
-        }
       },
       orderBy: orderByInput,
-      include: {
-        leavePackage: {
-          include: { leaveType: true }
-        },
-        employee: true,
-      }
+      select: {
+        employee: employeeNumber ? true : false,
+        leavePackage: leaveTypeCode 
+          ? { select: { leaveType: true } } 
+          : false,
+        startDate: startDate ? true : false,
+        returnDate: returnDate ? true : false,
+        comment: comment ? true : false,
+        status: status ? true : false,
+        cancelledByEmployee: cancelledByEmployeeNumber ? true : false,
+        approvalsRequired: approvalsRequired ? true : false,
+        numberOfDays: numberOfDays ? true : false,
+      },
     });
     logger.info('Found %d LeaveRequest(s) that matched query', result.data.length, { query });
   } catch (err) {
@@ -1420,16 +1413,19 @@ export async function exportLeaveRequests(
       cause: err
     });
   }
+
+  const selectedColumns = Object.entries(exportData)
+    .filter(([key, value]) => value === true)
+    .map(([key, value]) => key);
+
   const workbook = new Excel.Workbook();
   const worksheet = workbook.addWorksheet('leave_requests');
-  worksheet.columns = [
-    { header: 'employeeNumber', key: 'employeeNumber', width: 10 },
-    { header: 'leaveTypeCode', key: 'leaveTypeCode', width: 32 }, 
-    { header: 'startDate', key: 'startDate', width: 15 },
-    { header: 'returnDate', key: 'returnDate', width: 15 },
-    { header: 'comment', key: 'comment', width: 32 }, 
-    { header: 'notifyApprovers', key: 'notifyApprovers', width: 15 }
-  ];
+
+  worksheet.columns = selectedColumns.map(col => ({
+    header: col,
+    key: col,
+    width: 30
+  }));
 
   result.data.forEach((leaveRequest) => {
     worksheet.addRow({
@@ -1438,7 +1434,11 @@ export async function exportLeaveRequests(
       startDate: leaveRequest.startDate,
       returnDate: leaveRequest.returnDate,
       comment: leaveRequest.comment,
-      notifyApprovers: ''
+      notifyApprovers: '',
+      status: leaveRequest.status,
+      cancelledByEmployeeNumber: leaveRequest.cancelledByEmployee?.employmentDate,
+      approvalsRequired: leaveRequest.approvalsRequired,
+      numberOfDays: leaveRequest.numberOfDays,
     });
   });
   return workbook;

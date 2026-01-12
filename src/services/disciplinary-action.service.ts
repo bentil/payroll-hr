@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { DisciplinaryAction } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import {
@@ -8,6 +9,7 @@ import {
   DisciplinaryActionDto,
   DisciplinaryActionsReportResponse,
   QueryDisciplinaryActionReportDto,
+  ExportDisciplinaryActionQueryDto,
 } from '../domain/dto/disciplinary-action.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
@@ -27,7 +29,7 @@ import * as dateutil from '../utils/date.util';
 import { generateDisciplinaryActionNumber } from '../utils/generator.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-
+import Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'DisciplinaryActionService' });
@@ -528,4 +530,84 @@ export async function getDisciplinaryActionsForEmployeeReport(
     });
   }
   return report;
+}
+
+export async function exportDisciplinaryActions(
+  companyId: number,
+  query: ExportDisciplinaryActionQueryDto,
+  authUser: AuthorizedUser,
+) {
+  const {
+    orderBy,
+    ...exportData
+  } = query;
+  const {
+    employeeNumber,
+    actionTypeCode,
+    actionNumber,
+    grievanceReportNumber,
+    notes,
+    actionDate,
+  } = exportData;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyEmployeeScopeToQuery(
+    authUser, 
+    {
+      companyId
+    }
+  );
+
+  let result: ListWithPagination<DisciplinaryActionDto>;
+  try {
+    logger.debug('Finding DisciplinaryAction(s) that matched query', { query });
+    result = await repository.find({
+      where: { 
+        ...scopedQuery,
+      },
+      orderBy: orderByInput,
+      select: {
+        employee: employeeNumber ? true : false,
+        actionType: actionTypeCode ? true : false,
+        actionNumber: actionNumber ? true : false,
+        grievanceReport: grievanceReportNumber ? true : false,
+        notes: notes ? true : false,
+        actionDate: actionDate ? true : false,
+      },
+    });
+    logger.info('Found %d DisciplinaryAction(s) that matched query', result.data.length, { query });
+  } catch (err) {
+    logger.warn(
+      'Querying DisciplinaryAction with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  const selectedColumns = Object.entries(exportData)
+    .filter(([key, value]) => value === true)
+    .map(([key, value]) => key);
+
+  const workbook = new Excel.Workbook();
+  const worksheet = workbook.addWorksheet('leave_requests');
+
+  worksheet.columns = selectedColumns.map(col => ({
+    header: col,
+    key: col,
+    width: 30
+  }));
+
+
+  result.data.forEach((disciplinaryAction) => {
+    worksheet.addRow({
+      employeeNumber: disciplinaryAction.employee?.employeeNumber,
+      actionTypeCode: disciplinaryAction.actionType?.code,
+      actionNumber: disciplinaryAction.actionNumber,
+      grievanceReportNumber: disciplinaryAction.grievanceReport?.reportNumber,
+      notes: disciplinaryAction.notes,
+      actionDate: disciplinaryAction.actionDate,
+    });
+  });
+  return workbook;
 }

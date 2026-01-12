@@ -187,3 +187,45 @@ export const QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(LeaveRequestOrderBy)}`
     })
 });
+
+export const EXPORT_LEAVE_REQUEST_QUERY_SCHEMA = Joi.object({
+  employeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  leaveTypeCode: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  startDate: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  returnDate: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  comment: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  status: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  cancelledByEmployeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  approvalsRequired: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  numberOfDays: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  queryMode: Joi.string()
+    .valid(...Object.values(RequestQueryMode)),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(LeaveRequestOrderBy))
+    .default(LeaveRequestOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(LeaveRequestOrderBy)}`
+    })
+}).or(
+  'employeeNumber', 'leaveTypeCode', 'startDate', 'returnDate', 'comment',
+  'status', 'cancelledByEmployeeNumber', 'approvalsRequired', 'numberOfDays'
+);

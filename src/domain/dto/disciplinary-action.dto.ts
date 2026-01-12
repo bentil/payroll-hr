@@ -89,3 +89,13 @@ export class DisciplinaryActionsReportResponse {
     code: string;
   };
 }
+
+export class ExportDisciplinaryActionQueryDto {
+  employeeNumber?: boolean;
+  actionTypeCode?: boolean;
+  actionNumber?: boolean;
+  grievanceReportNumber?: boolean;
+  notes?: boolean;
+  actionDate?: boolean;
+  orderBy: DisciplinaryActionOrderBy = DisciplinaryActionOrderBy.CREATED_AT_DESC;
+}

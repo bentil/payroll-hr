@@ -112,3 +112,30 @@ export const SEARCH_GRIEVANCE_REPORT_SCHEMA = Joi.object({
       'any.only': `orderBy must be one of these: ${Object.values(GrievanceReportOrderBy)}`
     })
 });
+
+export const EXPORT_GRIEVANCE_REPORT_QUERY_SCHEMA = Joi.object({
+  grievanceTypeCode: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  reportNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  reportingEmployeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  reportDate: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  note: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(GrievanceReportOrderBy))
+    .default(GrievanceReportOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(GrievanceReportOrderBy)}`
+    })
+}).or(
+  'grievanceTypeCode', 'reportNumber', 'reportingEmployeeNumber', 'reportDate', 'note'
+);

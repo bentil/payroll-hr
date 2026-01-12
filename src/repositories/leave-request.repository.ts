@@ -75,17 +75,12 @@ export async function find(params: {
   where?: Prisma.LeaveRequestWhereInput;
   orderBy?: Prisma.LeaveRequestOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.LeaveRequestInclude;
+  select?: Prisma.LeaveRequestSelect
 }): Promise<ListWithPagination<LeaveRequestDto>> {
-  const { skip, take, include } = params;
+  const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.leaveRequest.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include
-    }),
+    prisma.leaveRequest.findMany(params),
     paginate
       ? prisma.leaveRequest.count({ where: params.where })
       : Promise.resolve(undefined),

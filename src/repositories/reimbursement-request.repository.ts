@@ -75,17 +75,12 @@ export async function find(params: {
   where?: Prisma.ReimbursementRequestWhereInput;
   orderBy?: Prisma.ReimbursementRequestOrderByWithRelationAndSearchRelevanceInput;
   include?: Prisma.ReimbursementRequestInclude;
+  select?: Prisma.ReimbursementRequestSelect
 }): Promise<ListWithPagination<ReimbursementRequestDto>> {
-  const { skip, take, include } = params;
+  const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.reimbursementRequest.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include
-    }),
+    prisma.reimbursementRequest.findMany(params),
     paginate 
       ? prisma.reimbursementRequest.count({ where: params.where }) 
       : Promise.resolve(undefined),
