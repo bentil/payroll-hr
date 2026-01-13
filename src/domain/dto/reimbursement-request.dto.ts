@@ -100,3 +100,18 @@ export class SearchReimbursementRequestDto {
   limit: number = config.pagination.limit;
   orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_DESC;
 }
+
+export class ExportReimbursementRequestQueryDto {
+  employeeNumber?: boolean;
+  title?: boolean;
+  description?: boolean;
+  currencyCode?: boolean;
+  amount?: boolean;
+  status?: boolean;
+  expenditureDate?: boolean;
+  approverEmployeeNumber?: boolean;
+  completerEmployeeNumber?: boolean;
+  approvalsRequired?: boolean;
+  queryMode?: RequestQueryMode;
+  orderBy: ReimbursementRequestOrderBy = ReimbursementRequestOrderBy.CREATED_AT_DESC;
+}

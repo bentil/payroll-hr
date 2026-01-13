@@ -63,7 +63,8 @@ import {
   QUERY_DISCIPLINARY_ACTION_SCHEMA,
   UPDATE_DISCIPLINARY_ACTION_SCHEMA,
   SEARCH_DISCIPLINARY_ACTION_SCHEMA,
-  QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA
+  QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA,
+  EXPORT_DISCIPLINARY_ACTION_QUERY_SCHEMA
 } from '../domain/request-schema/disciplinary-action.schema';
 import {
   CREATE_EMPLOYEE_APPROVER_SCHEMA, 
@@ -89,6 +90,7 @@ import {
 import {
   CREATE_GRIEVANCE_REPORTED_EMPLOYEE_SCHEMA,
   CREATE_GRIEVANCE_REPORT_SCHEMA, 
+  EXPORT_GRIEVANCE_REPORT_QUERY_SCHEMA, 
   QUERY_GRIEVANCE_REPORT_SCHEMA, 
   SEARCH_GRIEVANCE_REPORT_SCHEMA,
   UPDATE_GRIEVANCE_REPORT_SCHEMA
@@ -117,8 +119,8 @@ import {
   CREATE_LEAVE_RESPONSE_SCHEMA,
   ADJUST_DAYS_SCHEMA,
   CONVERT_LEAVE_PLAN_SCHEMA,
-  FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA,
   QUERY_LEAVE_REQUEST_FOR_REPORT_SCHEMA,
+  EXPORT_LEAVE_REQUEST_QUERY_SCHEMA,
 } from '../domain/request-schema/leave-request.schema';
 import {
   CREATE_LEAVE_TYPE_SCHEMA,
@@ -132,6 +134,7 @@ import {
   COMPLETE_REIMBURSEMENT_REQUEST_SCHEMA,
   CREATE_REIMBURSEMENT_REQUEST_SCHEMA, 
   CREATE_REIMBURSEMENT_RESPONSE_SCHEMA, 
+  EXPORT_REIMBURSEMENT_REQUEST_QUERY_SCHEMA, 
   QUERY_REIMBURSEMENT_REQUEST_SCHEMA, 
   REIMBURSEMENT_REQUEST_UPDATES_SCHEMA, 
   SEARCH_REIMBURSEMENT_REQUEST_SCHEMA, 
@@ -668,6 +671,14 @@ router.get(
   reimbReqV1Controller.searchReimbursementRequests
 );
 
+
+router.get(
+  '/reimbursement-requests/exports',
+  authenticateUser(),
+  validateRequestQuery(EXPORT_REIMBURSEMENT_REQUEST_QUERY_SCHEMA),
+  reimbReqV1Controller.exportReimbursementRequests
+);
+
 router.get(
   '/reimbursement-requests/:id',
   authenticateUser(),
@@ -1035,9 +1046,24 @@ router.get(
     category: [UserCategory.HR, UserCategory.OPERATIONS], 
     permissions: 'company_configs:read' 
   }),
-  validateRequestQuery(FILTER_LEAVE_REQUEST_FOR_EXPORT_SCHEMA),
+  validateRequestQuery(EXPORT_LEAVE_REQUEST_QUERY_SCHEMA),
   uploadV1Controller.exportLeaveRequests
 );
+
+router.get(
+  '/payroll-companies/:companyId/exports/disciplinary-actions',
+  authenticateUser(),
+  validateRequestQuery(EXPORT_DISCIPLINARY_ACTION_QUERY_SCHEMA),
+  uploadV1Controller.exportDisciplinaryActions
+);
+
+router.get(
+  '/payroll-companies/:companyId/exports/grievance-reports',
+  authenticateUser(),
+  validateRequestQuery(EXPORT_GRIEVANCE_REPORT_QUERY_SCHEMA),
+  uploadV1Controller.exportGrievanceReports
+);
+
 
 // ## DISCIPLINARY ACTION REPORT ROUTES
 router.get(

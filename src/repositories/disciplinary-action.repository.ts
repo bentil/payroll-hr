@@ -59,6 +59,7 @@ export async function find(params: {
   where?: Prisma.DisciplinaryActionWhereInput,
   orderBy?: Prisma.DisciplinaryActionOrderByWithRelationAndSearchRelevanceInput
   include?: Prisma.DisciplinaryActionInclude,
+  select?: Prisma.DisciplinaryActionSelect
 }): Promise<ListWithPagination<DisciplinaryActionDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;

@@ -66,6 +66,7 @@ export interface LeaveRequestDto extends LeaveRequest {
 	employee?: EmployeeDto;
 	leavePackage?: LeavePackageDto;
   leaveResponses?: LeaveResponse[];
+  cancelledByEmployee?: EmployeeDto | null;
 }
 
 export enum AdjustmentOptions {
@@ -216,4 +217,18 @@ export class LeaveBalanceReportLeavePackageObject {
   code?: string;
   name?: string;
   remainingLeaveDays!: number;
+}
+
+export class ExportLeaveRequestQueryDto {
+  employeeNumber?: boolean;
+  leaveTypeCode?: boolean;
+  startDate?: boolean;
+  returnDate?: boolean;
+  comment?: boolean;
+  status?: boolean;
+  cancelledByEmployeeNumber?: boolean;
+  approvalsRequired?: boolean;
+  numberOfDays?: boolean;
+  queryMode?: RequestQueryMode;
+  orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }

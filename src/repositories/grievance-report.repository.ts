@@ -10,7 +10,8 @@ import { ListWithPagination, getListWithPagination } from './types';
 export async function create(
   { 
     companyId, grievanceTypeId, reportingEmployeeId, reportedEmployeeId, ...dtoData 
-  }: CreateGrievanceReportDto, includeRelations?: boolean
+  }: CreateGrievanceReportDto, 
+  include?: Prisma.GrievanceReportInclude
 ): Promise<GrievanceReportDto> {
   let createGrievanceReportResult: GrievanceReportDto;
   try {
@@ -26,11 +27,7 @@ export async function create(
           )
         } }
       }, 
-      include: includeRelations 
-        ? { 
-          company: true, grievanceType: true, 
-          reportingEmployee: true, grievanceReportedEmployees: true 
-        } : undefined
+      include
     });
     return createGrievanceReportResult;
   } catch (err) {
@@ -47,15 +44,12 @@ export async function create(
 }
 
 export async function findOne(
-  whereUniqueInput: Prisma.GrievanceReportWhereUniqueInput, includeRelations?: boolean,
+  whereUniqueInput: Prisma.GrievanceReportWhereUniqueInput, 
+  include?: Prisma.GrievanceReportInclude,
 ): Promise<GrievanceReportDto | null> {
   return await prisma.grievanceReport.findUnique({
     where: whereUniqueInput,
-    include: includeRelations 
-      ? { 
-        company: true, grievanceType: true, 
-        reportingEmployee: true, grievanceReportedEmployees: true 
-      } : undefined
+    include
   });
 }
 
@@ -64,20 +58,13 @@ export async function find(params: {
   take?: number,
   where?: Prisma.GrievanceReportWhereInput,
   orderBy?: Prisma.GrievanceReportOrderByWithRelationAndSearchRelevanceInput,
-  includeRelations?: boolean,
+  include?: Prisma.GrievanceReportInclude,
+  select?: Prisma.GrievanceReportSelect
 }): Promise<ListWithPagination<GrievanceReportDto>> {
   const { skip, take } = params;
   const paginate = skip !== undefined && take !== undefined;
   const [data, totalCount] = await Promise.all([
-    prisma.grievanceReport.findMany({
-      skip: params.skip,
-      take: params.take,
-      where: params.where,
-      orderBy: params.orderBy,
-      include: params.includeRelations 
-        ? { grievanceType: true, reportingEmployee: true } 
-        : undefined
-    }),
+    prisma.grievanceReport.findMany(params),
     paginate ? prisma.grievanceReport.count({ where: params.where }) : Promise.resolve(undefined),
   ]);
 
@@ -87,19 +74,10 @@ export async function find(params: {
 export async function update(params: {
   where: Prisma.GrievanceReportWhereUniqueInput,
   data: Prisma.GrievanceReportUpdateInput,
-  includeRelations?: boolean
+  include?: Prisma.GrievanceReportInclude
 }) {
-  const { where, data, includeRelations } = params;
   try {
-    return await prisma.grievanceReport.update({ 
-      where, 
-      data,
-      include: includeRelations 
-        ? {
-          company: true, grievanceType: true, 
-          reportingEmployee: true, grievanceReportedEmployees: true 
-        } : undefined
-    });
+    return await prisma.grievanceReport.update(params);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {

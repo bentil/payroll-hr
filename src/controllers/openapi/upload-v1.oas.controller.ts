@@ -12,12 +12,16 @@ import {
 import { rootLogger } from '../../utils/logger';
 import * as leaveReqeustService from '../../services/leave-request.service';
 import { 
-  FilterLeaveRequestForExportDto,
+  ExportLeaveRequestQueryDto,
   UploadLeaveRequestResponse 
 } from '../../domain/dto/leave-request.dto';
+import { ExportDisciplinaryActionQueryDto } from '../../domain/dto/disciplinary-action.dto';
+import { exportDisciplinaryActions } from '../../services/disciplinary-action.service';
+import { ExportGrievanceReportQueryDto } from '../../domain/dto/grievance-report.dto';
+import { exportGrievanceReports } from '../../services/grievance-report.service';
 
 @Tags('upload')
-@Route('/api/v1/payroll-companies/{companyId}/uploads')
+@Route('/api/v1/payroll-companies/{companyId}')
 @Security('api_key')
 export class UploadV1Controller {
   private readonly logger = rootLogger.child({ context: UploadV1Controller.name });
@@ -29,7 +33,7 @@ export class UploadV1Controller {
      * @param req Request object
      * @returns Employee
      */
-    @Post('leave-requests')
+    @Post('/uploads/leave-requests')
   public async uploadLeaveRequests(
     @Path('companyId') companyId: number,
     @UploadedFile() file: Express.Multer.File,
@@ -47,14 +51,51 @@ export class UploadV1Controller {
    * @param req 
    * @returns excel file stream
    */
-  @Get('/payroll-companies/{companyId}/exports/leave-requests')
+  @Get('/exports/leave-requests')
     public async exportLeaveRequests(
       @Path('companyId') companyId: number,
-      @Queries() query: FilterLeaveRequestForExportDto,
+      @Queries() query: ExportLeaveRequestQueryDto,
       @Request() req: Express.Request,
     ): Promise<any> {
-      this.logger.debug('Received request to serve LeaveRequestTemplate');
+      this.logger.debug('Received request to export LeaveRequest');
       const rel = await leaveReqeustService.exportLeaveRequests(companyId, query, req.user!);
       return rel;
     }
+
+  /**
+   * Get disciplinary actions for a payroll company and export them as an Excel file.
+   * 
+   * @param companyId 
+   * @param query 
+   * @param req 
+   * @returns excel file stream
+   */
+  @Get('/exports/disciplinary-actions')
+  public async exportDisciplinaryActions(
+    @Path('companyId') companyId: number,
+    @Queries() query: ExportDisciplinaryActionQueryDto,
+    @Request() req: Express.Request,
+  ): Promise<any> {
+    this.logger.debug('Received request to export DisciplinaryAction');
+    const rel = await exportDisciplinaryActions(companyId, query, req.user!);
+    return rel;
+  }
+
+  /**
+   * Get grievance reports for a payroll company and export them as an Excel file.
+   * 
+   * @param companyId 
+   * @param query 
+   * @param req 
+   * @returns excel file stream
+   */
+  @Get('/exports/grievance-reports')
+  public async exportGrievanceReports(
+    @Path('companyId') companyId: number,
+    @Queries() query: ExportGrievanceReportQueryDto,
+  ): Promise<any> {
+    this.logger.debug('Received request to export GrievanceReport');
+    const rel = await exportGrievanceReports(companyId, query);
+    return rel;
+  }
 }
