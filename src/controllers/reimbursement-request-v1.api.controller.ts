@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 // eslint-disable-next-line max-len
 import { ReimbursementRequestV1Controller } from './openapi/reimbursement-request-v1.oas.controller';
 import { 
+  ExportReimbursementRequestQueryDto,
   QueryReimbursementRequestDto, 
   SearchReimbursementRequestDto 
 } from '../domain/dto/reimbursement-request.dto';
@@ -131,6 +132,27 @@ export async function deleteReimbursementRequest(
   try {
     await controller.deleteReimbursementRequest(+id, req);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function exportReimbursementRequests(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const response = await controller.exportReimbursementRequests(
+      req.query as unknown as ExportReimbursementRequestQueryDto, req
+    );
+    res.setHeader(
+      'Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="reimbursement-requests.xlsx"');
+    await response.xlsx.write(res);
+    res.end();
   } catch (err) {
     next(err);
   }

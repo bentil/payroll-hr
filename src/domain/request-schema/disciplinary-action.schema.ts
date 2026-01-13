@@ -115,3 +115,33 @@ export const QUERY_DISCIPLINARY_ACTIONS_REPORT_SCHEMA = Joi.object({
   'actionDate.lte': joi.date().optional()
     .format('YYYY-MM-DD').utc().raw(),
 });
+
+export const EXPORT_DISCIPLINARY_ACTION_QUERY_SCHEMA = Joi.object({
+  employeeNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  actionTypeCode: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  actionNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  grievanceReportNumber: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  notes: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  actionDate: Joi.boolean()
+    .optional()
+    .valid(true, false),
+  orderBy: Joi.string()
+    .optional()
+    .valid(...Object.values(DisciplinaryActionOrderBy))
+    .default(DisciplinaryActionOrderBy.CREATED_AT_DESC)
+    .messages({
+      'any.only': `orderBy must be one of these: ${Object.values(DisciplinaryActionOrderBy)}`
+    })
+}).or(
+  'employeeNumber', 'actionTypeCode', 'actionNumber', 'grievanceReportCode', 'notes', 'actionDate'
+);

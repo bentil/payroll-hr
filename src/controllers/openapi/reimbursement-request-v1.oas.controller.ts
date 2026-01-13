@@ -18,6 +18,7 @@ import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses
 import { 
   CompleteReimbursementRequestDto,
   CreateReimbursementRequestDto, 
+  ExportReimbursementRequestQueryDto, 
   QueryReimbursementRequestDto, 
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
@@ -27,6 +28,7 @@ import {
 import * as reimbursementReqService from '../../services/reimbursement-request.service';
 import { rootLogger } from '../../utils/logger';
 import { errors } from '../../utils/constants';
+import { exportReimbursementRequests } from '../../services/reimbursement-request.service';
 
 @Tags('reimbursement-requests')
 @Route('/api/v1/reimbursement-requests')
@@ -245,5 +247,21 @@ export class ReimbursementRequestV1Controller {
     this.logger.debug('Received request to delete ReimbursementRequest[%s]', id);
     await reimbursementReqService.deleteReimbursementRequest(id, req.user!);
     this.logger.debug('ReimbursementRequest[%s] deleted successfully', id);
+  }
+  /**
+   * Get reimbursement request and export them in an Excel file.
+   * 
+   * @param query 
+   * @param req 
+   * @returns excel file stream
+   */
+  @Get('/exports')
+  public async exportReimbursementRequests(
+    @Queries() query: ExportReimbursementRequestQueryDto,
+    @Request() req: Express.Request,
+  ): Promise<any> {
+    this.logger.debug('Received request to export DisciplinaryAction');
+    const rel = await exportReimbursementRequests(query, req.user!);
+    return rel;
   }
 }

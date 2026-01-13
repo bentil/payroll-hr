@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Employee,
   GrievanceReport,
@@ -11,6 +12,7 @@ import {
   UpdateGrievanceReportDto,
   SearchGrievanceReportDto,
   GrievanceReportDto,
+  ExportGrievanceReportQueryDto,
 } from '../domain/dto/grievance-report.dto';
 import { AuthorizedUser } from '../domain/user.domain';
 import { 
@@ -29,7 +31,7 @@ import * as dateutil from '../utils/date.util';
 import { generateGrievanceReportNumber } from '../utils/generator.util';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
-
+import Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'GrievanceReportService' });
@@ -97,15 +99,21 @@ export async function addGrievanceReport(
   logger.debug('Adding new GrievanceReport to the database...');
   try {
     newGrievanceReport = 
-      await grievanceReportRepository.create({ 
-        companyId, 
-        reportingEmployeeId, 
-        reportedEmployeeId, 
-        grievanceTypeId,
-        reportDate: creatData.reportDate,
-        reportNumber,
-        note: creatData.note,
-      }, true);
+      await grievanceReportRepository.create(
+        { 
+          companyId, 
+          reportingEmployeeId, 
+          reportedEmployeeId, 
+          grievanceTypeId,
+          reportDate: creatData.reportDate,
+          reportNumber,
+          note: creatData.note,
+        }, 
+        { 
+          company: true, grievanceType: true, 
+          reportingEmployee: true, grievanceReportedEmployees: true 
+        }
+      );
     logger.info('GreivanceReport[%s] added successfully!', newGrievanceReport.id);
   } catch (err) {
     logger.error('Adding GrievanceReport failed', { error: err });
@@ -162,7 +170,7 @@ export async function getGrievanceReports(
           lt: createdAtLte && dateutil.getDate(new Date(createdAtLte), { days: 1 }),
         } },
       orderBy: orderByInput,
-      includeRelations: true
+      include: { grievanceType: true, reportingEmployee: true } 
     });
     logger.info('Found %d GrievanceReport(s) that matched query', result.data.length, { query });
   } catch (err) {
@@ -181,7 +189,15 @@ export async function getGrievanceReport(id: number): Promise<GrievanceReportDto
   let grievanceReport: GrievanceReportDto | null;
 
   try {
-    grievanceReport = await grievanceReportRepository.findOne({ id }, true);
+    grievanceReport = await grievanceReportRepository.findOne(
+      { id },
+      {
+        company: true, 
+        grievanceType: true, 
+        reportingEmployee: true, 
+        grievanceReportedEmployees: true
+      }
+    );
   } catch (err) {
     logger.warn('Getting GreivanceReport[%s] failed', id, { error: (err as Error).stack });
     throw new ServerError({ message: (err as Error).message, cause: err });
@@ -298,7 +314,14 @@ export async function updateGrievanceReport(
 
   logger.debug('Persisting update(s) to GrievanceReport[%s]', id);
   const updatedGrievanceReport = await grievanceReportRepository.update({
-    where: { id }, data: updateData, includeRelations: true
+    where: { id }, 
+    data: updateData, 
+    include: {
+      company: true, 
+      grievanceType: true, 
+      reportingEmployee: true, 
+      grievanceReportedEmployees: true
+    }
   });
   logger.info('Update(s) to GrievanceReport[%s] persisted successfully!', id);
 
@@ -334,4 +357,72 @@ export async function deleteGrievanceReport(id: number): Promise<void> {
   logger.debug(`Emitting ${events.deleted} event`);
   kafkaService.send(events.deleted, deletedGrievanceReport);
   logger.info(`${events.deleted} event created successfully!`);
+}
+
+export async function exportGrievanceReports(
+  companyId: number,
+  query: ExportGrievanceReportQueryDto,
+) {
+  const {
+    orderBy,
+    ...exportData
+  } = query;
+  const {
+    grievanceTypeCode,
+    reportNumber,
+    reportingEmployeeNumber,
+    reportDate,
+    note,
+  } = exportData;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+
+  let result: ListWithPagination<GrievanceReportDto>;
+  try {
+    logger.debug('Finding GrievanceReport(s) that matched query', { query });
+    result = await grievanceReportRepository.find({
+      where: { companyId },
+      orderBy: orderByInput,
+      select: {
+        grievanceType: grievanceTypeCode ? true : false, 
+        reportNumber: reportNumber ? true : false,
+        reportingEmployee: reportingEmployeeNumber ? true : false,
+        reportDate: reportDate ? true : false,
+        note: note ? true : false,
+      },
+    });
+    logger.info('Found %d GrievanceReport(s) that matched query', result.data.length, { query });
+  } catch (err) {
+    logger.warn(
+      'Querying GrievanceReport with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  const selectedColumns = Object.entries(exportData)
+    .filter(([key, value]) => value === true)
+    .map(([key, value]) => key);
+
+  const workbook = new Excel.Workbook();
+  const worksheet = workbook.addWorksheet('leave_requests');
+
+  worksheet.columns = selectedColumns.map(col => ({
+    header: col,
+    key: col,
+    width: 30
+  }));
+
+
+  result.data.forEach((grievanceReport) => {
+    worksheet.addRow({
+      grievanceTypeCode: grievanceReport.grievanceType?.code,
+      reportNumber: grievanceReport.reportNumber,
+      reportingEmployeeNumber: grievanceReport.reportingEmployee?.employeeNumber,
+      reportDate: grievanceReport.reportDate,
+      note: grievanceReport.note,
+    });
+  });
+  return workbook;
 }

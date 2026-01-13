@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { 
   REIMBURESEMENT_REQUEST_STATUS, 
   ReimbursementRequest 
@@ -13,7 +14,8 @@ import {
   ReimbursementRequestUpdatesDto, 
   ReimbursementResponseInputDto, 
   UpdateReimbursementRequestDto,
-  SearchReimbursementRequestDto
+  SearchReimbursementRequestDto,
+  ExportReimbursementRequestQueryDto
 } from '../domain/dto/reimbursement-request.dto';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
 import { 
@@ -40,7 +42,7 @@ import {
   sendReimbursementResponseEmail 
 } from '../utils/notification.util';
 import { CompanyCurrencyEvent } from '../domain/events/company-currency.event';
-
+import Excel from 'exceljs';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'ReimbursementRequestService' });
@@ -760,4 +762,97 @@ export async function deleteReimbursementRequest(
   logger.debug(`Emitting ${events.deleted}`);
   kafkaService.send(events.deleted, deletedReimbursementRequest);
   logger.info(`${events.deleted} event emitted successfully!`);
+}
+
+export async function exportReimbursementRequests(
+  query: ExportReimbursementRequestQueryDto,
+  authUser: AuthorizedUser,
+) {
+  const {
+    orderBy,
+    queryMode,
+    ...exportData
+  } = query;
+  const {
+    employeeNumber,
+    title,
+    description,
+    currencyCode,
+    amount,
+    status,
+    expenditureDate,
+    approverEmployeeNumber,
+    completerEmployeeNumber,
+    approvalsRequired,
+  } = exportData;
+  const orderByInput = helpers.getOrderByInput(orderBy);
+  const { scopedQuery } = await helpers.applyApprovalScopeToQuery(
+    authUser, 
+    { queryMode },
+    { extendAdminCategories: [UserCategory.OPERATIONS] }
+  );
+
+  let result: ListWithPagination<ReimbursementRequestDto>;
+  try {
+    logger.debug('Finding ReimbursementRequest(s) that matched query', { query });
+    result = await repository.find({
+      where: { 
+        ...scopedQuery,
+      },
+      orderBy: orderByInput,
+      select: {
+        employee: employeeNumber ? true : false,
+        title: title ? true : false,
+        description: description ? true : false,
+        currency: currencyCode ? true : false,
+        amount: amount ? true : false,
+        status: status ? true : false,
+        expenditureDate: expenditureDate ? true : false,
+        approver: approverEmployeeNumber ? true : false,
+        completer: completerEmployeeNumber ? true : false,
+        approvalsRequired: approvalsRequired ? true : false,
+      },
+    });
+    logger.info(
+      'Found %d ReimbursementRequest(s) that matched query', result.data.length, { query }
+    );
+  } catch (err) {
+    logger.warn(
+      'Querying ReimbursementRequest with query failed', { query }, { error: err as Error }
+    );
+    throw new ServerError({
+      message: (err as Error).message,
+      cause: err
+    });
+  }
+
+  const selectedColumns = Object.entries(exportData)
+    .filter(([key, value]) => value === true)
+    .map(([key, value]) => key);
+
+  const workbook = new Excel.Workbook();
+  const worksheet = workbook.addWorksheet('leave_requests');
+
+  worksheet.columns = selectedColumns.map(col => ({
+    header: col,
+    key: col,
+    width: 30
+  }));
+
+
+  result.data.forEach((reimbursementRequest) => {
+    worksheet.addRow({
+      employeeNumber: reimbursementRequest.employee?.employeeNumber,
+      title: reimbursementRequest.title,
+      description: reimbursementRequest.description,
+      currencyCode: reimbursementRequest.currency?.currency?.code,
+      amount: reimbursementRequest.amount,
+      status: reimbursementRequest.status,
+      expenditureDate: reimbursementRequest.expenditureDate,
+      approverEmployeeNumber: reimbursementRequest.approver?.employeeNumber,
+      completerEmployeeNumber: reimbursementRequest.completer?.employeeNumber,
+      approvalsRequired: reimbursementRequest.approvalsRequired,
+    });
+  });
+  return workbook;
 }
