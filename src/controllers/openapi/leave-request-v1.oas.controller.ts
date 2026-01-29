@@ -199,7 +199,7 @@ export class LeaveRequestV1Controller {
     @Request() req: Express.Request
   ): Promise<ApiSuccessResponse<LeaveRequest>> {
     this.logger.debug('Received request to adjust the number of days for LeaveRequest[%s]', id);
-    const updateLeaveRequest = await leaveReqService.adjustDays(id, req.user!, updateDto);
+    const updateLeaveRequest = await leaveReqService.adjustDays(id, updateDto, req.user!);
     this.logger.info('Number of days for LeaveRequest[%s] adjusted successfully!', id);
     return { data: updateLeaveRequest };
   }

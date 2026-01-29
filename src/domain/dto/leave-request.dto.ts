@@ -232,3 +232,20 @@ export class ExportLeaveRequestQueryDto {
   queryMode?: RequestQueryMode;
   orderBy: LeaveRequestOrderBy = LeaveRequestOrderBy.CREATED_AT_DESC;
 }
+
+export class UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto {
+  employeeId!: number;
+  leaveTypeId!: number;
+  year!: number;
+  numberOfDaysUsed?: number;
+  numberOfDaysPending?: number;
+  carryOverDays?: number;
+  prevNumberOfDays?: number;
+  newCarryOverDays?: number ;
+  numberOfDaysAllowed?: number;
+  numberOfDaysLeft?: number;
+  considerPublicHolidayAsWorkday?: boolean;
+  considerWeekendAsWorkday?: boolean;
+  organizationId?: string;
+  numberOfCarryOverDaysUsed?: number;
+}

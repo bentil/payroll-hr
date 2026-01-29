@@ -1,6 +1,7 @@
 import { Holiday, Prisma } from '@prisma/client';
 import { prisma } from '../components/db.component';
 import { RecordInUse } from '../errors/http-errors';
+import { getListWithPagination, ListWithPagination } from './types';
 
  
 export async function createOrUpdate(
@@ -45,4 +46,20 @@ export async function deleteOne(
     }
     throw err;
   }
+}
+
+export async function find(params: {
+  skip?: number,
+  take?: number,
+  where?: Prisma.HolidayWhereInput,
+  orderBy?: Prisma.HolidayOrderByWithRelationAndSearchRelevanceInput
+}): Promise<ListWithPagination<Holiday>> {
+  const { skip, take } = params;
+  const paginate = skip !== undefined && take !== undefined;
+  const [data, totalCount] = await Promise.all([
+    prisma.holiday.findMany(params),
+    paginate ? prisma.holiday.count({ where: params.where }) : Promise.resolve(undefined),
+  ]);
+
+  return getListWithPagination(data, { skip, take, totalCount });
 }

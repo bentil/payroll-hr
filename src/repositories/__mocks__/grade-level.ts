@@ -56,6 +56,17 @@ const dataStore: GradeLevel[] = [
     'type': GRADE_LEVEL_TYPE.MAJOR,
     'createdAt': new Date('2024-09-27T15:11:18.372Z'),
     'modifiedAt': new Date ('2024-09-27T15:11:18.372Z'),
+  },
+  {
+    'id': 6,
+    'companyId': 1,
+    'companyLevelId': 1,
+    'name': 'test6',
+    'code': 'GMJ03',
+    'description': '',
+    'type': GRADE_LEVEL_TYPE.MAJOR,
+    'createdAt': new Date('2024-09-27T15:11:18.372Z'),
+    'modifiedAt': new Date ('2024-09-27T15:11:18.372Z'),
   }
 ];
 

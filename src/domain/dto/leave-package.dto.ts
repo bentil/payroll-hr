@@ -13,6 +13,7 @@ export class CreateLeavePackageDto {
   accrued?: boolean;
   carryOverDaysValue?: number;
   carryOverDaysPercent?: number;
+  carryOverExpiryDate?: Date;
   companyLevelIds?: number[];
 }
 
@@ -25,8 +26,9 @@ export class UpdateLeavePackageDto {
   paid?: boolean;
   redeemable?: boolean;
   accrued?: boolean;
-  carryOverDaysValue?: number;
-  carryOverDaysPercent?: number;
+  carryOverDaysValue?: number | null;
+  carryOverDaysPercent?: number | null;
+  carryOverExpiryDate?: Date;
   addCompanyLevelIds?: number[];
   removeCompanyLevelIds?: number[];
 }
@@ -47,7 +49,8 @@ export interface LeavePackageDto extends LeavePackage {
 }
 
 export interface CompanyLevelLeavePackageDto extends CompanyLevelLeavePackage {
-  companyLevel?: CompanyLevel
+  companyLevel?: CompanyLevel;
+  leavePackage?: LeavePackage;
 }
 
 

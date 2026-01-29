@@ -32,6 +32,8 @@ export const CREATE_LEAVE_PACKAGE_SCHEMA = Joi.object({
     .optional(),
   carryOverDaysPercent: Joi.number()
     .optional(),
+  carryOverExpiryDate: Joi.date()
+    .optional(),
   companyLevelIds: Joi.array()
     .optional()
 });
@@ -64,6 +66,8 @@ export const UPDATE_LEAVE_PACKAGE_SCHEMA = Joi.object({
   carryOverDaysValue: Joi.number()
     .optional(),
   carryOverDaysPercent: Joi.number()
+    .optional(),
+  carryOverExpiryDate: Joi.date()
     .optional(),
   addCompanyLevelIds: Joi.array()
     .optional(),

@@ -83,7 +83,7 @@ export function generateLeavePackageRecordsForACompanyLevel(
 }
 
 // calculate number of days between two given dates
-export async function calculateDaysBetweenDates(
+export async function calculateDaysFromDates(
   startDate: Date,
   endDate: Date
 ): Promise<number> {
@@ -92,6 +92,19 @@ export async function calculateDaysBetweenDates(
 
   // To calculate the no. of days between two dates 
   const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24)) + 1;
+
+  return differenceInDays;
+}
+
+export async function calculateDaysBetweenDates(
+  startDate: Date,
+  endDate: Date
+): Promise<number> {
+  // To calculate the time difference of two dates 
+  const differenceInTime = endDate.getTime() - startDate.getTime();
+
+  // To calculate the no. of days between two dates 
+  const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
 
   return differenceInDays;
 }

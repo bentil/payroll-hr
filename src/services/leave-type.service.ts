@@ -16,7 +16,7 @@ import {
 // eslint-disable-next-line max-len
 import * as compLevelLeavePackageRepository from '../repositories/company-level-leave-package.repository';
 import * as employeeRepository from '../repositories/employee.repository';
-import * as repository from '../repositories/leave-type';
+import * as repository from '../repositories/leave-type.repository';
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import * as helpers from '../utils/helpers';
