@@ -249,3 +249,8 @@ export class UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto {
   organizationId?: string;
   numberOfCarryOverDaysUsed?: number;
 }
+
+export class OverlapReturnObject { 
+  overlap!: boolean; 
+  existingLeaveId?: number; 
+}

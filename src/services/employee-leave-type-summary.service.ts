@@ -16,6 +16,9 @@ import { ListWithPagination } from '../repositories/types';
 import * as helpers from '../utils/helpers';
 import { rootLogger } from '../utils/logger';
 import { getApplicableLeavePackage } from './leave-package.service';
+import { CronJob } from 'cron';
+import config from '../config';
+import { LeavePackageDto } from '../domain/dto/leave-package.dto';
 
 
 const logger = rootLogger.child({ context: 'EmployeeLeaveTypeSummaryService' });
@@ -171,62 +174,75 @@ export async function deleteEmployeeLeaveTypeSummary(
   }
 }
 
-export async function resetExpiredCarryOverDays() {
-  const currentYear = new Date().getFullYear();
-  logger.debug('Resetting expired carry over days for year[%s]', currentYear);
-  logger.debug(
-    'Finding EmployeeLeaveTypeSummary(s) for year[%s] where carryOverDays > 0' +
-    ' and leavePackage carryOverExpiryDate', 
-    currentYear
-  );
-  const employeeLeaveTypeSummary = await repository.find({ 
-    where: { 
-      year: currentYear,
-      carryOverDays: { gt: 0 },
-      leaveType: {
-        leavePackages: {
-          some: {
-            carryOverExpiryDate: { not: null }
+export const resetExpiredCarryOverDays = new CronJob (
+  config.dailyCronJobTime,
+  async function() {
+    const currentYear = new Date().getFullYear();
+    logger.debug('Resetting expired carry over days for year[%s]', currentYear);
+    logger.debug(
+      'Finding EmployeeLeaveTypeSummary(s) for year[%s] where carryOverDays > 0' +
+      ' and leavePackage carryOverExpiryDate', 
+      currentYear
+    );
+    const employeeLeaveTypeSummary = await repository.find({ 
+      where: { 
+        year: currentYear,
+        carryOverDays: { gt: 0 },
+        leaveType: {
+          leavePackages: {
+            some: {
+              carryOverExpiryDate: { not: null }
+            }
           }
         }
       }
-    }
-  });
-  for (const elts of employeeLeaveTypeSummary.data) {
-    logger.debug(
-      'Finding applicable LeavePackage of LeaveType[%s] for Employee[%s]',
-      elts.leaveTypeId, elts.employeeId
-    );
-    const leavePackage = await getApplicableLeavePackage(elts.employeeId, elts.leaveTypeId);
-    logger.info(
-      'Found applicable LeavePackage of LeaveType[%s] for Employee[%s]',
-      elts.leaveTypeId, elts.employeeId
-    );
-    
-    if (leavePackage && leavePackage.carryOverExpiryDate) {
-      const expiryDate = new Date(leavePackage.carryOverExpiryDate);
-      if (expiryDate <= new Date()) {
-        logger.debug(
-          'Resetting carry over days for EmployeeLeaveTypeSummary' +
-          ' with employeeId[%s], leaveTypeId[%s], year[%s]',
-          elts.employeeId, elts.leaveTypeId, elts.year
-        );
-        
-        await repository.update({
-          where: { 
-            employeeId_leaveTypeId_year: 
-              { employeeId: elts.employeeId, 
-                leaveTypeId: elts.leaveTypeId, 
-                year: elts.year 
-              } 
-          },
-          data: { carryOverDays: 0 }
-        });
+    });
+    for (const elts of employeeLeaveTypeSummary.data) {
+      logger.debug(
+        'Finding applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+        elts.leaveTypeId, elts.employeeId
+      );
+      let leavePackage: LeavePackageDto | undefined;
+      try {
+        leavePackage = await getApplicableLeavePackage(elts.employeeId, elts.leaveTypeId);
+      } catch (err) {
+        if (err instanceof NotFoundError) {
+          logger.warn('Did not find any appicable leave packageof LeaveType[%s] for Employee[%s]',
+            elts.leaveTypeId, elts.employeeId
+          );
+        } else {
+          throw err;
+        }
+      }
+      logger.info(
+        'Found applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+        elts.leaveTypeId, elts.employeeId
+      );
+      
+      if (leavePackage && leavePackage.carryOverExpiryDate) {
+        const expiryDate = new Date(leavePackage.carryOverExpiryDate);
+        if (expiryDate <= new Date()) {
+          logger.debug(
+            'Resetting carry over days for EmployeeLeaveTypeSummary' +
+            ' with employeeId[%s], leaveTypeId[%s], year[%s]',
+            elts.employeeId, elts.leaveTypeId, elts.year
+          );
+          
+          await repository.update({
+            where: { 
+              employeeId_leaveTypeId_year: 
+                { employeeId: elts.employeeId, 
+                  leaveTypeId: elts.leaveTypeId, 
+                  year: elts.year 
+                } 
+            },
+            data: { carryOverDays: 0 }
+          });
+        }
       }
     }
   }
-
-}
+);
 
 export async function createOrUpdateEmployeeLeaveTypeSummary(
   data: Omit<EmployeeLeaveTypeSummary, 'createdAt' | 'modifiedAt'>

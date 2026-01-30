@@ -27,6 +27,7 @@ import {
   LeaveTakenReportEmployeeObject,
   LeaveTakenReportObject,
   LeaveTakenWithPackageReportObject,
+  OverlapReturnObject,
   QueryLeaveRequestDto,
   QueryLeaveRequestForReportDto,
   RequestQueryMode,
@@ -106,6 +107,21 @@ export async function addLeaveRequest(
     );
     throw new ForbiddenError({
       message: 'You are not allowed to create leave request for another employee'
+    });
+  }
+
+  // check for overlaps with existing leaves
+
+  const overlap = await checkIfLeaveOverlapsExistingLeaves({
+    startDate,
+    returnDate,
+    employeeId
+  });
+
+  if (overlap === true) {
+    logger.warn('LeaveRequest overlaps with existing leave for employee');
+    throw new InputError({
+      message: 'Leave request overlaps with existing leave. Kindly reselect'
     });
   }
 
@@ -415,6 +431,21 @@ export async function updateLeaveRequest(
         message: 'You can not create a leave request with return date earlier than start date'
       });
     }
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate,
+      returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: returnDate, 
@@ -432,6 +463,22 @@ export async function updateLeaveRequest(
         message: 'You can not create a leave request with return date earlier than start date'
       });
     }
+
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate,
+      returnDate: leaveRequest.returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: leaveRequest.returnDate, 
@@ -449,6 +496,22 @@ export async function updateLeaveRequest(
         message: 'You can not create a leave request with return date earlier than start date'
       });
     }
+
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate: leaveRequest.startDate,
+      returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate: leaveRequest.startDate, 
       endDate: returnDate, 
@@ -2543,4 +2606,63 @@ export async function getLeavesBalanceReport(
     }
   }
   return report;
+}
+
+async function checkIfLeaveOverlapsExistingLeaves(params: {
+  startDate: Date;
+  returnDate: Date;
+  employeeId: number;
+  leaveRequestId?: number;
+}): Promise<boolean> {
+  const { startDate, returnDate, employeeId, leaveRequestId } = params;
+
+  // check if leave exists that intersects with the given dates
+  const existingLeave = await leaveRequestRepository.findFirst(
+    {
+      id: leaveRequestId 
+        ? {
+          not: leaveRequestId
+        }
+        : undefined,
+      employeeId,
+      OR: [
+        // Existing startDate is between start and end dates of new leave
+        // captures scenario where leave starts before an existing leave but ends after 
+        // the start of that existing leave
+        // ie: E.L 20th to 26th, new leave , 18th to 21st
+        { 
+          startDate: {
+            gte: startDate,
+            lte: returnDate,
+          } 
+        },
+        // Existing returnDate is between start and end dates of newLeave
+        // captures scenario where leave starts before an existing leave ends but ends after 
+        // the end of that existing leave
+        // ie: E.L 20th to 26th, new leave , 24th to 31st
+        {
+          returnDate: {
+            lt: startDate,
+            gte: returnDate
+          }
+        },
+        // new startdate after existing startDate and returnDate before existing existing
+        // captures scenario where leave starts before an existing leave ends but ends before 
+        // the end of that existing leave
+        // ie: E.L 20th to 26th, new leave , 22nd to 24th
+        {
+          AND:  {
+            startDate: {
+              lte: startDate
+            },
+            returnDate: {
+              gte: returnDate
+            }
+          }
+        }
+      ]
+    },
+    { employee: true }
+  );
+  return existingLeave !== null;
 }
