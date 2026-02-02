@@ -122,6 +122,7 @@ model Employee {
   departmentLeadership            DepartmentLeadership[]
   announcementReadEvent           AnnouncementReadEvent[]
   jobTitle                        JobTitle?                        @relation(fields: [jobTitleId], references: [id])
+  EmployeeLeaveTypeSummaries        EmployeeLeaveTypeSummary[]
 
   @@fulltext([firstName, lastName, otherNames, employeeNumber])
   @@map("employee")
@@ -272,6 +273,7 @@ model LeaveType {
   modifiedAt  DateTime? @updatedAt @map("modified_at")
 
   leavePackages LeavePackage[]
+  EmployeeLeaveTypeSummaries EmployeeLeaveTypeSummary[]
 
   @@unique(fields: [code])
   @@unique(fields: [name])
@@ -292,6 +294,7 @@ model LeavePackage {
   accrued              Boolean?   @default(true) @map("accrued")
   carryOverDaysValue   Int?       @map("carry_over_days_value") @db.Int()
   carryOverDaysPercent Decimal?   @map("carry_over_days_percent") @db.Decimal(10, 4)
+  carryOverExpiryDate  DateTime?  @map("carry_over_expiry_date")
   leaveType            LeaveType? @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   createdAt            DateTime   @default(now()) @map("created_at")
   modifiedAt           DateTime?  @updatedAt @map("modified_at")
@@ -821,4 +824,22 @@ model AnnouncementReadEvent {
 
   @@unique([employeeId, announcementId])
   @@map("announcement_read_event")
+}
+
+model EmployeeLeaveTypeSummary {
+  employeeId            Int        @map("employee_id") @db.UnsignedInt() //fk
+  leaveTypeId          Int        @map("leave_type_id") @db.UnsignedInt() 
+  numberOfDaysUsed     Int        @map("number_of_days_used")
+  numberOfDaysPending  Int      @map("number_of_days_pending")
+  numberOfCarryOverDaysUsed Int?      @map("number_of_carry_over_days_used")
+  carryOverDays        Int      @map("carry_over_days")
+  year                 Int      @map("year") @db.Year()
+  createdAt      DateTime     @default(now()) @map("created_at")
+  modifiedAt     DateTime?    @updatedAt @map("modified_at")
+
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@map("employee_leave_type_summary")
 }

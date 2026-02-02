@@ -11,7 +11,8 @@ import {
   AdjustDaysDto,
   LeaveResponseAction,
   LeaveRequestDto,
-  LeaveResponseInputDto
+  LeaveResponseInputDto,
+  UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto
 } from '../domain/dto/leave-request.dto';
 import {
   AlreadyExistsError,
@@ -19,6 +20,7 @@ import {
   RecordInUse
 } from '../errors/http-errors';
 import { ListWithPagination, getListWithPagination } from './types';
+import { countWorkingDaysForAdjustment } from '../services/holiday.service';
 
 export class CreateLeaveRequestObject {
   employeeId!: number;
@@ -131,14 +133,39 @@ export async function update(params: {
   where: Prisma.LeaveRequestWhereUniqueInput;
   data: Prisma.LeaveRequestUpdateInput | Prisma.LeaveRequestUncheckedUpdateInput;
   include?: Prisma.LeaveRequestInclude;
+  updateEmployeeLeaveTypeSummary?: UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto;
 }): Promise<LeaveRequestDto> {
-  const { where, data, include } = params;
+  const { where, data, include, updateEmployeeLeaveTypeSummary } = params;
+  
   try {
-    return await prisma.leaveRequest.update({ 
-      where, 
-      data,
-      include,
+    return await prisma.$transaction(async (trxn) => {
+      if (updateEmployeeLeaveTypeSummary) {
+        const {
+          employeeId,
+          leaveTypeId,
+          year,
+          numberOfDaysPending,
+        } = updateEmployeeLeaveTypeSummary;
+
+        await trxn.employeeLeaveTypeSummary.update({
+          where: { employeeId_leaveTypeId_year: {
+            employeeId,
+            leaveTypeId,
+            year
+          } },
+          data: {
+            numberOfDaysPending
+          }
+        });
+      }
+      
+      return await trxn.leaveRequest.update({ 
+        where, 
+        data,
+        include,
+      });
     });
+    
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
@@ -153,10 +180,32 @@ export async function update(params: {
 }
 
 export async function deleteOne(
-  where: Prisma.LeaveRequestWhereUniqueInput
+  where: Prisma.LeaveRequestWhereUniqueInput,
+  updateEmployeeLeaveTypeSummary?: UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto
 ): Promise<LeaveRequest> {
   try {
-    return await prisma.leaveRequest.delete({ where });
+    return await prisma.$transaction(async (trxn) => {
+      if (updateEmployeeLeaveTypeSummary) {
+        const {
+          employeeId,
+          leaveTypeId,
+          year,
+          numberOfDaysPending,
+        } = updateEmployeeLeaveTypeSummary;
+
+        await trxn.employeeLeaveTypeSummary.update({
+          where: { employeeId_leaveTypeId_year: {
+            employeeId,
+            leaveTypeId,
+            year
+          } },
+          data: {
+            numberOfDaysPending
+          }
+        });
+      }
+      return trxn.leaveRequest.delete({ where });
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2003') {
@@ -174,16 +223,39 @@ export async function cancel(params: {
   id: number;
   cancelledByEmployeeId: number;
   include?: Prisma.LeaveRequestInclude;
+  updateEmployeeLeaveTypeSummary?: UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto;
 }): Promise<LeaveRequestDto> {
-  const { id, cancelledByEmployeeId, include } = params;
-  return await prisma.leaveRequest.update({ 
-    where: { id }, 
-    data: {
-      status: LEAVE_REQUEST_STATUS.CANCELLED,
-      cancelledAt: new Date(),
-      cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
-    },
-    include,
+  const { id, cancelledByEmployeeId, include, updateEmployeeLeaveTypeSummary } = params;
+  return await prisma.$transaction(async (trxn) => {
+    if (updateEmployeeLeaveTypeSummary) {
+      const {
+        employeeId,
+        leaveTypeId,
+        year,
+        numberOfDaysPending,
+      } = updateEmployeeLeaveTypeSummary;
+
+      await trxn.employeeLeaveTypeSummary.update({
+        where: { employeeId_leaveTypeId_year: {
+          employeeId,
+          leaveTypeId,
+          year
+        } },
+        data: {
+          numberOfDaysPending
+        }
+      });
+    }
+
+    return await trxn.leaveRequest.update({ 
+      where: { id }, 
+      data: {
+        status: LEAVE_REQUEST_STATUS.CANCELLED,
+        cancelledAt: new Date(),
+        cancelledByEmployee: { connect: { id: cancelledByEmployeeId } },
+      },
+      include,
+    });
   });
 }
 
@@ -194,9 +266,10 @@ export async function respond(params: {
     finalApproval: boolean,
     approverLevel: number
   };
-  include?: Prisma.LeaveRequestInclude
+  include?: Prisma.LeaveRequestInclude,
+  updateEmployeeLeaveTypeSummary?: UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto
 }): Promise<LeaveRequestDto> {
-  const { id, data, include } = params;
+  const { id, data, include, updateEmployeeLeaveTypeSummary } = params;
   
   let requestStatus: LEAVE_REQUEST_STATUS | undefined,
     responseType: LEAVE_RESPONSE_TYPE;
@@ -216,21 +289,48 @@ export async function respond(params: {
   }
 
   try {
-    return await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: requestStatus,
-        responseCompletedAt: requestStatus ? new Date() : undefined,
-        leaveResponses: {
-          create: {
-            employee: { connect: { id: data.approvingEmployeeId } },
-            comment: data.comment,
-            responseType,
-            approverLevel: data.approverLevel
+    return await prisma.$transaction(async (trxn) =>  {
+      if (updateEmployeeLeaveTypeSummary) {
+        const {
+          employeeId,
+          leaveTypeId,
+          year,
+          numberOfDaysPending,
+          carryOverDays,
+          numberOfDaysUsed,
+          numberOfCarryOverDaysUsed
+        } = updateEmployeeLeaveTypeSummary;
+
+        await trxn.employeeLeaveTypeSummary.update({
+          where: { employeeId_leaveTypeId_year: {
+            employeeId,
+            leaveTypeId,
+            year
+          } },
+          data: {
+            numberOfDaysPending,
+            carryOverDays,
+            numberOfDaysUsed,
+            numberOfCarryOverDaysUsed,
           }
-        }
-      },
-      include,
+        });
+      }
+      return await trxn.leaveRequest.update({
+        where: { id },
+        data: {
+          status: requestStatus,
+          responseCompletedAt: requestStatus ? new Date() : undefined,
+          leaveResponses: {
+            create: {
+              employee: { connect: { id: data.approvingEmployeeId } },
+              comment: data.comment,
+              responseType,
+              approverLevel: data.approverLevel
+            }
+          }
+        },
+        include,
+      });
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -247,27 +347,87 @@ export async function respond(params: {
 
 export async function adjustDays(params: {
   id: number;
-  data: AdjustDaysDto & { respondingEmployeeId: number };
+  data: AdjustDaysDto & { respondingEmployeeId: number, newReturnDate: Date };
   include?: Prisma.LeaveRequestInclude;
+  updateEmployeeLeaveTypeSummary?: UpdateEmployeeLeaveTypeSummaryViaLeaveRequestDto;
 }): Promise<LeaveRequestDto> {
-  const { id, data, include } = params;
+  const { id, data, include, updateEmployeeLeaveTypeSummary } = params;
 
   try {
-    return await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        numberOfDays: data.adjustment === AdjustmentOptions.DECREASE
-          ? { decrement: data.count }
-          : { increment: data.count },
-        leaveResponses: {
-          create: {
-            comment: data.comment,
-            responseType: LEAVE_RESPONSE_TYPE.ADJUSTED,
-            employee: { connect: { id: data.respondingEmployeeId } }
-          }
+    return await prisma.$transaction(async (trxn) => {
+      const leaveRequest = await trxn.leaveRequest.update({
+        where: { id },
+        data: {
+          numberOfDays: data.adjustment === AdjustmentOptions.DECREASE
+            ? { decrement: data.count }
+            : { increment: data.count },
+          leaveResponses: {
+            create: {
+              comment: data.comment,
+              responseType: LEAVE_RESPONSE_TYPE.ADJUSTED,
+              employee: { connect: { id: data.respondingEmployeeId } }
+            }
+          },
+          returnDate: data.newReturnDate
+        },
+        include,
+      });
+
+      if (updateEmployeeLeaveTypeSummary) {
+        const {
+          employeeId,
+          leaveTypeId,
+          year,
+          prevNumberOfDays,
+          numberOfDaysUsed,
+          considerPublicHolidayAsWorkday,
+          considerWeekendAsWorkday,
+          organizationId,
+          numberOfDaysAllowed,
+          numberOfDaysLeft,
+          numberOfDaysPending,
+        } = updateEmployeeLeaveTypeSummary;
+        let newNumberOfDays = await countWorkingDaysForAdjustment({ 
+          startDate: leaveRequest.startDate, 
+          endDate: data.newReturnDate, 
+          considerPublicHolidayAsWorkday,
+          considerWeekendAsWorkday,
+          organizationId: organizationId!
+        });
+        newNumberOfDays = data.adjustment === AdjustmentOptions.INCREASE
+          ? newNumberOfDays + 1
+          : newNumberOfDays;
+        const newNumberOfDaysUsed = (numberOfDaysUsed! + newNumberOfDays) - prevNumberOfDays!;
+        let newCarryOverDays: number | undefined, newNumberOfCarryOverDaysUsed: number | undefined;
+        
+        const newNumberOfDaysLeft = numberOfDaysLeft! + prevNumberOfDays! - newNumberOfDaysUsed;
+        
+        if (newNumberOfDaysLeft > numberOfDaysAllowed!) {
+          newCarryOverDays = newNumberOfDaysLeft - numberOfDaysAllowed!;
+          newNumberOfCarryOverDaysUsed = (newNumberOfDaysLeft! + newNumberOfDaysUsed!) 
+            - (numberOfDaysAllowed! + newCarryOverDays);
+        } else {
+          newCarryOverDays = 0;
+          newNumberOfCarryOverDaysUsed = 
+            (newNumberOfDaysUsed + newNumberOfDaysLeft) - numberOfDaysAllowed!;
         }
-      },
-      include,
+        await trxn.employeeLeaveTypeSummary.update({
+          where: { employeeId_leaveTypeId_year: {
+            employeeId,
+            leaveTypeId,
+            year
+          } },
+          data: {
+            numberOfDaysUsed: newNumberOfDaysUsed,
+            carryOverDays: newCarryOverDays,
+            numberOfDaysPending,
+            numberOfCarryOverDaysUsed: newNumberOfCarryOverDaysUsed
+          }
+        });
+      }
+      
+
+      return leaveRequest;
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {

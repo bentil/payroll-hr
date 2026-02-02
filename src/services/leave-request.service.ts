@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  EmployeeLeaveTypeSummary,
   LEAVE_REQUEST_STATUS,
   LeaveRequest,
   LeaveType,
@@ -9,6 +10,7 @@ import {
 import { KafkaService } from '../components/kafka.component';
 import {
   AdjustDaysDto,
+  AdjustmentOptions,
   ConvertLeavePlanToRequestDto,
   CreateLeaveRequestDto,
   EmployeeLeavePackageObject,
@@ -19,11 +21,13 @@ import {
   LeaveBalanceReportLeaveTypeObject,
   LeaveBalanceReportObject,
   LeaveRequestDto,
+  LeaveResponseAction,
   LeaveResponseInputDto,
   LeaveTakenReportDepartmentObject,
   LeaveTakenReportEmployeeObject,
   LeaveTakenReportObject,
   LeaveTakenWithPackageReportObject,
+  OverlapReturnObject,
   QueryLeaveRequestDto,
   QueryLeaveRequestForReportDto,
   RequestQueryMode,
@@ -62,16 +66,22 @@ import { rootLogger } from '../utils/logger';
 import { sendLeaveRequestEmail, sendLeaveResponseEmail } from '../utils/notification.util';
 import { getEmployeeApproversWithDefaults } from './employee-approver.service';
 import * as employeeService from './employee.service';
-import { countWorkingDays } from './holiday.service';
+import { 
+  countWorkingDays, 
+  countWorkingDaysForAdjustment, 
+  countWorkingDaysWithoutEndDate, 
+  countWorkingDaysWithReduction 
+} from './holiday.service';
 import { getApplicableLeavePackage } from './leave-package.service';
 import * as leaveTypeService from './leave-type.service';
 import * as leavePlanService from './leave-plan.service';
-import * as leaveTypeRepository from '../repositories/leave-type';
+import * as leaveTypeRepository from '../repositories/leave-type.repository';
 import * as companyRepository from '../repositories/payroll-company.repository';
 import * as Excel from 'exceljs';
 import * as departmentRepository from '../repositories/department.repository';
-import * as leavePackageRepository from '../repositories/leave-package';
+import * as leavePackageRepository from '../repositories/leave-package.repository';
 import * as companyService from './payroll-company.service';
+import * as employeeLeaveTypeSummaryService from './employee-leave-type-summary.service';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'LeaveRequestService' });
@@ -86,7 +96,7 @@ export async function addLeaveRequest(
   payload: CreateLeaveRequestDto,
   authUser: AuthorizedUser
 ): Promise<LeaveRequestDto> {
-  const { employeeId, leaveTypeId, startDate } = payload;
+  const { employeeId, leaveTypeId, startDate, returnDate } = payload;
   const { employeeId: reqEmployeeId, category, organizationId } = authUser;
   const allowedUsers = [UserCategory.HR, UserCategory.OPERATIONS];
   if ((reqEmployeeId !== employeeId) && (!allowedUsers.includes(category))) {
@@ -99,8 +109,25 @@ export async function addLeaveRequest(
       message: 'You are not allowed to create leave request for another employee'
     });
   }
+
+  // check for overlaps with existing leaves
+
+  const overlap = await checkIfLeaveOverlapsExistingLeaves({
+    startDate,
+    returnDate,
+    employeeId
+  });
+
+  if (overlap === true) {
+    logger.warn('LeaveRequest overlaps with existing leave for employee');
+    throw new InputError({
+      message: 'Leave request overlaps with existing leave. Kindly reselect'
+    });
+  }
+
   const currentDate = new Date().getTime();
   const leaveStartDate = new Date(startDate).getTime();
+  const leaveReturnDate = new Date(returnDate).getTime();
   if (leaveStartDate < currentDate && category !== UserCategory.HR) {
     logger.warn(
       'LeaveRequest can not start before today. Create rejected',
@@ -108,6 +135,15 @@ export async function addLeaveRequest(
     );
     throw new InputError({
       message: 'You can not create a leave request with a start date in the past'
+    });
+  }
+  if (leaveStartDate > leaveReturnDate) {
+    logger.warn(
+      'LeaveRequest can not have a return date earlier that startate. Create rejected',
+      employeeId
+    );
+    throw new InputError({
+      message: 'You can not create a leave request with return date earlier than start date'
     });
   }
 
@@ -324,7 +360,10 @@ export async function updateLeaveRequest(
   const { employeeId, organizationId } = authorizedUser;
 
   logger.debug('Finding LeaveRequest[%s] to update', id);
-  const leaveRequest = await leaveRequestRepository.findOne({ id });
+  const leaveRequest = await leaveRequestRepository.findOne(
+    { id },
+    { leavePackage: true }
+  );
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to update does not exist', id);
     throw new NotFoundError({
@@ -383,6 +422,30 @@ export async function updateLeaveRequest(
 
   let numberOfDays: number | undefined;
   if (startDate && returnDate) {
+    if (startDate > returnDate) {
+      logger.warn(
+        'LeaveRequest can not have a return date earlier that startate. Create rejected',
+        employeeId
+      );
+      throw new InputError({
+        message: 'You can not create a leave request with return date earlier than start date'
+      });
+    }
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate,
+      returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: returnDate, 
@@ -391,6 +454,31 @@ export async function updateLeaveRequest(
       organizationId
     });
   } else if (startDate) {
+    if (startDate > leaveRequest.returnDate) {
+      logger.warn(
+        'LeaveRequest can not have a return date earlier that startate. Create rejected',
+        employeeId
+      );
+      throw new InputError({
+        message: 'You can not create a leave request with return date earlier than start date'
+      });
+    }
+
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate,
+      returnDate: leaveRequest.returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate, 
       endDate: leaveRequest.returnDate, 
@@ -399,6 +487,31 @@ export async function updateLeaveRequest(
       organizationId
     });
   } else if (returnDate) {
+    if (leaveRequest.startDate > returnDate) {
+      logger.warn(
+        'LeaveRequest can not have a return date earlier that startate. Create rejected',
+        employeeId
+      );
+      throw new InputError({
+        message: 'You can not create a leave request with return date earlier than start date'
+      });
+    }
+
+    const overlap = await checkIfLeaveOverlapsExistingLeaves({
+      startDate: leaveRequest.startDate,
+      returnDate,
+      employeeId,
+      leaveRequestId: id
+    });
+
+
+    if (overlap === true) {
+      logger.warn('LeaveRequest overlaps with existing leave for employee');
+      throw new InputError({
+        message: 'Leave request overlaps with existing leave. Kindly reselect'
+      });
+    }
+
     numberOfDays = await countWorkingDays({ 
       startDate: leaveRequest.startDate, 
       endDate: returnDate, 
@@ -406,6 +519,33 @@ export async function updateLeaveRequest(
       considerWeekendAsWorkday,
       organizationId
     });
+  }
+
+  const prevNumberOfDays = await countWorkingDays({ 
+    startDate: leaveRequest.startDate, 
+    endDate: leaveRequest.returnDate, 
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+    organizationId
+  });
+  const currentYear = new Date().getFullYear();
+  let numberOfDaysPending: number | undefined;
+
+  const leaveSummary = await getEmployeeLeaveTypeSummary(
+    leaveRequest.employeeId,
+    leaveRequest.leavePackage!.leaveTypeId,
+  );
+  if (numberOfDays && numberOfDays > leaveSummary.numberOfDaysLeft) {
+    logger.warn('Number of days requested is more than number of days left for this leave');
+    throw new RequirementNotMetError({
+      name: errors.LEAVE_QUOTA_EXCEEDED,
+      message: `You have ${leaveSummary.numberOfDaysLeft} day(s) left for this leave type`
+    });
+  }
+
+  if (leaveSummary && numberOfDays) {
+    numberOfDaysPending = (leaveSummary.numberOfDaysPending - prevNumberOfDays)
+      + numberOfDays;
   }
   
   logger.debug('Persisting update(s) to LeaveRequest[%s]', id);
@@ -416,11 +556,19 @@ export async function updateLeaveRequest(
       startDate,
       returnDate,
       comment,
-      leavePackageId
+      leavePackageId,
     },
     include: {
       leavePackage: { include: { leaveType: true } }
     },
+    updateEmployeeLeaveTypeSummary: numberOfDaysPending 
+      ? {
+        employeeId: leaveRequest.employeeId,
+        leaveTypeId: leaveRequest.leavePackage!.leaveTypeId,
+        year: currentYear,
+        numberOfDaysPending: numberOfDays,
+      }
+      : undefined,
   });
   logger.info('Update(s) to LeaveRequest[%s] persisted successfully!', id);
 
@@ -436,7 +584,7 @@ export async function deleteLeaveRequest(
   id: number,
   authorizedUser: AuthorizedUser,
 ): Promise<void> {
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
   logger.debug('Finding LeaveRequest[%s] to delete', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
   if (!leaveRequest) {
@@ -465,7 +613,46 @@ export async function deleteLeaveRequest(
 
   logger.debug('Deleting LeaveRequest[%s] from database...', id);
   try {
-    await leaveRequestRepository.deleteOne({ id });
+    const employee = await employeeRepository.findOne(
+      { id: employeeId },
+      {
+        majorGradeLevel: { include: { companyLevel: true } },
+        company: true,
+      },
+    );
+    const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+    const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
+    const prevNumberOfDays = await countWorkingDays({ 
+      startDate: leaveRequest.startDate, 
+      endDate: leaveRequest.returnDate, 
+      considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday,
+      organizationId
+    });
+    const currentYear = new Date().getFullYear();
+    let numberOfDaysPending: number | undefined;
+
+    const employeeLeaveTypeSummary = 
+    await employeeLeaveTypeSummaryService.getEmployeeLeaveTypeSummary(
+      leaveRequest.employeeId,
+      leaveRequest.leavePackage!.leaveTypeId,
+      currentYear,
+    );
+
+    if (employeeLeaveTypeSummary) {
+      numberOfDaysPending = employeeLeaveTypeSummary.numberOfDaysPending - prevNumberOfDays;
+    }
+    await leaveRequestRepository.deleteOne(
+      { id },
+      numberOfDaysPending 
+        ? {
+          employeeId: leaveRequest.employeeId,
+          leaveTypeId: leaveRequest.leavePackage!.leaveTypeId,
+          year: currentYear,
+          numberOfDaysPending
+        }
+        : undefined
+    );
     logger.info('LeaveRequest[%s] successfully deleted', id);
   } catch (err) {
     logger.error('Deleting LeaveRequest[%] failed', id);
@@ -483,7 +670,8 @@ export async function addLeaveResponse(
   responseData: LeaveResponseInputDto,
   authUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authUser;
+  const { employeeId, organizationId } = authUser;
+  const { action } = responseData;
   let approvingEmployeeId: number;
   if (employeeId) {
     approvingEmployeeId = employeeId;
@@ -492,7 +680,10 @@ export async function addLeaveResponse(
   }
 
   logger.debug('Finding LeaveRequest[%s] to respond to', id);
-  const leaveRequest = await leaveRequestRepository.findOne({ id });
+  const leaveRequest = await leaveRequestRepository.findOne(
+    { id },
+    { leavePackage: { include: { leaveType: true } } }
+  );
   if (!leaveRequest) {
     logger.warn('LeaveRequest[%s] to add response to does not exist', id);
     throw new NotFoundError({
@@ -521,6 +712,55 @@ export async function addLeaveResponse(
     expectedLevel, 
   });
 
+  const employee = await employeeRepository.findOne(
+    { id: employeeId },
+    {
+      majorGradeLevel: { include: { companyLevel: true } },
+      company: true,
+    },
+  );
+  const numberOfDays = leaveRequest.numberOfDays!;
+  const currentYear = new Date().getFullYear();
+  let numberOfDaysPending: number | undefined,
+    carryOverDays: number | undefined,
+    numberOfDaysUsed: number | undefined,
+    numberOfCarryOverDaysUsed: number | undefined;
+
+  const employeeLeaveTypeSummary = 
+  await employeeLeaveTypeSummaryService.getEmployeeLeaveTypeSummary(
+    leaveRequest.employeeId,
+    leaveRequest.leavePackage!.leaveTypeId,
+    currentYear,
+  );
+
+  if (employeeLeaveTypeSummary) {
+    numberOfDaysPending = employeeLeaveTypeSummary.numberOfDaysPending > 0
+      ? employeeLeaveTypeSummary.numberOfDaysPending - numberOfDays
+      : 0;
+    if (
+      action === LeaveResponseAction.APPROVE && leaveRequest.approvalsRequired === expectedLevel
+    ) {
+      numberOfDaysUsed = employeeLeaveTypeSummary.numberOfDaysUsed + numberOfDays;
+      if (employeeLeaveTypeSummary.carryOverDays > 0) {
+        carryOverDays = employeeLeaveTypeSummary.carryOverDays - numberOfDays;
+        numberOfCarryOverDaysUsed = (carryOverDays < 0) 
+          ? employeeLeaveTypeSummary.numberOfCarryOverDaysUsed! 
+            + employeeLeaveTypeSummary.carryOverDays
+          : employeeLeaveTypeSummary.numberOfCarryOverDaysUsed! + numberOfDays;
+        carryOverDays = (carryOverDays < 0) ? 0 : carryOverDays;
+      }
+    }
+  }
+
+  let updateEmployeeLeaveTypeSummary: boolean = false;
+  if (action === LeaveResponseAction.DECLINE) {
+    updateEmployeeLeaveTypeSummary = true;
+  } else if (
+    action === LeaveResponseAction.APPROVE && leaveRequest.approvalsRequired === expectedLevel
+  ) {
+    updateEmployeeLeaveTypeSummary = true;
+  }
+
   logger.debug('Adding response to LeaveRequest[%s]', id);
   const updatedLeaveRequest = await leaveRequestRepository.respond({
     id,
@@ -534,7 +774,18 @@ export async function addLeaveResponse(
       leavePackage: { include: { leaveType: true } },
       leaveResponses: true,
       employee: { include: { company: true } }
-    } 
+    },
+    updateEmployeeLeaveTypeSummary: updateEmployeeLeaveTypeSummary 
+      ? {
+        employeeId: leaveRequest.employeeId,
+        leaveTypeId: leaveRequest.leavePackage!.leaveTypeId,
+        year: currentYear,
+        numberOfDaysPending,
+        carryOverDays,
+        numberOfDaysUsed,
+        numberOfCarryOverDaysUsed
+      }
+      : undefined
   });
   logger.info('Response added to LeaveRequest[%s] successfully!', id);
 
@@ -664,7 +915,7 @@ export async function cancelLeaveRequest(
   id: number, 
   authorizedUser: AuthorizedUser,
 ): Promise<LeaveRequestDto> {
-  const { employeeId } = authorizedUser;
+  const { employeeId, organizationId } = authorizedUser;
   
   logger.debug('Finding LeaveRequest[%s] to cancel', id);
   const leaveRequest = await leaveRequestRepository.findOne({ id });
@@ -709,6 +960,36 @@ export async function cancelLeaveRequest(
     });
   }
 
+  const employee = await employeeRepository.findOne(
+    { id: employeeId },
+    {
+      majorGradeLevel: { include: { companyLevel: true } },
+      company: true,
+    },
+  );
+  const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+  const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
+  const prevNumberOfDays = await countWorkingDays({ 
+    startDate: leaveRequest.startDate, 
+    endDate: leaveRequest.returnDate, 
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+    organizationId
+  });
+  const currentYear = new Date().getFullYear();
+  let numberOfDaysPending: number | undefined;
+
+  const employeeLeaveTypeSummary = 
+  await employeeLeaveTypeSummaryService.getEmployeeLeaveTypeSummary(
+    leaveRequest.employeeId,
+    leaveRequest.leavePackage!.leaveTypeId,
+    currentYear,
+  );
+
+  if (employeeLeaveTypeSummary) {
+    numberOfDaysPending = employeeLeaveTypeSummary.numberOfDaysPending - prevNumberOfDays;
+  }
+
   logger.debug('Cancelling LeaveRequest[%s]', id);
   let cancelledLeaveRequest: LeaveRequestDto;
   try {
@@ -718,6 +999,14 @@ export async function cancelLeaveRequest(
       include: {
         leavePackage: { include: { leaveType: true } }
       },
+      updateEmployeeLeaveTypeSummary: numberOfDaysPending 
+        ? {
+          employeeId: leaveRequest.employeeId,
+          leaveTypeId: leaveRequest.leavePackage!.leaveTypeId,
+          year: currentYear,
+          numberOfDaysPending
+        }
+        : undefined
     });
     logger.info('LeaveRequest[%s] cancelled successfully', id);
   } catch (err) {
@@ -735,7 +1024,8 @@ export async function cancelLeaveRequest(
 
 export async function getEmployeeLeaveTypeSummary(
   employeeId: number,
-  leaveTypeId: number
+  leaveTypeId: number,
+  year?: number
 ): Promise<EmployeLeaveTypeSummary> {
   logger.debug(
     'Finding applicable LeavePackage of LeaveType[%s] for Employee[%s]',
@@ -784,7 +1074,7 @@ export async function getEmployeeLeaveTypeSummary(
     'Fetched APPROVED and PENDING LeaveRequests of LeavePackage[%s] for Employee[%s] for %s',
     leavePackage.id, employeeId, currentYear
   );
-
+  
   logger.debug('Computing Employee[%s] LeaveType[%s] summary', employeeId, leaveTypeId);
   const numberOfDaysUsed = leaveRequestStatusApproved.data.reduce(
     (accumulator, currentValue) => {
@@ -794,27 +1084,154 @@ export async function getEmployeeLeaveTypeSummary(
     (accumulator, currentValue) => {
       return accumulator + currentValue.numberOfDays!;
     }, 0);
-  const numberOfDaysLeft = numberOfDaysAllowed - (numberOfDaysUsed + numberOfDaysPending);
+
+  let  carryOverDays: number | undefined, carryOverDaysFromSummary: EmployeeLeaveTypeSummary | null,
+    numberOfCarryOverDaysUsed = 0;
+  try {
+    carryOverDaysFromSummary = 
+    await employeeLeaveTypeSummaryService.getEmployeeLeaveTypeSummary(
+      employeeId, leaveTypeId, year ?? currentYear
+    ); 
+  } catch (err) {
+    carryOverDaysFromSummary = null;
+  }
+  if (carryOverDaysFromSummary) {
+    carryOverDays = carryOverDaysFromSummary.carryOverDays;
+    numberOfCarryOverDaysUsed = carryOverDaysFromSummary.numberOfCarryOverDaysUsed!;
+  } else {
+    carryOverDays = await getCarryOverDays(employeeId, leaveTypeId, currentYear);
+  }
+  const numberOfCarryOverDays = carryOverDays ? carryOverDays : 0;
+
+  const numberOfDaysLeft = 
+    (numberOfDaysAllowed + numberOfCarryOverDays + numberOfCarryOverDaysUsed) 
+    - (numberOfDaysUsed + numberOfDaysPending);
+
+  await employeeLeaveTypeSummaryService.createOrUpdateEmployeeLeaveTypeSummary({
+    employeeId,
+    leaveTypeId,
+    year: year ?? currentYear,
+    carryOverDays: carryOverDays ?? 0,
+    numberOfDaysUsed,
+    numberOfDaysPending,
+    numberOfCarryOverDaysUsed: numberOfCarryOverDaysUsed ?? 0,
+  });
+
   logger.info('Employee[%s] LeaveType[%s] summary computed', employeeId, leaveTypeId);
 
   return {
     numberOfDaysAllowed,
     numberOfDaysUsed,
     numberOfDaysPending,
-    numberOfDaysLeft
+    numberOfDaysLeft,
+    numberOfCarryOverDays,
+    numberOfCarryOverDaysUsed
   };
+}
+
+export async function getCarryOverDays(
+  employeeId: number,
+  leaveTypeId: number,
+  currentYear: number
+): Promise<number | undefined> {
+  logger.debug(
+    'Finding applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+    leaveTypeId, employeeId
+  );
+  const leavePackage = await getApplicableLeavePackage(employeeId, leaveTypeId);
+  logger.info(
+    'Found applicable LeavePackage of LeaveType[%s] for Employee[%s]',
+    leaveTypeId, employeeId
+  );
+  
+  const { 
+    maxDays: numberOfDaysAllowed, 
+    carryOverDaysPercent, 
+    carryOverDaysValue 
+  } = leavePackage;
+  const previousYear = currentYear - 1;
+  const firstDayPrevYear = new Date(previousYear, 0, 1);
+  const lastDayPrevYear = new Date(previousYear, 11, 31);
+
+  logger.debug(
+    'Fetching APPROVED LeaveRequests of LeaveType[%s] for Employee[%s] for %s',
+    leaveTypeId, employeeId, currentYear
+  );
+  const leaveRequests = await leaveRequestRepository.find({
+    where: {
+      employeeId,
+      leavePackage: {
+        leaveTypeId
+      },
+      status: LEAVE_REQUEST_STATUS.APPROVED,
+      createdAt: {
+        gte: firstDayPrevYear,
+        lte: lastDayPrevYear
+      }
+    }
+  });
+  
+  logger.info(
+    'Fetched APPROVED LeaveRequests of LeaveType[%s] for Employee[%s] for %s',
+    leaveTypeId, employeeId, currentYear
+  );
+
+  const numberOfDaysUsed = leaveRequests.data.reduce(
+    (accumulator, currentValue) => {
+      return accumulator + currentValue.numberOfDays!;
+    }, 0);
+  
+  const numberOfDaysLeft = numberOfDaysAllowed - numberOfDaysUsed;
+  if (numberOfDaysLeft <= 0) {
+    logger.info(
+      'No carry over days for LeaveType[%s] for Employee[%s] for %s',
+      leaveTypeId, employeeId, currentYear
+    );
+    return 0;
+  } else if (leavePackage.carryOverExpiryDate && leavePackage.carryOverExpiryDate > new Date()) {
+    return 0;
+  } else {
+    if (carryOverDaysPercent == null && carryOverDaysValue == null) {
+      return undefined;
+    } else if (carryOverDaysPercent != null) {
+      const carryOverDays = Math.round(
+        carryOverDaysPercent.div(100).times(numberOfDaysLeft).toNumber()
+      );
+      logger.info(
+        'Computed carry over days for LeaveType[%s] for Employee[%s] for %s using percent',
+        leaveTypeId, employeeId, currentYear
+      );
+      return carryOverDays;
+    } else if (carryOverDaysValue) {
+      const carryOverDays = Math.min(carryOverDaysValue, numberOfDaysLeft);
+      logger.info(
+        'Computed carry over days for LeaveType[%s] for Employee[%s] for %s using value',
+        leaveTypeId, employeeId, currentYear
+      );
+      return carryOverDays;
+    } else {
+      logger.info(
+        'No carry over days for LeaveType[%s] for Employee[%s] for %s',
+        leaveTypeId, employeeId, currentYear
+      );
+      return 0;
+    }
+  }
 }
 
 export async function adjustDays(
   id: number,
+  payload: AdjustDaysDto,
   authorizedUser: AuthorizedUser,
-  payload: AdjustDaysDto
 ): Promise<LeaveRequestDto> {
-  const { employeeId, category } = authorizedUser;
+  const { employeeId, category, organizationId } = authorizedUser;
   const allowedUsers = [UserCategory.HR, UserCategory.OPERATIONS];
   
   logger.debug('Finding LeaveRequest[%s] to adjust', id);
-  const leaveRequest = await leaveRequestRepository.findOne({ id });
+  const leaveRequest = await leaveRequestRepository.findOne(
+    { id },
+    { leavePackage: true }
+  );
   // check for employee being an hr
   if(!allowedUsers.includes(category)) {
     throw new ForbiddenError({
@@ -843,21 +1260,120 @@ export async function adjustDays(
     );
     throw new InvalidStateError({ message: 'Leave request cannot be adjusted' });
   }
+  
+  if (leaveRequest.numberOfDays === 0 && payload.adjustment === AdjustmentOptions.DECREASE) {
+    logger.warn(
+      'LeaveRequest[%s] cannot have days decreased below zero. Current days: %s, Decrease by: %s',
+      id, leaveRequest.numberOfDays, payload.count
+    );
+    throw new InputError({
+      message: 'You cannot decrease leave days below zero'
+    });
+  }
+  if (
+    leaveRequest.numberOfDays 
+    && payload.count > leaveRequest.numberOfDays 
+    && payload.adjustment === AdjustmentOptions.DECREASE) 
+  {
+    logger.warn(
+      'LeaveRequest[%s] cannot have days decreased below zero. Current days: %s, Decrease by: %s',
+      id, leaveRequest.numberOfDays, payload.count
+    );
+    throw new InputError({
+      message: 'You cannot decrease leave days below zero'
+    });
+  }
+  
+  const employeeLeaveTypeSummary = await getEmployeeLeaveTypeSummary(
+    leaveRequest.employeeId,
+    leaveRequest.leavePackage!.leaveTypeId,
+    leaveRequest.startDate.getFullYear()
+  );
+
+  const { numberOfDaysLeft } = employeeLeaveTypeSummary;
+  
+  if (leaveRequest.numberOfDays && payload.adjustment === AdjustmentOptions.INCREASE) {
+    if (payload.count > numberOfDaysLeft) {
+      logger.warn(
+        'LeaveRequest[%s] cannot have days increased above numberOfDaysLeft',
+      );
+      throw new InputError({
+        message: 'You cannot increase leave days more than number of days available'
+      });
+    }
+  }
+
+  const currentYear = new Date(leaveRequest.startDate).getFullYear();
+
+  const employee = await employeeRepository.findOne(
+    { id: leaveRequest.employeeId },
+    {
+      majorGradeLevel: { include: { companyLevel: true } },
+      company: true,
+    },
+  );
+  const considerPublicHolidayAsWorkday = employee?.company?.considerPublicHolidayAsWorkday;
+  const considerWeekendAsWorkday = employee?.company?.considerWeekendAsWorkday;
+
+  const prevNumberOfDays = await countWorkingDays({ 
+    startDate: leaveRequest.startDate, 
+    endDate: leaveRequest.returnDate, 
+    considerPublicHolidayAsWorkday,
+    considerWeekendAsWorkday,
+    organizationId
+  });
+
+  let newReturnDate: Date | undefined;
+  if (payload.adjustment === AdjustmentOptions.INCREASE) {
+    newReturnDate = await countWorkingDaysWithoutEndDate({
+      startDate: leaveRequest.returnDate,
+      count: payload.count,
+      considerPublicHolidayAsWorkday: considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday: considerWeekendAsWorkday,
+      organizationId
+    });
+  } else {
+    const count = leaveRequest.numberOfDays! - payload.count;
+    newReturnDate = await countWorkingDaysWithReduction({
+      startDate: leaveRequest.startDate,
+      endDate: leaveRequest.returnDate,
+      count,
+      considerPublicHolidayAsWorkday: considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday: considerWeekendAsWorkday,
+      organizationId
+    });
+  }
 
   logger.debug('Adjusting number of days for LeaveRequest[%s]', id);
   const adjustedLeaveRequest = await leaveRequestRepository.adjustDays({
     id,
     data: {
       ...payload,
-      respondingEmployeeId: authorizedUser.employeeId!
+      respondingEmployeeId: authorizedUser.employeeId!,
+      newReturnDate
     },
     include: {
       leavePackage: {
         include: { leaveType: true }
       },
       leaveResponses: true
+    },
+    updateEmployeeLeaveTypeSummary: {
+      employeeId: leaveRequest.employeeId,
+      leaveTypeId: leaveRequest.leavePackage!.leaveTypeId,
+      year: currentYear,
+      prevNumberOfDays,
+      carryOverDays: employeeLeaveTypeSummary.numberOfCarryOverDays,
+      numberOfDaysUsed: employeeLeaveTypeSummary.numberOfDaysUsed,
+      numberOfDaysPending: employeeLeaveTypeSummary.numberOfDaysPending,
+      numberOfDaysAllowed: employeeLeaveTypeSummary.numberOfDaysAllowed,
+      numberOfDaysLeft: employeeLeaveTypeSummary.numberOfDaysLeft,
+      considerPublicHolidayAsWorkday,
+      considerWeekendAsWorkday,
+      organizationId,
+      numberOfCarryOverDaysUsed: employeeLeaveTypeSummary.numberOfCarryOverDaysUsed
     }
-  });
+  }); 
   logger.info('Number of days adjusted for LeaveRequest[%s] successfully!', id);
 
   // Emit event.LeaveRequest.modified event
@@ -2090,4 +2606,63 @@ export async function getLeavesBalanceReport(
     }
   }
   return report;
+}
+
+async function checkIfLeaveOverlapsExistingLeaves(params: {
+  startDate: Date;
+  returnDate: Date;
+  employeeId: number;
+  leaveRequestId?: number;
+}): Promise<boolean> {
+  const { startDate, returnDate, employeeId, leaveRequestId } = params;
+
+  // check if leave exists that intersects with the given dates
+  const existingLeave = await leaveRequestRepository.findFirst(
+    {
+      id: leaveRequestId 
+        ? {
+          not: leaveRequestId
+        }
+        : undefined,
+      employeeId,
+      OR: [
+        // Existing startDate is between start and end dates of new leave
+        // captures scenario where leave starts before an existing leave but ends after 
+        // the start of that existing leave
+        // ie: E.L 20th to 26th, new leave , 18th to 21st
+        { 
+          startDate: {
+            gte: startDate,
+            lte: returnDate,
+          } 
+        },
+        // Existing returnDate is between start and end dates of newLeave
+        // captures scenario where leave starts before an existing leave ends but ends after 
+        // the end of that existing leave
+        // ie: E.L 20th to 26th, new leave , 24th to 31st
+        {
+          returnDate: {
+            lt: startDate,
+            gte: returnDate
+          }
+        },
+        // new startdate after existing startDate and returnDate before existing existing
+        // captures scenario where leave starts before an existing leave ends but ends before 
+        // the end of that existing leave
+        // ie: E.L 20th to 26th, new leave , 22nd to 24th
+        {
+          AND:  {
+            startDate: {
+              lte: startDate
+            },
+            returnDate: {
+              gte: returnDate
+            }
+          }
+        }
+      ]
+    },
+    { employee: true }
+  );
+  return existingLeave !== null;
 }
