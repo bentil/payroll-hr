@@ -1,4 +1,4 @@
-import {  Prisma } from '@prisma/client';
+import {  GRADE_LEVEL_TYPE, Prisma } from '@prisma/client';
 import { EmployeeDto } from '../../domain/events/employee.event';
 import { getListWithPagination, ListWithPagination } from '../types';
 
@@ -17,7 +17,7 @@ const dataStore: EmployeeDto[] = [
     'photoUrl': null,
     'ssn': '',
     'taxIdentificationNumber': null,
-    'majorGradeLevelId': null,
+    'majorGradeLevelId': 1,
     'minorGradeLevelId': null,
     'nationality': 'Ghanaian',
     'regionId': null,
@@ -90,7 +90,18 @@ const dataStore: EmployeeDto[] = [
       'createdAt': new Date('2024-11-20'),
       'modifiedAt': new Date('2024-11-20'),
     },
-    'majorGradeLevel': undefined,
+    'majorGradeLevel': 
+      {
+        id: 6,
+        companyId: 1,
+        companyLevelId: 1,
+        name: 'test6',
+        code: 'GMJ03',
+        description: '',
+        type: GRADE_LEVEL_TYPE.MAJOR,
+        createdAt: new Date('2024-09-27T15:11:18.372Z'),
+        modifiedAt: new Date ('2024-09-27T15:11:18.372Z'),
+      },
   },
   {
     'id': 2,

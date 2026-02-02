@@ -24,7 +24,9 @@ export type EmployeLeaveTypeSummary = {
   numberOfDaysAllowed: number,
   numberOfDaysUsed: number,
   numberOfDaysPending: number,
-  numberOfDaysLeft: number
+  numberOfDaysLeft: number,
+  numberOfCarryOverDays?: number,
+  numberOfCarryOverDaysUsed?: number,
 }
 
 export class QueryLeaveTypeDto {

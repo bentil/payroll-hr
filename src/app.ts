@@ -9,6 +9,7 @@ import { appErrorHandler } from './middleware/error-handler.middleware';
 import appRouter from './routes';
 import { rootLogger } from './utils/logger';
 import { announcementDailyJob } from './services/announcement.service';
+import { resetExpiredCarryOverDays } from './services/employee-leave-type-summary.service';
 
 const logger = rootLogger.child({ context: 'App' });
 
@@ -44,6 +45,7 @@ export default async function startApp(
   }
 
   announcementDailyJob.start(); // Start daily announcemnt job
+  resetExpiredCarryOverDays.start(); // Start daily job to check and set expired carryOVer days to 0
 
   const server = app.listen(config.port, async () => {
     logger.info(`App started successfully at http://**:${port}/`);

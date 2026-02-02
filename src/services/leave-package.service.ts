@@ -9,9 +9,9 @@ import {
 } from '../domain/dto/leave-package.dto';
 import { IncludeCompanyLevelsQueryDto } from '../domain/dto/leave-type.dto';
 import { AuthorizedUser } from '../domain/user.domain';
-import { HttpError, NotFoundError, ServerError } from '../errors/http-errors';
+import { HttpError, InputError, NotFoundError, ServerError } from '../errors/http-errors';
 import * as employeeRepository from '../repositories/employee.repository';
-import * as repository from '../repositories/leave-package';
+import * as repository from '../repositories/leave-package.repository';
 import { ListWithPagination } from '../repositories/types';
 import * as payrollCompanyService from '../services/payroll-company.service';
 import { errors } from '../utils/constants';
@@ -24,10 +24,22 @@ import * as leaveTypeservice from './leave-type.service';
 const logger = rootLogger.child({ context: 'LeavePackageService' });
 
 export async function createLeavePackage(
-  createLeavePackageDto: CreateLeavePackageDto, authorizedUser: AuthorizedUser
+  createLeavePackageDto: CreateLeavePackageDto, 
+  authorizedUser: AuthorizedUser
 ): Promise<LeavePackageDto> {
-  const { companyId, leaveTypeId, companyLevelIds } = createLeavePackageDto;
+  const { 
+    companyId, 
+    leaveTypeId, 
+    companyLevelIds,
+    carryOverDaysPercent,
+    carryOverDaysValue
+  } = createLeavePackageDto;
   const { organizationId } = authorizedUser;
+  if (carryOverDaysPercent && carryOverDaysValue) {
+    throw new InputError({
+      message: 'Cant set both CarryOverDaysPercent and CarryOverDaysValue'
+    });
+  }
 
   logger.debug('Validating PayrollCompany[%s] and LeaveType[%s]', companyId, leaveTypeId);
   try {
@@ -77,11 +89,28 @@ export async function updateLeavePackage(
   id: number,
   updateLeavePackageDto: UpdateLeavePackageDto,
 ): Promise<LeavePackageDto> {
-  const { addCompanyLevelIds, removeCompanyLevelIds } = updateLeavePackageDto;
+  const { 
+    addCompanyLevelIds, 
+    removeCompanyLevelIds,
+    carryOverDaysPercent,
+    carryOverDaysValue
+  } = updateLeavePackageDto;
   const leavePackage = await repository.findOne({ id });
   if (!leavePackage) {
     logger.warn('LeavePackage[%s] to update does not exist', id);
     throw new NotFoundError({ message: 'Leave package to update does not exist' });
+  }
+
+  if (carryOverDaysPercent && carryOverDaysValue) {
+    throw new InputError({
+      message: 'Cant set both CarryOverDaysPercent and CarryOverDaysValue'
+    });
+  }
+  if (carryOverDaysPercent && leavePackage.carryOverDaysValue) {
+    updateLeavePackageDto.carryOverDaysValue = null;
+  }
+  if (carryOverDaysValue && leavePackage.carryOverDaysPercent) {
+    updateLeavePackageDto.carryOverDaysPercent = null;
   }
   await Promise.all([
     addCompanyLevelIds
