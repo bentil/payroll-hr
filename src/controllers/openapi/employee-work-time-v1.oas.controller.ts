@@ -12,12 +12,14 @@ import {
   Security,
   SuccessResponse,
   Tags,
+  UploadedFile,
 } from 'tsoa';
 import { ApiErrorResponse, ApiSuccessResponse } from '../../domain/api-responses';
 import { 
   CreateEmployeeWorkTimeDto, 
   QueryEmployeeWorkTimeDto,
-  UpdateEmployeeWorkTimeDto
+  UpdateEmployeeWorkTimeDto,
+  UploadEmployeeWorkTimeResponse
 } from '../../domain/dto/employee-work-time.dto';
 import * as service from '../../services/employee-work-time.service';
 import { rootLogger } from '../../utils/logger';
@@ -127,6 +129,22 @@ export class EmployeeWorkTimeV1Controller {
     this.logger.debug('Received request to delete EmployeeWorkTime[%s]', id);
     await service.deleteEmployeeWorkTime(id);
     this.logger.debug('EmployeeWorkTime[%s] deleted successfully', id);
+  }
+
+  /**
+   * Add new employee work times by uploading via template excel file
+   *
+   * @param companyId Company id
+   * @param file File containing employee data
+   * @param req Request object
+   * @returns EmployeeWorkTimeResponse
+   */
+  @Post('/uploads')
+  public async uploadEmployeeWorkTimes(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<UploadEmployeeWorkTimeResponse> {
+    this.logger.debug('About to upload EmployeeWorkTimes');
+    return await service.uploadEmployeeWorkTimes(file);
   }
 
 }

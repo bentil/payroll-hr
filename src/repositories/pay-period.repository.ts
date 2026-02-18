@@ -58,3 +58,9 @@ export async function deleteOne(
     throw err;
   }
 }
+
+export async function findFirst(
+  where: Prisma.PayPeriodWhereInput,
+): Promise<PayPeriod | null> {
+  return prisma.payPeriod.findFirst({ where });
+}

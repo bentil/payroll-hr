@@ -3,6 +3,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import v1Router from './api-v1.route';
 import { 
+  serveEmployeeWorkTimeTemplate,
   serveLeaveRequestTemplate 
 } from '../controllers/system.api';
 
@@ -33,6 +34,11 @@ if (process.env.NODE_ENV !== 'production') {
 appRouter.get(
   '/templates/uploads/leave_requests.xlsx',
   serveLeaveRequestTemplate
+);
+
+appRouter.get(
+  '/templates/uploads/employee_work_times.xlsx',
+  serveEmployeeWorkTimeTemplate
 );
 
 export default appRouter;

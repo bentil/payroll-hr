@@ -15,3 +15,16 @@ export async function serveLeaveRequestTemplate(
     next(err);
   }
 }
+
+export async function serveEmployeeWorkTimeTemplate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const response = await controller.serveEmployeeWorkTimeTemplate();
+    res.download(response);
+  } catch (err) {
+    next(err);
+  }
+}

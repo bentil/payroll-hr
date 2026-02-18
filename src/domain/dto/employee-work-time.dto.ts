@@ -39,3 +39,30 @@ export class QueryEmployeeWorkTimeDto {
   limit: number = config.pagination.limit;
   orderBy: EmployeeWorkTimeOrderBy = EmployeeWorkTimeOrderBy.CREATED_AT_DESC;
 }
+
+export class UploadEmployeeWorkTimeViaSpreadsheetDto {
+  rowNumber?: number;
+  employeeNumber!: string;
+  payPeriodCode!: string;
+  timeUnit!: WorkTimeUnit;
+  timeValue!: number;
+}
+
+export class UploadEmployeeWorkTimeCheckedRecords {
+  employeeId!: number;
+  payPeriodId!: number;
+}
+
+export class UploadEmployeeWorkTimeResponse {
+  successful!: {
+    employeeWorkTimeId?: number;
+    rowNumber?: number;
+  }[];
+  failed!: {
+    rowNumber?: number;
+    errors: {
+      column: string;
+      reason: string;
+    }[]
+  }[];
+}
