@@ -76,17 +76,3 @@ export async function deleteEmployeeWorkTime(
     next(err);
   }
 }
-
-export async function uploadEmployeeWorkTimes(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const file = req.file as Express.Multer.File;
-    const response = await controller.uploadEmployeeWorkTimes(file);
-    res.json(response);
-  } catch (err) {
-    next(err);
-  }
-}
