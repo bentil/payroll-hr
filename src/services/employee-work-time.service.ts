@@ -1,10 +1,13 @@
-import { EmployeeWorkTime } from '@prisma/client';
+import { EmployeeWorkTime, WorkTimeUnit } from '@prisma/client';
 import { KafkaService } from '../components/kafka.component';
 import { 
   CreateEmployeeWorkTimeDto, 
   EmployeeWorkTimeDto,
   QueryEmployeeWorkTimeDto,
-  UpdateEmployeeWorkTimeDto
+  UpdateEmployeeWorkTimeDto,
+  UploadEmployeeWorkTimeCheckedRecords,
+  UploadEmployeeWorkTimeResponse,
+  UploadEmployeeWorkTimeViaSpreadsheetDto
 } from '../domain/dto/employee-work-time.dto';
 import * as repository from '../repositories/employee-work-time.repository';
 import * as employeeService from '../services/employee.service';
@@ -20,6 +23,10 @@ import {
 import { ListWithPagination } from '../repositories/types';
 import { errors } from '../utils/constants';
 import { AuthorizedUser, UserCategory } from '../domain/user.domain';
+import * as Excel from 'exceljs';
+import * as employeeRepository from '../repositories/employee.repository';
+import * as payPeriodRepository from '../repositories/pay-period.repository';
+import { EmployeeDto } from '../domain/events/employee.event';
 
 const kafkaService = KafkaService.getInstance();
 const logger = rootLogger.child({ context: 'EmployeeWorkTimeService' });
@@ -237,3 +244,228 @@ export async function deleteEmployeeWorkTime(id: number): Promise<void> {
   kafkaService.send(events.deleted, deletedEmployeeWorkTime);
   logger.info(`${events.deleted} event emitted successfully!`);
 }
+
+export async function uploadEmployeeWorkTimes(
+  uploadedExcelFile: Express.Multer.File,
+): Promise<UploadEmployeeWorkTimeResponse> {
+  const successful: UploadEmployeeWorkTimeResponse['successful'] = [];
+  const failed: UploadEmployeeWorkTimeResponse['failed'] = [];
+  const workbook = new Excel.Workbook();
+
+  try {
+    const collectedRows: UploadEmployeeWorkTimeViaSpreadsheetDto[] = [];
+    const sheet = await workbook.xlsx.load(uploadedExcelFile.buffer as any);
+    const worksheet = sheet.getWorksheet('employee_work_times');
+    if (!worksheet) {
+      throw new NotFoundError({
+        message: 'Work sheet with data not availble'
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let noRows = -1;
+    worksheet.eachRow({ includeEmpty: false }, function() {
+      noRows += 1;
+    });
+
+    worksheet.eachRow(((row: Excel.Row, rowNumber: number) => {
+      const handleNull = (index: number) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        return row?.values[index] || null;
+      };
+
+      if (row.hasValues && Array.isArray(row.values)) {
+
+        if (rowNumber !== 1) {
+          const payload: UploadEmployeeWorkTimeViaSpreadsheetDto = {
+            rowNumber,
+            employeeNumber: handleNull(1),
+            payPeriodCode: handleNull(2),
+            timeUnit: handleNull(3),
+            timeValue: handleNull(4),
+          };
+
+          collectedRows.push(payload);
+        }
+      }
+    }));
+
+    for (const collectedRow of collectedRows) {
+      const rowNumber = collectedRow.rowNumber;   
+
+      const validation = await handleEmployeeWorkTimeSpreadSheetValidation(
+        collectedRow
+      );
+
+      if (!validation.issues.length) {
+        const checkedRecords = validation.checkedRecords;
+        const record = createEmployeeWorkTimePayloadStructure(collectedRow, checkedRecords);
+        
+        const newEmployeeWorkTime = await repository.create(record.employeeWorkTime);
+      
+        successful.push({
+          employeeWorkTimeId: newEmployeeWorkTime.id,
+          rowNumber: collectedRow.rowNumber,
+        });
+      } else {
+        failed.push({ rowNumber, errors: validation.issues, });
+      }
+    }
+  } catch (err) {
+    throw new ServerError({ message: (err as Error).message, cause: err });
+  }
+
+  return { successful, failed };
+}
+
+const handleEmployeeWorkTimeSpreadSheetValidation =
+  async (
+    data: UploadEmployeeWorkTimeViaSpreadsheetDto, 
+  ) => {
+    const response = {
+      checkedRecords: {
+        payPeriodId: 0,
+        employeeId: 0,
+      },
+      issues: [] as {
+          reason: string,
+          column: string,
+      }[]
+    };
+
+    const expectedColumns = [
+      {
+        name: 'employeeNumber', type: 'string', required: true,
+        validate: async (data: UploadEmployeeWorkTimeViaSpreadsheetDto) => {
+          if (!data.employeeNumber) {
+            return false;
+          }
+
+          const employee: EmployeeDto | null = await employeeRepository.findFirst(
+            {
+              employeeNumber: data.employeeNumber,
+            }
+          );
+
+          if (!employee) {
+            return {
+              error: {
+                column: 'employeeNumber',
+                reason: 'This employee does not exists'
+              },
+            };
+          } else {
+            return { id: employee.id, column: 'employeeId' };
+          }
+          
+        }
+      },
+      {
+        name: 'payPeriodCode', type: 'string', required: true,
+        validate: async (data: UploadEmployeeWorkTimeViaSpreadsheetDto) => {
+          if (!data.payPeriodCode)  {
+            return {
+              error: {
+                column: 'payPeriodCode',
+                reason: 'Pay period code is required'
+              },
+            };
+          }
+          const payPeriod = await payPeriodRepository.findFirst({
+            code: data.payPeriodCode,
+          });
+
+          if (!payPeriod) {
+            return {
+              error: {
+                column: 'payPeriodCode',
+                reason: 'This pay period does not exists'
+              },
+            };
+          } else {
+            return { id: payPeriod.id, column: 'payPeriodId' };
+          }
+        }
+      },
+      {
+        name: 'timeUnit', type: 'string', required: true,
+        validate: async (data: UploadEmployeeWorkTimeViaSpreadsheetDto) => {
+          const expectedUnit = Object.keys(WorkTimeUnit);
+          if (data.timeUnit && !expectedUnit.includes(data.timeUnit)) {
+            return {
+              error: {
+                column: 'timeUnit',
+                reason: 'timeUnit has to be one of the following options.' +
+                ` ${JSON.stringify(expectedUnit)}`
+              },
+            };
+          }
+
+          return false;
+        }
+      },
+      {
+        name: 'timeValue', type: 'number', required: true,
+        validate: async (data: UploadEmployeeWorkTimeViaSpreadsheetDto) => {
+          if (data.timeValue) {
+            return false;
+          }
+        }
+      },
+    ];
+
+    for (const expectedColumn of expectedColumns) {
+
+      const columnName = expectedColumn.name;
+      const columnValue = 
+        data?.[expectedColumn.name as keyof UploadEmployeeWorkTimeViaSpreadsheetDto] || null;
+
+      if (columnValue && expectedColumn.type === 'date') {
+        (data as any)[expectedColumn.name as keyof UploadEmployeeWorkTimeViaSpreadsheetDto] = 
+          new Date(columnValue);
+      }
+
+      if (!columnValue && expectedColumn.required) {
+        response.issues.push({
+          column: columnName,
+          reason: `${columnName} is required`,
+        });
+      }
+      if (!['date'].includes(expectedColumn.type)) {
+        if (columnValue && typeof columnValue !== expectedColumn.type) {
+          response.issues.push({
+            column: columnName,
+            reason: `Expected ${expectedColumn.type} but got ${typeof columnValue}`
+          });
+        }
+      }
+
+      const executeValidator = await expectedColumn.validate(data);
+      if (executeValidator && ('error' in executeValidator) ) {
+        response.issues.push(executeValidator.error as any);
+      }
+
+      if ( executeValidator && ('id' in executeValidator) 
+        && executeValidator?.column) {
+        const key = executeValidator.column, value = executeValidator.id;
+        response.checkedRecords = { ...response.checkedRecords, [key]: value };
+      }
+
+    }
+
+    
+    return response;
+  };
+
+const createEmployeeWorkTimePayloadStructure = (
+  collectedRow: UploadEmployeeWorkTimeViaSpreadsheetDto, 
+  checkedRecords: UploadEmployeeWorkTimeCheckedRecords
+) => {
+  const employeeWorkTimeCreatePayload = {
+    employeeId: checkedRecords.employeeId,
+    payPeriodId: checkedRecords.payPeriodId,
+    timeUnit: collectedRow.timeUnit,
+    timeValue: collectedRow.timeValue,
+  };
+  return { employeeWorkTime: employeeWorkTimeCreatePayload };
+};

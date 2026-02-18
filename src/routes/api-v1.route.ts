@@ -755,6 +755,16 @@ router.delete(
   employeeWorkTimeV1Controller.deleteEmployeeWorkTime
 );
 
+router.post(
+  '/employee-work-times/uploads',
+  authenticateUser({ 
+    category: [UserCategory.HR, UserCategory.OPERATIONS],
+    permissions: 'employees:time:write',
+  }),
+  validate('employee_work_times'),
+  employeeWorkTimeV1Controller.uploadEmployeeWorkTimes
+);
+
 // ### EMPLOYEE OVERTIME ENTRY ROUTES
 
 router.post(

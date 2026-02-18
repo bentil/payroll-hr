@@ -22,4 +22,15 @@ export class SystemController {
     return rel;
   }
 
+  /**
+     * Serves employee work time template file
+     * @returns 
+     */
+  @Get('/templates/uploads/employee_work_times.xlsx')
+  public serveEmployeeWorkTimeTemplate() {
+    this.logger.debug('Received request to serve EmployeeWorkTimeTemplate');
+    const rel = path.join(__dirname, '../../../templates/uploads/employee_work_times.xlsx');
+    return rel;
+  }
+
 }
