@@ -84,3 +84,18 @@ export async function exportGrievanceReports(
     next(err);
   }
 }
+
+export async function uploadEmployeeWorkTimes(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const file = req.file as Express.Multer.File;
+    const { companyId } = req.params;
+    const response = await controller.uploadEmployeeWorkTimes(+companyId, file, req);
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}

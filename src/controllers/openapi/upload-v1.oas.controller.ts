@@ -19,6 +19,8 @@ import { ExportDisciplinaryActionQueryDto } from '../../domain/dto/disciplinary-
 import { exportDisciplinaryActions } from '../../services/disciplinary-action.service';
 import { ExportGrievanceReportQueryDto } from '../../domain/dto/grievance-report.dto';
 import { exportGrievanceReports } from '../../services/grievance-report.service';
+import { UploadEmployeeWorkTimeResponse } from '../../domain/dto/employee-work-time.dto';
+import { uploadEmployeeWorkTimes } from '../../services/employee-work-time.service';
 
 @Tags('upload')
 @Route('/api/v1/payroll-companies/{companyId}')
@@ -98,4 +100,24 @@ export class UploadV1Controller {
     const rel = await exportGrievanceReports(companyId, query);
     return rel;
   }
+
+  
+  /**
+   * Add new employee work times by uploading via template excel file
+   *
+   * @param companyId Company id
+   * @param file File containing employee data
+   * @param req Request object
+   * @returns EmployeeWorkTimeResponse
+   */
+  @Post('/uploads/employee-work-times')
+  public async uploadEmployeeWorkTimes(
+    @Path('companyId') companyId: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: Express.Request
+  ): Promise<UploadEmployeeWorkTimeResponse> {
+    this.logger.debug('About to upload EmployeeWorkTimes');
+    return await uploadEmployeeWorkTimes(companyId, file, req.user!);
+  }
+
 }
