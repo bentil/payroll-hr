@@ -246,8 +246,11 @@ export async function deleteEmployeeWorkTime(id: number): Promise<void> {
 }
 
 export async function uploadEmployeeWorkTimes(
+  companyId: number,
   uploadedExcelFile: Express.Multer.File,
+  user: AuthorizedUser,
 ): Promise<UploadEmployeeWorkTimeResponse> {
+  const { organizationId } = user;
   const successful: UploadEmployeeWorkTimeResponse['successful'] = [];
   const failed: UploadEmployeeWorkTimeResponse['failed'] = [];
   const workbook = new Excel.Workbook();
@@ -294,7 +297,9 @@ export async function uploadEmployeeWorkTimes(
       const rowNumber = collectedRow.rowNumber;   
 
       const validation = await handleEmployeeWorkTimeSpreadSheetValidation(
-        collectedRow
+        collectedRow,
+        companyId,
+        organizationId
       );
 
       if (!validation.issues.length) {
@@ -321,6 +326,8 @@ export async function uploadEmployeeWorkTimes(
 const handleEmployeeWorkTimeSpreadSheetValidation =
   async (
     data: UploadEmployeeWorkTimeViaSpreadsheetDto, 
+    companyId: number,
+    organizationId: string,
   ) => {
     const response = {
       checkedRecords: {
@@ -344,6 +351,7 @@ const handleEmployeeWorkTimeSpreadSheetValidation =
           const employee: EmployeeDto | null = await employeeRepository.findFirst(
             {
               employeeNumber: data.employeeNumber,
+              companyId
             }
           );
 
@@ -373,6 +381,7 @@ const handleEmployeeWorkTimeSpreadSheetValidation =
           }
           const payPeriod = await payPeriodRepository.findFirst({
             code: data.payPeriodCode,
+            organizationId
           });
 
           if (!payPeriod) {

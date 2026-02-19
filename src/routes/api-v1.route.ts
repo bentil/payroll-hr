@@ -756,13 +756,13 @@ router.delete(
 );
 
 router.post(
-  '/employee-work-times/uploads',
+  '/payroll-companies/:companyId/uploads/employee-work-times',
   authenticateUser({ 
     category: [UserCategory.HR, UserCategory.OPERATIONS],
     permissions: 'employees:time:write',
   }),
   validate('employee_work_times'),
-  employeeWorkTimeV1Controller.uploadEmployeeWorkTimes
+  uploadV1Controller.uploadEmployeeWorkTimes
 );
 
 // ### EMPLOYEE OVERTIME ENTRY ROUTES
