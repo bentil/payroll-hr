@@ -21,6 +21,8 @@ export interface PayrollCompanyMessage {
   notifyApproversOnRequestResponse: boolean
   notifyHrOnLeaveRequest: boolean
   notifyHrOnReimbursementRequest: boolean
+  notifyHrOnEmployeeOvertimeEntryRequest: boolean
+  notifyHrOnEmployeeWorkTimeRequest: boolean
 }
 
 export interface PayrollCompanyCreatedEvent extends PayrollCompanyMessage {
