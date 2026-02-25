@@ -2615,6 +2615,10 @@ async function checkIfLeaveOverlapsExistingLeaves(params: {
   leaveRequestId?: number;
 }): Promise<boolean> {
   const { startDate, returnDate, employeeId, leaveRequestId } = params;
+  const allowedStatuses = [
+    LEAVE_REQUEST_STATUS.PENDING,
+    LEAVE_REQUEST_STATUS.APPROVED
+  ];
 
   // check if leave exists that intersects with the given dates
   const existingLeave = await leaveRequestRepository.findFirst(
@@ -2625,6 +2629,9 @@ async function checkIfLeaveOverlapsExistingLeaves(params: {
         }
         : undefined,
       employeeId,
+      status: {
+        in: allowedStatuses
+      },
       OR: [
         // Existing startDate is between start and end dates of new leave
         // captures scenario where leave starts before an existing leave but ends after 
