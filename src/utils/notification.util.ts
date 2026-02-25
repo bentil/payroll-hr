@@ -7,6 +7,7 @@ import config from '../config';
 import { rootLogger } from './logger';
 import StringUtil from './string.util';
 import { Decimal } from '@prisma/client/runtime/library';
+import { WorkTimeUnit } from '@prisma/client';
 
 dayjs.extend(dayjsAdvanced);
 dayjs.extend(dayjsTZ);
@@ -25,6 +26,18 @@ const reimbursementResponseTemplate = fs.readFileSync(
 );
 const announcementTemplate = fs.readFileSync(
   config.templates.announcementPath, 'utf8'
+);
+const employeeOvertimeEntryRequest = fs.readFileSync(
+  config.templates.employeeOvertimeEntryRequestPath, 'utf8'
+);
+const employeeOvertimeEntryResponse = fs.readFileSync(
+  config.templates.employeeOvertimeEntryResponsePath, 'utf8'
+);
+const employeeWorkTimeRequest = fs.readFileSync(
+  config.templates.employeeWorkTimeRequestPath, 'utf8'
+);
+const employeeWorkTimeResponse = fs.readFileSync(
+  config.templates.employeeWorkTimeResponsePath, 'utf8'
 );
 const NOTIFICATION_TOPIC = config.topics.notifications;
 
@@ -91,6 +104,48 @@ interface AnnouncementDetail {
   announcementId: number;
   recipientEmail: string;
   recipientFirstName: string;
+}
+
+interface EmployeeOvertmeEntryRequestDetail {
+  requestId: number;
+  approverEmail: string;
+  approverFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  overtimeName: string;
+  employeePhotoUrl?: string | null;
+}
+
+interface EmployeeOvertmeEntryResponseDetail {
+  requestId: number;
+  recipientEmail: string;
+  recipientFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  overtimeName: string;
+  responseMessage: string;
+}
+
+interface EmployeeWorkTimeRequestDetail {
+  requestId: number;
+  approverEmail: string;
+  approverFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  timeUnit: WorkTimeUnit;
+  timeValue: number;
+  employeePhotoUrl?: string | null;
+}
+
+interface EmployeeWorkTimeResponseDetail {
+  requestId: number;
+  recipientEmail: string;
+  recipientFirstName: string;
+  employeeFullName: string;
+  requestDate: Date;
+  timeUnit: WorkTimeUnit;
+  timeValue: number;
+  responseMessage: string;
 }
 
 const _logger = rootLogger.child({ context: 'NotificationUtil' });
@@ -272,6 +327,152 @@ export async function sendAnnouncementEmail(
     payload: {
       from: config.notifications.emailSender,
       subject: config.notifications.announcementSubject,
+      body: emailBody,
+      emailRecipients: [data.recipientEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendEmployeeOvertimeEntryRequestEmail(
+  data: EmployeeOvertmeEntryRequestDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendEmployeeOvertimeEntryRequestEmail' });
+  const link = new URL(config.actionUrls.leaveRequest);
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(employeeOvertimeEntryRequest, {
+    approverFirstName: data.approverFirstName,
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    overtimeName: data.overtimeName,
+    employeePhotoUrl: data.employeePhotoUrl || config.templates.defaultPhotoUrl,
+    actionUrl: link,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.leaveRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.approverEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendEmployeeOvertimeEntryResponseEmail(
+  data: EmployeeOvertmeEntryResponseDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendEmployeeOvertimeEntryResponseEmail' });
+  const link = new URL(config.actionUrls.leaveRequest);
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(employeeOvertimeEntryResponse, {
+    recipientFirstName: data.recipientFirstName,
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    overtimeName: data.overtimeName,
+    actionUrl: link,
+    responseMessage: data.responseMessage,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.leaveRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.recipientEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendEmployeeWorkTimeRequestEmail(
+  data: EmployeeWorkTimeRequestDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendEmployeeWorkTimeRequestEmail' });
+  const link = new URL(config.actionUrls.leaveRequest);
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(employeeWorkTimeRequest, {
+    approverFirstName: data.approverFirstName,
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    timeValue: data.timeValue,
+    timeUnit: data.timeUnit,
+    employeePhotoUrl: data.employeePhotoUrl || config.templates.defaultPhotoUrl,
+    actionUrl: link,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.leaveRequestSubject,
+      body: emailBody,
+      emailRecipients: [data.approverEmail],
+    }
+  };
+  logger.debug(`Emitting ${NOTIFICATION_TOPIC} event`);
+  kafkaService.send(NOTIFICATION_TOPIC, message);
+  logger.info(`${NOTIFICATION_TOPIC} event emitted successfully!`);
+}
+
+export async function sendEmployeeWorkTimeResponseEmail(
+  data: EmployeeWorkTimeResponseDetail
+): Promise<void> {
+  const logger = _logger.child({ method: 'sendEmployeeWorkTimeResponseEmail' });
+  const link = new URL(config.actionUrls.leaveRequest);
+  link.searchParams.append('id', `${data.requestId}`);
+  const emailBody = StringUtil.render(employeeWorkTimeResponse, {
+    recipientFirstName: data.recipientFirstName,
+    employeeFullName: data.employeeFullName,
+    requestDate: dayjs(data.requestDate).format('MMM DD YYYY'),
+    timeValue: data.timeValue,
+    timeUnit: data.timeUnit,
+    actionUrl: link,
+    responseMessage: data.responseMessage,
+    date: dayjs(new Date()).format('MMM DD YYYY')
+  });
+  
+  if (!NOTIFICATION_TOPIC) {
+    logger.error('Notifications topic not properly configured. Discarding message...');
+    return;
+  }
+
+  // Dispatch message to Kafka
+  const message: NotificationMessage = {
+    kafkaMessagingOperation: 'sendEmail',
+    payload: {
+      from: config.notifications.emailSender,
+      subject: config.notifications.leaveRequestSubject,
       body: emailBody,
       emailRecipients: [data.recipientEmail],
     }

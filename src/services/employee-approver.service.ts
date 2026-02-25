@@ -442,8 +442,12 @@ export async function getEmployeeApproversWithDefaults(params: {
     );
   } else if (approvalType === 'leave') {
     approverLevelsAllowed = company.leaveRequestApprovalsRequired;
-  } else {
+  } else if (approvalType === 'reimbursement') {
     approverLevelsAllowed = company.reimbursementRequestApprovalsRequired;
+  } else if (approvalType === 'overtime') {
+    approverLevelsAllowed = company.employeeOvertimeEntryRequestApprovalsRequired;
+  } else {
+    approverLevelsAllowed = company.employeeWorkTimeRequestApprovalsRequired;
   }
 
   const allowedLevels: number[] = [];

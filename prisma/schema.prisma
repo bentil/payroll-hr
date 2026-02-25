@@ -29,9 +29,13 @@ model PayrollCompany {
   workHoursInADay                       Int       @default(8) @map("work_hours_in_a_day")
   leaveRequestApprovalsRequired         Int       @default(1) @map("leave_request_approvals_required") @db.UnsignedTinyInt()
   reimbursementRequestApprovalsRequired Int       @default(1) @map("reimbursement_request_approvals_required") @db.UnsignedTinyInt()
+  employeeOvertimeEntryRequestApprovalsRequired Int @default(1) @map("employee_overtime_entry_request_approvals_required") @db.UnsignedTinyInt()
+  employeeWorkTimeRequestApprovalsRequired Int @default(1) @map("employee_work_time_request_approvals_required") @db.UnsignedTinyInt()
   notifyApproversOnRequestResponse      Boolean   @default(false) @map("notify_approvers_on_request_response")
   notifyHrOnLeaveRequest                Boolean   @default(false) @map("notify_hr_on_leave_request")
   notifyHrOnReimbursementRequest        Boolean   @default(false) @map("notify_hr_on_reimbursement_request")
+  notifyHrOnEmployeeOvertimeEntryRequest Boolean  @default(false) @map("notify_hr_on_employee_overtime_entry_request")
+  notifyHrOnEmployeeWorkTimeRequest Boolean  @default(false) @map("notify_hr_on_employee_work_time_request")
   createdAt                             DateTime  @default(now()) @map("created_at")
   modifiedAt                            DateTime? @updatedAt @map("modified_at")
   statusLastModifiedAt                  DateTime? @map("status_last_modified_at")
@@ -123,6 +127,13 @@ model Employee {
   announcementReadEvent           AnnouncementReadEvent[]
   jobTitle                        JobTitle?                        @relation(fields: [jobTitleId], references: [id])
   EmployeeLeaveTypeSummaries        EmployeeLeaveTypeSummary[]
+  employeeWorkTimeRequests               EmployeeWorkTimeRequest[]
+  employeeOvertimeEntryRequests         EmployeeOvertimeEntryRequest[]
+  employeeWorkTimeResponses               EmployeeWorkTimeResponse[]
+  employeeOvertimeEntryResponses         EmployeeOvertimeEntryResponse[]
+  cancelledEmployeeWorkTimeRequests          EmployeeWorkTimeRequest[]                   @relation(name: "cancelledByEmployee")
+  cancelledEmployeeOvertimeEntryRequests    EmployeeOvertimeEntryRequest[]                   @relation(name: "cancelledByEmployee")
+
 
   @@fulltext([firstName, lastName, otherNames, employeeNumber])
   @@map("employee")
@@ -589,6 +600,8 @@ model PayPeriod {
 
   employeeWorkTimes       EmployeeWorkTime[]
   employeeOvertimeEntries EmployeeOvertimeEntry[]
+  employeeWorkTimeRequests       EmployeeWorkTimeRequest[]
+  employeeOvertimeEntryRequests EmployeeOvertimeEntryRequest[]
 
   @@map("pay_period")
 }
@@ -629,6 +642,7 @@ model Overtime {
 
   employeeOvertimeEntries EmployeeOvertimeEntry[]
   overtimePaymentTiers    OvertimePaymentTier[]
+  employeeOvertimeEntryRequests EmployeeOvertimeEntryRequest[]
 
   @@map("overtime")
 }
@@ -842,4 +856,101 @@ model EmployeeLeaveTypeSummary {
 
   @@unique([employeeId, leaveTypeId, year])
   @@map("employee_leave_type_summary")
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
+enum ResponseType {
+  APPROVED
+  DECLINED
+  ADJUSTED
+}
+
+model EmployeeWorkTimeRequest {
+  id          Int          @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId  Int          @map("employee_id") @db.UnsignedInt()
+  payPeriodId Int          @map("pay_period_id") @db.UnsignedInt()
+  timeUnit    WorkTimeUnit @map("time_unit")
+  timeValue   Int          @map("time_value") 
+  status      Status       @default(PENDING)
+  approverId  Int?         @map("approver_id") @db.UnsignedInt()
+  createdAt   DateTime     @default(now()) @map("created_at")
+  modifiedAt  DateTime?    @updatedAt @map("modified_at")
+  statusLastModifiedAt DateTime?                     @map("status_last_modified_at")
+  approvedAt           DateTime?                     @map("approved_at")
+  cancelledByEmployeeId Int?                 @map("cancelled_by_employee_id") @db.UnsignedInt()
+  approvalsRequired     Int                  @default(1) @map("approvals_required") @db.UnsignedTinyInt()
+  responseCompletedAt   DateTime?            @updatedAt @map("response_completed_at")
+  cancelledAt           DateTime?            @updatedAt @map("cancelled_at")
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  cancelledByEmployee Employee? @relation(fields: [cancelledByEmployeeId], references: [id], name: "cancelledByEmployee")
+
+  employeeWorkTimeResponses EmployeeWorkTimeResponse[]
+
+  @@map("employee_work_time_request")
+}
+
+
+model EmployeeOvertimeEntryRequest {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt()
+  employeeId    Int       @map("employee_id") @db.UnsignedInt()
+  payPeriodId   Int       @map("pay_period_id") @db.UnsignedInt()
+  overtimeId    Int       @map("overtime_id") @db.UnsignedInt()
+  numberOfHours Int       @map("number_of_hours")
+  status      Status       @default(PENDING)
+  approverId  Int?         @map("approver_id") @db.UnsignedInt()
+  createdAt   DateTime     @default(now()) @map("created_at")
+  modifiedAt  DateTime?    @updatedAt @map("modified_at")
+  statusLastModifiedAt DateTime?                     @map("status_last_modified_at")
+  approvedAt           DateTime?                     @map("approved_at")
+  cancelledByEmployeeId Int?                 @map("cancelled_by_employee_id") @db.UnsignedInt()
+  approvalsRequired     Int                  @default(1) @map("approvals_required") @db.UnsignedTinyInt()
+  responseCompletedAt   DateTime?            @updatedAt @map("response_completed_at")
+  cancelledAt           DateTime?            @updatedAt @map("cancelled_at")
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  payPeriod PayPeriod @relation(fields: [payPeriodId], references: [id])
+  overtime  Overtime  @relation(fields: [overtimeId], references: [id])
+  cancelledByEmployee Employee? @relation(fields: [cancelledByEmployeeId], references: [id], name: "cancelledByEmployee")
+
+  employeeOvertimeEntryResponses EmployeeOvertimeEntryResponse[]
+
+  @@map("employee_overtime_entry_request")
+}
+
+model EmployeeWorkTimeResponse {
+  id                  Int                 @id @default(autoincrement()) @db.UnsignedInt()
+  employeeWorkTimeRequestId      Int                 @map("leave_request_id") @db.UnsignedInt()
+  approvingEmployeeId Int                 @map("approving_employee_id") @db.UnsignedInt()
+  comment             String              @db.Text()
+  responseType        ResponseType @map("response_type")
+  approverLevel       Int                @map("approver_level") @db.UnsignedTinyInt()
+  createdAt           DateTime            @default(now()) @map("created_at")
+
+  employee     Employee     @relation(fields: [approvingEmployeeId], references: [id])
+  employeeWorkTimeRequest EmployeeWorkTimeRequest @relation(fields: [employeeWorkTimeRequestId], references: [id])
+
+  @@map("employee_work_time_response")
+}
+
+model EmployeeOvertimeEntryResponse {
+  id                  Int                 @id @default(autoincrement()) @db.UnsignedInt()
+  employeeOvertimeEntryRequestId      Int                 @map("leave_request_id") @db.UnsignedInt()
+  approvingEmployeeId Int                 @map("approving_employee_id") @db.UnsignedInt()
+  comment             String              @db.Text()
+  responseType        ResponseType @map("response_type")
+  approverLevel       Int                 @map("approver_level") @db.UnsignedTinyInt()
+  createdAt           DateTime            @default(now()) @map("created_at")
+
+  employee     Employee     @relation(fields: [approvingEmployeeId], references: [id])
+  employeeOvertimeEntryRequest EmployeeOvertimeEntryRequest @relation(fields: [employeeOvertimeEntryRequestId], references: [id])
+
+  @@map("employee_overtime_entry_response")
 }
