@@ -28,6 +28,10 @@ import * as uploadV1Controller from '../controllers/upload-v1.api.controller';
 import * as disciplinaryActionReportV1Controller from '../controllers/disciplinary-action-report-v1.api.controller';
 import * as leaveReportV1controller from '../controllers/leave-report-v1.api.controller';
 import * as companyApproverV1Controller from '../controllers/company-approver-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as employeeOtEntryRequestV1Controller from '../controllers/employee-overtime-entry-request-v1.api.controller';
+// eslint-disable-next-line max-len
+import * as employeeWorkTimeRequestV1Controller from '../controllers/employee-work-time-request-v1.api.controller';
 import {
   CREATE_ANNOUNCEMENT_SCHEMA, 
   QUERY_EMPLOYEE_ANNOUNCEMENT_SCHEMA, 
@@ -160,6 +164,18 @@ import {
   CREATE_ANNOUNCEMENT_READ_EVENT_SCHEMA, 
   QUERY_ANNOUNCEMENT_READ_EVENT_SUMMARY_SCHEMA
 } from '../domain/request-schema/announcement-read-event.schema';
+import { 
+  CREATE_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA, 
+  CREATE_EMPLOYEE_OVERTIME_ENTRY_RESPONSE_SCHEMA, 
+  QUERY_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA, 
+  UPDATE_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA 
+} from '../domain/request-schema/employee-overtime-entry-request.schema';
+import { 
+  CREATE_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA, 
+  CREATE_EMPLOYEE_WORK_TIME_RESPONSE_SCHEMA, 
+  QUERY_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA, 
+  UPDATE_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA 
+} from '../domain/request-schema/employee-work-time-request.schema';
 
 const router = Router();
 router.use(authenticateClient);
@@ -1230,6 +1246,98 @@ router.get(
     category: [UserCategory.HR, UserCategory.OPERATIONS],
   }),
   announcementV1Controller.getReadEventDetailsPdf
+);
+
+// ### EMPLOYEE OVERTIME ENTRY REQUEST ROUTES
+router.post(
+  '/employee-overtime-entry-requests',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA),
+  employeeOtEntryRequestV1Controller.addNewEmployeeOvertimeEntryRequest
+);
+
+router.patch(
+  '/employee-overtime-entry-requests/:id',
+  authenticateUser(),
+  validateRequestBody(UPDATE_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA),
+  employeeOtEntryRequestV1Controller.updateEmployeeOvertimeEntryRequest
+);
+router.get(
+  '/employee-overtime-entry-requests',
+  authenticateUser(),
+  validateRequestQuery(QUERY_EMPLOYEE_OVERTIME_ENTRY_REQUEST_SCHEMA),
+  employeeOtEntryRequestV1Controller.getEmployeeOvertimeEntryRequests
+);
+
+router.get(
+  '/employee-overtime-entry-requests/:id',
+  authenticateUser(),
+  employeeOtEntryRequestV1Controller.getEmployeeOvertimeEntryRequest
+);
+
+router.delete(
+  '/employee-overtime-entry-requests/:id',
+  authenticateUser(),
+  employeeOtEntryRequestV1Controller.deleteEmployeeOvertimeEntryRequest
+);
+
+router.post(
+  '/employee-overtime-entry-requests/:id/response',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_OVERTIME_ENTRY_RESPONSE_SCHEMA),
+  employeeOtEntryRequestV1Controller.addEmployeeOvertimeEntryResponse
+);
+
+router.post(
+  '/employee-overtime-entry-requests/:id/cancel',
+  authenticateUser(),
+  employeeOtEntryRequestV1Controller.cancelEmployeeOvertimeEntryRequest
+);
+
+// ### EMPLOYEE WORK TIME REQUEST ROUTES
+router.post(
+  '/employee-work-time-requests',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA),
+  employeeWorkTimeRequestV1Controller.addNewEmployeeWorkTimeRequest
+);
+
+router.patch(
+  '/employee-work-time-requests/:id',
+  authenticateUser(),
+  validateRequestBody(UPDATE_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA),
+  employeeWorkTimeRequestV1Controller.updateEmployeeWorkTimeRequest
+);
+router.get(
+  '/employee-work-time-requests',
+  authenticateUser(),
+  validateRequestQuery(QUERY_EMPLOYEE_WORK_TIME_REQUEST_SCHEMA),
+  employeeWorkTimeRequestV1Controller.getEmployeeWorkTimeRequests
+);
+
+router.get(
+  '/employee-work-time-requests/:id',
+  authenticateUser(),
+  employeeWorkTimeRequestV1Controller.getEmployeeWorkTimeRequest
+);
+
+router.delete(
+  '/employee-work-time-requests/:id',
+  authenticateUser(),
+  employeeWorkTimeRequestV1Controller.deleteEmployeeWorkTimeRequest
+);
+
+router.post(
+  '/employee-work-time-requests/:id/response',
+  authenticateUser(),
+  validateRequestBody(CREATE_EMPLOYEE_WORK_TIME_RESPONSE_SCHEMA),
+  employeeWorkTimeRequestV1Controller.addEmployeeWorkTimeResponse
+);
+
+router.post(
+  '/employee-work-time-requests/:id/cancel',
+  authenticateUser(),
+  employeeWorkTimeRequestV1Controller.cancelEmployeeWorkTimeRequest
 );
 
 export default router;

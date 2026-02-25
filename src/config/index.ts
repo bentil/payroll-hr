@@ -13,7 +13,11 @@ export default {
     reimbursementRequestPath: process.env.REIMBURSEMENT_REQUEST_TEMPLATE_PATH || '',
     reimbursementResponsePath: process.env.REIMBURSEMENT_RESPONSE_TEMPLATE_PATH || '',
     announcementPath: process.env.ANNOUNCEMENT_TEMPLATE_PATH || '',
-    defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || ''
+    defaultPhotoUrl: process.env.DEFAULT_PHOTO_URL || '',
+    employeeOvertimeEntryRequestPath: process.env.OVERTIME_ENTRY_REQUEST_TEMPLATE_PATH || '',
+    employeeOvertimeEntryResponsePath: process.env.OVERTIME_ENTRY_RESPONSE_TEMPLATE_PATH || '',
+    employeeWorkTimeRequestPath: process.env.WORK_TIME_REQUEST_TEMPLATE_PATH || '',
+    employeeWorkTimeResponsePath: process.env.WORK_TIME_RESPONSE_TEMPLATE_PATH || '',
   },
   log: {
     level: process.env.LOG_LEVEL,
